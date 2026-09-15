@@ -1,6 +1,9 @@
 package org.example.cli;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,14 +17,31 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
+import org.printscript.application.PrintScript;
 import org.printscript.application.PrintScriptConfigReader;
+import org.printscript.application.ProgressReporter;
 import org.printscript.formatter.FormatterConfig;
 
 class AppTest {
   private static final String SOURCE_FILE_NAME = "source.pisp";
   private static final String SOURCE_FLAG = "--source";
   private static final String VERSION_FLAG = "--version";
+  private static final String CONFIG_FLAG = "--config";
+  private static final String CONFIG_FILE_NAME = "config.toml";
   private static final String EXPECTED_SUCCESSFUL_EXIT_CODE = "expected successful exit code";
+  private static final String CLOSE_RESOURCE_SUPPRESSION = "PMD.CloseResource";
+  private static final String FORMATTER_SECTION = "[formatter]\n";
+  private static final String ANALYZER_SECTION = "[analyzer]\n";
+  private static final String FORMAT_COMMAND = "format";
+  private static final String ANALYZE_COMMAND = "analyze";
+  private static final String EXECUTE_COMMAND = "execute";
+  private static final String VALIDATE_COMMAND = "validate";
+  private static final String VERSION_ONE_ZERO = "1.0";
+  private static final String UNSUPPORTED_VERSION = "9.9";
+  private static final String UNSUPPORTED_VERSION_FRAGMENT = "Unsupported PrintScript version";
+  private static final String EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC =
+      "expected the unsupported-version diagnostic to be printed to stderr";
+  private static final String PRINTLN_HI_SOURCE = "println(\"hi\");";
 
   @TempDir Path tempDir;
 
@@ -41,8 +61,8 @@ class AppTest {
   }
 
   @SuppressWarnings(
-      "PMD.CloseResource") // originalOut/originalIn are saved references to restore, not ours to
-  // close
+      CLOSE_RESOURCE_SUPPRESSION) // originalOut/originalIn are saved references to restore, not
+  // ours to close
   private ExecuteRun runExecuteCommandWithStdin() throws Exception {
     Path source = tempDir.resolve(SOURCE_FILE_NAME);
     Files.writeString(source, "let name: string = readInput(\"Name: \");\nprintln(name);");
@@ -55,7 +75,8 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       System.setIn(new ByteArrayInputStream("Ada\n".getBytes(StandardCharsets.UTF_8)));
-      exitCode = new App().run("execute", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
+      exitCode =
+          new App().run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -92,12 +113,12 @@ class AppTest {
   }
 
   @SuppressWarnings(
-      "PMD.CloseResource") // originalOut is a saved reference to restore, not ours to close
+      CLOSE_RESOURCE_SUPPRESSION) // originalOut is a saved reference to restore, not ours to close
   private FormatRun runFormatCommandWithInjectedConfigReader() throws Exception {
     Path source = tempDir.resolve(SOURCE_FILE_NAME);
-    Path config = tempDir.resolve("config.toml");
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
     Files.writeString(source, "let text: string = \"hello\";\nprintln(text);");
-    Files.writeString(config, "[formatter]\n");
+    Files.writeString(config, FORMATTER_SECTION);
     FakeConfigReader reader = new FakeConfigReader();
 
     int exitCode;
@@ -109,12 +130,12 @@ class AppTest {
       exitCode =
           new App(reader)
               .run(
-                  "format",
+                  FORMAT_COMMAND,
                   SOURCE_FLAG,
                   source.toString(),
                   VERSION_FLAG,
-                  "1.0",
-                  "--config",
+                  VERSION_ONE_ZERO,
+                  CONFIG_FLAG,
                   config.toString());
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
@@ -154,12 +175,12 @@ class AppTest {
   }
 
   @SuppressWarnings(
-      "PMD.CloseResource") // originalOut is a saved reference to restore, not ours to close
+      CLOSE_RESOURCE_SUPPRESSION) // originalOut is a saved reference to restore, not ours to close
   private PromptFormatRun runFormatCommandWithMissingConfigFile() throws Exception {
     Path source = tempDir.resolve(SOURCE_FILE_NAME);
-    Path config = tempDir.resolve("config.toml");
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
     Files.writeString(source, "let text: string = \"hello\";");
-    Files.writeString(config, "[formatter]\n");
+    Files.writeString(config, FORMATTER_SECTION);
     FakeConfigReader reader = new FakeConfigReader();
     PromptStub prompt = new PromptStub(config);
 
@@ -171,7 +192,7 @@ class AppTest {
       System.setOut(redirectedOut);
       exitCode =
           new App(reader, prompt)
-              .run("format", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.0");
+              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -203,17 +224,276 @@ class AppTest {
 
   private AnalyzeRun runAnalyzeCommandWithMissingConfigFile() throws Exception {
     Path source = tempDir.resolve(SOURCE_FILE_NAME);
-    Path config = tempDir.resolve("config.toml");
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
     Files.writeString(source, "let text: string = \"hello\";");
-    Files.writeString(config, "[analyzer]\n");
+    Files.writeString(config, ANALYZER_SECTION);
     FakeConfigReader reader = new FakeConfigReader();
     PromptStub prompt = new PromptStub(config);
 
     int exitCode =
-        new App(reader, prompt).run("analyze", SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.0");
+        new App(reader, prompt)
+            .run(ANALYZE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
 
     return new AnalyzeRun(exitCode, config, reader, prompt.prompts);
   }
+
+  @Test
+  void validateCommandExitsSuccessfullyForValidSource() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Files.writeString(source, "let name: string = \"Ada\";");
+
+    int exitCode =
+        new App()
+            .run(VALIDATE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+
+    assertEquals(0, exitCode, EXPECTED_SUCCESSFUL_EXIT_CODE);
+  }
+
+  @Test
+  void validateCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+    CapturedErr captured = runValidateWithUnsupportedVersion();
+
+    assertEquals(1, captured.exitCode(), "expected validate to fail for an unsupported version");
+  }
+
+  @Test
+  void validateCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+    CapturedErr captured = runValidateWithUnsupportedVersion();
+
+    assertTrue(
+        captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
+        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+  }
+
+  private CapturedErr runValidateWithUnsupportedVersion() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Files.writeString(source, "let name: string = \"Ada\";");
+
+    return runCapturingStderr(
+        () ->
+            new App()
+                .run(
+                    VALIDATE_COMMAND,
+                    SOURCE_FLAG,
+                    source.toString(),
+                    VERSION_FLAG,
+                    UNSUPPORTED_VERSION));
+  }
+
+  @Test
+  void executeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+    CapturedErr captured = runExecuteWithUnsupportedVersion();
+
+    assertEquals(1, captured.exitCode(), "expected execute to fail for an unsupported version");
+  }
+
+  @Test
+  void executeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+    CapturedErr captured = runExecuteWithUnsupportedVersion();
+
+    assertTrue(
+        captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
+        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+  }
+
+  private CapturedErr runExecuteWithUnsupportedVersion() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Files.writeString(source, PRINTLN_HI_SOURCE);
+
+    return runCapturingStderr(
+        () ->
+            new App()
+                .run(
+                    EXECUTE_COMMAND,
+                    SOURCE_FLAG,
+                    source.toString(),
+                    VERSION_FLAG,
+                    UNSUPPORTED_VERSION));
+  }
+
+  @Test
+  void formatCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+    CapturedErr captured = runFormatWithUnsupportedVersion();
+
+    assertEquals(1, captured.exitCode(), "expected format to fail for an unsupported version");
+  }
+
+  @Test
+  void formatCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+    CapturedErr captured = runFormatWithUnsupportedVersion();
+
+    assertTrue(
+        captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
+        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+  }
+
+  private CapturedErr runFormatWithUnsupportedVersion() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
+    Files.writeString(source, PRINTLN_HI_SOURCE);
+    Files.writeString(config, FORMATTER_SECTION);
+
+    return runCapturingStderr(
+        () ->
+            new App(new FakeConfigReader())
+                .run(
+                    FORMAT_COMMAND,
+                    SOURCE_FLAG,
+                    source.toString(),
+                    VERSION_FLAG,
+                    UNSUPPORTED_VERSION,
+                    CONFIG_FLAG,
+                    config.toString()));
+  }
+
+  @Test
+  void analyzeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+    CapturedErr captured = runAnalyzeWithUnsupportedVersion();
+
+    assertEquals(1, captured.exitCode(), "expected analyze to fail for an unsupported version");
+  }
+
+  @Test
+  void analyzeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+    CapturedErr captured = runAnalyzeWithUnsupportedVersion();
+
+    assertTrue(
+        captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
+        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+  }
+
+  private CapturedErr runAnalyzeWithUnsupportedVersion() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
+    Files.writeString(source, PRINTLN_HI_SOURCE);
+    Files.writeString(config, ANALYZER_SECTION);
+
+    return runCapturingStderr(
+        () ->
+            new App(new FakeConfigReader())
+                .run(
+                    ANALYZE_COMMAND,
+                    SOURCE_FLAG,
+                    source.toString(),
+                    VERSION_FLAG,
+                    UNSUPPORTED_VERSION,
+                    CONFIG_FLAG,
+                    config.toString()));
+  }
+
+  @Test
+  void analyzeCommandReturnsExitCodeOneWhenErrorDiagnosticsAreFound() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
+    Files.writeString(source, "let badName: string = \"hello\";");
+    Files.writeString(config, ANALYZER_SECTION);
+
+    int exitCode =
+        new App(new FakeConfigReader())
+            .run(
+                ANALYZE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                VERSION_ONE_ZERO,
+                CONFIG_FLAG,
+                config.toString());
+
+    assertEquals(1, exitCode, "expected a naming-style violation to yield exit code 1");
+  }
+
+  @Test
+  void runningWithoutASubcommandPrintsUsageAndReturnsExitCodeTwo() {
+    int exitCode = new App().run();
+
+    assertEquals(2, exitCode, "expected the bare command to print usage and exit with code 2");
+  }
+
+  @Test
+  void mainWithHelpFlagExitsWithoutThrowing() {
+    assertDoesNotThrow(
+        () -> App.main(new String[] {"--help"}),
+        "expected --help to exit cleanly without System.exit");
+  }
+
+  @Test
+  void appConstructedWithExplicitPrintScriptAndProgressExitsSuccessfully() throws Exception {
+    InjectedProgressRun run = runWithInjectedPrintScriptAndProgress();
+
+    assertEquals(0, run.exitCode(), EXPECTED_SUCCESSFUL_EXIT_CODE);
+  }
+
+  @Test
+  void appConstructedWithExplicitPrintScriptAndProgressUsesTheInjectedProgressReporter()
+      throws Exception {
+    InjectedProgressRun run = runWithInjectedPrintScriptAndProgress();
+
+    assertNotEquals(
+        List.of(), run.progressMessages(), "expected the injected progress reporter to be used");
+  }
+
+  private InjectedProgressRun runWithInjectedPrintScriptAndProgress() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Files.writeString(source, PRINTLN_HI_SOURCE);
+    List<String> progressMessages = new ArrayList<>();
+    ProgressReporter progress = progressMessages::add;
+
+    int exitCode =
+        new App(new FakeConfigReader(), new PrintScript(), progress)
+            .run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+
+    return new InjectedProgressRun(exitCode, progressMessages);
+  }
+
+  private record InjectedProgressRun(int exitCode, List<String> progressMessages) {}
+
+  @Test
+  @SuppressWarnings(
+      CLOSE_RESOURCE_SUPPRESSION) // the ByteArrayInputStream backs System.in for the duration of
+  // the test and is restored, not ours to close
+  void formatCommandWithDefaultAppPromptsRealStdinForConfigPath() throws Exception {
+    Path source = tempDir.resolve(SOURCE_FILE_NAME);
+    Path config = tempDir.resolve(CONFIG_FILE_NAME);
+    Files.writeString(source, "let text: string = \"hello\";");
+    Files.writeString(config, FORMATTER_SECTION);
+
+    int exitCode;
+    InputStream originalIn = System.in;
+    try {
+      System.setIn(
+          new ByteArrayInputStream((config.toString() + "\n").getBytes(StandardCharsets.UTF_8)));
+      exitCode =
+          new App()
+              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+    } finally {
+      System.setIn(originalIn);
+    }
+
+    assertEquals(0, exitCode, "expected the real stdin prompt to supply the config path");
+  }
+
+  private interface ThrowingSupplier {
+    int run() throws Exception;
+  }
+
+  @SuppressWarnings(
+      CLOSE_RESOURCE_SUPPRESSION) // originalErr is a saved reference to restore, not ours to close
+  private CapturedErr runCapturingStderr(ThrowingSupplier action) throws Exception {
+    PrintStream originalErr = System.err;
+    int exitCode;
+    String stderr;
+    try (ByteArrayOutputStream capturedErr = new ByteArrayOutputStream();
+        PrintStream redirectedErr = new PrintStream(capturedErr, true, StandardCharsets.UTF_8)) {
+      System.setErr(redirectedErr);
+      exitCode = action.run();
+      stderr = capturedErr.toString(StandardCharsets.UTF_8);
+    } finally {
+      System.setErr(originalErr);
+    }
+    return new CapturedErr(exitCode, stderr);
+  }
+
+  private record CapturedErr(int exitCode, String stderr) {}
 
   private record FormatRun(int exitCode, Path config, FakeConfigReader reader, String stdout) {}
 
