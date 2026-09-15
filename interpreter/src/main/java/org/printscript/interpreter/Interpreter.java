@@ -171,13 +171,31 @@ public final class Interpreter {
         output.println(stringify(argument));
         yield RuntimeValue.UnitValue.INSTANCE;
       }
-      case "readInput" -> parseValue(input.readLine(stringify(argument)), call, semanticModel);
+      case "readInput" -> {
+        String raw;
+        try {
+          raw = input.readLine(stringify(argument));
+        } catch (UnsupportedOperationException unsupported) {
+          RuntimeFailure failure = runtime(unsupported.getMessage(), call);
+          failure.initCause(unsupported);
+          throw failure;
+        }
+        yield parseValue(raw, call, semanticModel);
+      }
       case "readEnv" -> {
         String variableName = stringify(argument);
-        String raw =
-            env.get(variableName)
-                .orElseThrow(
-                    () -> runtime("Environment variable '" + variableName + "' is not set", call));
+        String raw;
+        try {
+          raw =
+              env.get(variableName)
+                  .orElseThrow(
+                      () ->
+                          runtime("Environment variable '" + variableName + "' is not set", call));
+        } catch (UnsupportedOperationException unsupported) {
+          RuntimeFailure failure = runtime(unsupported.getMessage(), call);
+          failure.initCause(unsupported);
+          throw failure;
+        }
         yield parseValue(raw, call, semanticModel);
       }
       default -> throw runtime("Unknown callable '" + name + "'", call);
