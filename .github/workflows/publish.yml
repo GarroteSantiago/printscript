@@ -9,7 +9,13 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  quality:
+    name: Quality gate
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    name: Publish
+    needs: quality
     runs-on: ubuntu-latest
     permissions:
       contents: read
