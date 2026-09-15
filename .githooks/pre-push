@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Full local quality gate, mirrors the CI "quality" job exactly.
+# Installed via `just install-hooks` (sets core.hooksPath to .githooks).
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "[pre-push] Running full quality gate (format, checkstyle, pmd, tests, coverage)..."
+if ! just validate; then
+  echo
+  echo "[pre-push] Quality gate failed. Fix the issues above before pushing (or push with --no-verify to bypass)."
+  exit 1
+fi
+
+echo "[pre-push] OK"

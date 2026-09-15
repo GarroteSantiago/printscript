@@ -70,6 +70,14 @@ validate: format-check checkstyle pmd coverage
 check:
     ./gradlew clean check jacocoTestReport
 
+# --- GIT HOOKS ---
+
+# Point Git at the versioned hooks in .githooks/ (run once per clone)
+install-hooks:
+    git config core.hooksPath .githooks
+    chmod +x .githooks/pre-commit .githooks/pre-push
+    @echo "Git hooks installed: pre-commit (format+checkstyle), pre-push (full validate)."
+
 # --- MAINTENANCE ---
 
 # Delete all generated build/ directories

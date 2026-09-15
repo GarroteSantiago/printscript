@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Fast local quality gate: formatting + style, mirrors the "cheap" half of CI.
+# Installed via `just install-hooks` (sets core.hooksPath to .githooks).
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+echo "[pre-commit] Checking formatting (Spotless)..."
+if ! just format-check; then
+  echo
+  echo "[pre-commit] Formatting check failed. Run 'just format' to fix, then re-stage and commit."
+  exit 1
+fi
+
+echo "[pre-commit] Running Checkstyle..."
+if ! just checkstyle; then
+  echo
+  echo "[pre-commit] Checkstyle failed. Fix the violations above, then re-stage and commit."
+  exit 1
+fi
+
+echo "[pre-commit] OK"
