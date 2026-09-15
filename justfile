@@ -34,15 +34,27 @@ format:
 lint:
     ./gradlew spotlessCheck checkstyleMain pmdMain
 
+# Check formatting without modifying files
+format-check:
+    ./gradlew spotlessCheck
+
+# Run Checkstyle on main and test sources
+checkstyle:
+    ./gradlew checkstyleMain checkstyleTest
+
+# Run PMD on main and test sources
+pmd:
+    ./gradlew pmdMain pmdTest
+
 # --- TESTING & COVERAGE ---
 
 # Run all tests cleanly from scratch (Bypasses caching)
 test:
     ./gradlew clean test
 
-# Run tests and generate the visual coverage report (JaCoCo)
+# Run tests, generate the visual coverage report (JaCoCo), and fail if coverage is under 80%
 coverage:
-    ./gradlew test jacocoTestReport
+    ./gradlew test jacocoTestReport jacocoTestCoverageVerification
     @echo "Coverage report generated inside each module's build directory."
     # For Linux: xdg-open cli/build/reports/jacoco/test/html/index.html
     # For macOS: open cli/build/reports/jacoco/test/html/index.html
@@ -50,8 +62,8 @@ coverage:
 # --- CONTINUOUS INTEGRATION / VERIFICATION ---
 
 # Run every CI quality tool (formatting, style, static analysis, tests) without a clean rebuild
-validate:
-    ./gradlew spotlessCheck checkstyleMain checkstyleTest pmdMain pmdTest test jacocoTestReport
+# Each check runs as its own gradlew invocation so CI can run them as separate, fail-fast steps.
+validate: format-check checkstyle pmd coverage
 
 # Run EVERYTHING (Compiles, tests, verifies style, and checks quality rules)
 # Run this command right before pushing your code to the faculty repository!
@@ -63,4 +75,3 @@ check:
 # Delete all generated build/ directories
 clean:
     ./gradlew clean
-
