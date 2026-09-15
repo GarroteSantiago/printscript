@@ -85,4 +85,36 @@ class StaticAnalyzerV11Test {
 
     assertEquals(1, diagnostics.size(), "expected the rule to fire inside a nested block");
   }
+
+  @Test
+  void reportsReadInputArgumentShapeWhenNestedInsideAnElseBlock() {
+    var diagnostics =
+        analyze(
+            """
+            let prompt: string = "p";
+            let flag: boolean = false;
+            if (flag) {
+              println("yes");
+            } else {
+              let value: string = readInput(prompt + "!");
+            }
+            """,
+            new AnalyzerConfig(NamingStyle.SNAKE_CASE, true, true, true));
+
+    assertEquals(1, diagnostics.size(), "expected the rule to fire inside a nested else block");
+  }
+
+  @Test
+  void reportsReadInputArgumentShapeWhenUsedAsAnAssignmentValue() {
+    var diagnostics =
+        analyze(
+            """
+            let prompt: string = "p";
+            let value: string = "x";
+            value = readInput(prompt + "!");
+            """,
+            new AnalyzerConfig(NamingStyle.SNAKE_CASE, true, true, true));
+
+    assertEquals(1, diagnostics.size(), "expected the assignment's call argument to be checked");
+  }
 }
