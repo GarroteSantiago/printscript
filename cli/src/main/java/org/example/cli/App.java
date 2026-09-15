@@ -11,11 +11,11 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import org.printscript.application.AnalysisResult;
 import org.printscript.application.CommandResult;
+import org.printscript.application.JsonPrintScriptConfigReader;
 import org.printscript.application.LanguageVersion;
 import org.printscript.application.PrintScript;
 import org.printscript.application.PrintScriptConfigReader;
 import org.printscript.application.ProgressReporter;
-import org.printscript.application.TomlPrintScriptConfigReader;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.interpreter.EnvironmentPort;
 import org.printscript.interpreter.InputPort;
@@ -42,7 +42,7 @@ public class App implements Callable<Integer> {
   private final ConfigPathPrompt configPathPrompt;
 
   public App() {
-    this(new TomlPrintScriptConfigReader());
+    this(new JsonPrintScriptConfigReader());
   }
 
   App(PrintScriptConfigReader configReader) {

@@ -27,11 +27,11 @@ class AppTest {
   private static final String SOURCE_FLAG = "--source";
   private static final String VERSION_FLAG = "--version";
   private static final String CONFIG_FLAG = "--config";
-  private static final String CONFIG_FILE_NAME = "config.toml";
+  private static final String CONFIG_FILE_NAME = "config.json";
   private static final String EXPECTED_SUCCESSFUL_EXIT_CODE = "expected successful exit code";
   private static final String CLOSE_RESOURCE_SUPPRESSION = "PMD.CloseResource";
-  private static final String FORMATTER_SECTION = "[formatter]\n";
-  private static final String ANALYZER_SECTION = "[analyzer]\n";
+  private static final String FORMATTER_SECTION = "{}\n";
+  private static final String ANALYZER_SECTION = "{}\n";
   private static final String FORMAT_COMMAND = "format";
   private static final String ANALYZE_COMMAND = "analyze";
   private static final String EXECUTE_COMMAND = "execute";
