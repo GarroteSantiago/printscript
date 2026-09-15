@@ -3,6 +3,7 @@ package org.printscript.lexer;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.source.SourcePosition;
@@ -18,6 +19,7 @@ public final class Lexer implements TokenSource {
 
   private final Reader reader;
   private final KeywordTable keywords;
+  private final PunctuationTable punctuation = PunctuationTable.v1();
   private int currentChar;
   private boolean eofTokenEmitted;
   private int row = 1;
@@ -53,29 +55,21 @@ public final class Lexer implements TokenSource {
     }
     SourcePosition start = position();
     char c = advance();
-    return switch (c) {
-      case ':' -> token(TokenType.COLON, ":", ":", leadingTrivia, start);
-      case ';' -> token(TokenType.SEMICOLON, ";", ";", leadingTrivia, start);
-      case '=' -> token(TokenType.EQUAL, "=", "=", leadingTrivia, start);
-      case '+' -> token(TokenType.PLUS, "+", "+", leadingTrivia, start);
-      case '-' -> token(TokenType.MINUS, "-", "-", leadingTrivia, start);
-      case '*' -> token(TokenType.STAR, "*", "*", leadingTrivia, start);
-      case '/' -> token(TokenType.SLASH, "/", "/", leadingTrivia, start);
-      case '(' -> token(TokenType.LEFT_PAREN, "(", "(", leadingTrivia, start);
-      case ')' -> token(TokenType.RIGHT_PAREN, ")", ")", leadingTrivia, start);
-      case '{' -> token(TokenType.LEFT_BRACE, "{", "{", leadingTrivia, start);
-      case '}' -> token(TokenType.RIGHT_BRACE, "}", "}", leadingTrivia, start);
-      case '\'', '"' -> string(c, leadingTrivia, start);
-      default -> {
-        if (Character.isDigit(c)) {
-          yield number(c, leadingTrivia, start);
-        }
-        if (isIdentifierStart(c)) {
-          yield identifier(c, leadingTrivia, start);
-        }
-        throw syntaxError("Unexpected character '" + c + "'", start);
-      }
-    };
+    if (c == '\'' || c == '"') {
+      return string(c, leadingTrivia, start);
+    }
+    Optional<Punctuation> symbol = Punctuation.lookup(c);
+    if (symbol.isPresent()) {
+      String text = String.valueOf(c);
+      return token(punctuation.classify(symbol.get()), text, text, leadingTrivia, start);
+    }
+    if (Character.isDigit(c)) {
+      return number(c, leadingTrivia, start);
+    }
+    if (isIdentifierStart(c)) {
+      return identifier(c, leadingTrivia, start);
+    }
+    throw syntaxError("Unexpected character '" + c + "'", start);
   }
 
   private String consumeTrivia() {
