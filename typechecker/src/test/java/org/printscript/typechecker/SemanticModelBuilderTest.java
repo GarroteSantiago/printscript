@@ -1,9 +1,11 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.semantics.SemanticModel;
 import org.printscript.testkit.TestSources;
 
 class SemanticModelBuilderTest {

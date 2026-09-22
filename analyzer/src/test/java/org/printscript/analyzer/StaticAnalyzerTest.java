@@ -8,8 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
 import org.printscript.testkit.TestSources;
+import org.printscript.typechecker.SemanticContext;
 
 class StaticAnalyzerTest {
   private List<Diagnostic> diagnostics;

@@ -9,11 +9,11 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
-import org.printscript.semantics.SemanticStatementResult;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.testkit.TestSources;
+import org.printscript.typechecker.SemanticContext;
+import org.printscript.typechecker.SemanticStatementResult;
 
 class InterpreterV11Test {
   private static final InputPort FAILING_INPUT =

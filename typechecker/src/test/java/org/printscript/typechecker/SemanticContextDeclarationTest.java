@@ -1,10 +1,12 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.printscript.lexer.KeywordTable;
+import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.semantics.SemanticModel;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.testkit.TestSources;
 

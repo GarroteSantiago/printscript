@@ -11,5 +11,6 @@ dependencies {
     implementation project(':syntax')
     implementation project(':parser')
     implementation project(':semantics')
+    implementation project(':typechecker')
     implementation project(':lexer')
 }

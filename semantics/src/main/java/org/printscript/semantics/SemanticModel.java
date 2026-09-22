@@ -53,11 +53,16 @@ public final class SemanticModel {
     return Optional.ofNullable(resolvedCalls.get(expression));
   }
 
-  static Builder builder() {
+  /**
+   * Public so {@code typechecker.SemanticContext} — the only production writer of a {@link
+   * SemanticModel} — can populate one from a different module/package. Nothing else should call
+   * this; read the result through {@link SemanticModel}'s own accessors instead.
+   */
+  public static Builder builder() {
     return new Builder();
   }
 
-  static final class Builder {
+  public static final class Builder {
     private final List<Diagnostic> diagnostics = new java.util.ArrayList<>();
     private final Map<ExpressionSyntax, TypeName> expressionTypes = new IdentityHashMap<>();
     private final Map<IdentifierExpressionSyntax, VariableSymbol> variableReferences =
@@ -65,27 +70,27 @@ public final class SemanticModel {
     private final Map<CallExpressionSyntax, BuiltinSignature> resolvedCalls =
         new IdentityHashMap<>();
 
-    void addDiagnostic(Diagnostic diagnostic) {
+    public void addDiagnostic(Diagnostic diagnostic) {
       diagnostics.add(diagnostic);
     }
 
-    void setType(ExpressionSyntax expression, TypeName type) {
+    public void setType(ExpressionSyntax expression, TypeName type) {
       if (type != null) expressionTypes.put(expression, type);
     }
 
-    void resolveVariable(IdentifierExpressionSyntax expression, VariableSymbol symbol) {
+    public void resolveVariable(IdentifierExpressionSyntax expression, VariableSymbol symbol) {
       variableReferences.put(expression, symbol);
     }
 
-    void resolveCall(CallExpressionSyntax expression, BuiltinSignature signature) {
+    public void resolveCall(CallExpressionSyntax expression, BuiltinSignature signature) {
       resolvedCalls.put(expression, signature);
     }
 
-    boolean hasErrors() {
+    public boolean hasErrors() {
       return !diagnostics.isEmpty();
     }
 
-    SemanticModel build() {
+    public SemanticModel build() {
       return new SemanticModel(diagnostics, expressionTypes, variableReferences, resolvedCalls);
     }
   }

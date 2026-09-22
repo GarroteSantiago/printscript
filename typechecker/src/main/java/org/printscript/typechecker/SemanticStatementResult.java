@@ -1,7 +1,8 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import java.util.List;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.semantics.SemanticModel;
 
 public record SemanticStatementResult(
     SemanticContext nextContext, SemanticModel semanticModel, List<Diagnostic> diagnostics) {

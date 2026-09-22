@@ -26,16 +26,16 @@ import org.printscript.interpreter.RuntimeFailure;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.semantics.BinaryOperatorRules;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
-import org.printscript.semantics.SemanticStatementResult;
 import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
 import org.printscript.syntax.StatementSource;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.tokens.SyntaxException;
+import org.printscript.typechecker.BinaryOperatorRules;
+import org.printscript.typechecker.SemanticContext;
+import org.printscript.typechecker.SemanticStatementResult;
 
 /**
  * The use-case facade and composition root for PrintScript: {@link #execute}, {@link #format},

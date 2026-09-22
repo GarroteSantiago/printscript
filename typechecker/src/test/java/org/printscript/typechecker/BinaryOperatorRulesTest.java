@@ -1,4 +1,4 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

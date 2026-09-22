@@ -1,4 +1,4 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.lexer.KeywordTable;
+import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.semantics.BuiltinSignature;
+import org.printscript.semantics.SemanticModel;
+import org.printscript.semantics.VariableSymbol;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;

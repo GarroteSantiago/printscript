@@ -1,43 +1,50 @@
 # Semantics Module
 
-The semantics module owns language meaning and correctness.
+The semantics module owns the *result* of semantic analysis, not the analysis itself: the record of
+decisions a type checker made, and the vocabulary needed to describe them.
 
 Responsibilities:
 
-- symbol resolution
-- type checking
-- built-in function resolution
-- semantic validation
-- shared semantic rules
+- `SemanticModel` — the record of decisions made while validating a statement: each expression's
+  resolved `TypeName`, each identifier's resolved `VariableSymbol`, each call's resolved
+  `BuiltinSignature`. Downstream stages (`interpreter`, `analyzer`) read these decisions instead of
+  re-deriving them.
+- `BuiltinRegistry` / `BuiltinSignature` — which callables (`println`, `readInput`, `readEnv`) exist
+  for a given language version, and their signatures.
+- `VariableSymbol` — a declared variable's resolved name, type, mutability, and declaration site.
 
-Type errors, undeclared variables, invalid assignments, and invalid built-in calls belong here.
+The actual type checker — `SemanticContext`, the whole-program `SemanticModelBuilder` convenience,
+and the `BinaryOperatorRules` strategy that decides operator result types — lives in a separate
+[typechecker](../typechecker/ARCHITECTURE.md) module, not here. This module defines what a
+completed analysis looks like; it never performs one.
 
-Style and policy checks belong in the analyzer module.
+Type errors, undeclared variables, invalid assignments, and invalid built-in calls are decided by
+the checker and recorded here. Style and policy checks belong in the analyzer module, on top of an
+already-valid `SemanticModel`.
 
-`println` should be parsed as a call by syntax and resolved as a built-in function by semantics.
-
-Built-ins should be handled through a small registry from the start. The registry maps a callable name to its signature and behavior contract.
-
-For version `1.0.0`, the registry only needs `println`, but the model should support more built-ins and future user-defined functions.
+`println` is parsed as a call by `syntax` and resolved as a built-in function through
+`BuiltinRegistry`. For version `1.0.0` the registry only needs `println`, but the model supports
+more built-ins and future user-defined functions.
 
 Variable declarations require explicit type annotations.
 
-## Swappable per-version behavior
+## Why this is a separate module from the checker
 
-Version-specific literal behavior lives behind small strategy interfaces (default `v1()`
-implementation, constructor-injected into `SemanticContext`/`SemanticModelBuilder`, selected by the
-composition root in `application`) rather than hardcoded `switch`/`if` chains:
+`interpreter` and `analyzer` both need to read a `SemanticModel` (and know what builtins exist) —
+neither one re-derives a type decision or a symbol resolution. Neither one, however, ever runs the
+checker itself: they receive an already-validated model from `application`'s composition root. Before
+this split, both modules pulled in `SemanticContext`, `SemanticModelBuilder`, and
+`BinaryOperatorRules` transitively through `semantics` even though they never referenced them.
+Depending on `typechecker` is now a signal that a consumer runs analysis, not just reads its result;
+today that's only `application` (the composition root) and, for test fixtures, `interpreter`'s and
+`analyzer`'s own test source sets.
 
-- `TypeAnnotationTable` — resolves a type-annotation lexeme (e.g. `"number"`, `"string"`) to a
-  `TypeName`.
-- `BinaryOperatorRules` — the single source of truth for what result type (if any) a binary
-  operator produces given two operand types. This is also what
-  [`interpreter.Interpreter`](../interpreter/ARCHITECTURE.md) relies on indirectly: the interpreter
-  does not re-derive "is `+` string concatenation or numeric addition" from runtime values, it reads
-  the type this rule already assigned during validation (`SemanticModel.typeOf`). Keep that rule
-  here, not duplicated at the interpreter level — the interpreter should only ever *act on* a type
-  decision, never *make* one.
+This is the same reasoning behind the `tokens`/`lexer` split (contract vs. one implementation) and
+the `syntax`/`parser` split (tree shape vs. the code that builds one), applied a third time to the
+type checker.
 
-Representative tests: `src/test/java/org/printscript/semantics/SemanticContextV11Test.java`
-(the v1.1 builtins/const/if rules), `SemanticContextDeclarationTest.java` (declaration/type-checking
-rules), `BinaryOperatorRulesTest.java`.
+Representative tests: `src/test/java/org/printscript/semantics/BuiltinSignatureTest.java`.
+Checker-specific tests (`SemanticContextV11Test.java`, `SemanticContextDeclarationTest.java`,
+`SemanticContextModelAccessorsTest.java`, `SemanticModelBuilderTest.java`,
+`BinaryOperatorRulesTest.java`) live in [typechecker](../typechecker/ARCHITECTURE.md) alongside the
+code they test.

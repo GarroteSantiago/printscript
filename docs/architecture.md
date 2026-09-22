@@ -15,6 +15,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Syntax Module](../syntax/ARCHITECTURE.md)
 - [Parser Module](../parser/ARCHITECTURE.md)
 - [Semantics Module](../semantics/ARCHITECTURE.md)
+- [Typechecker Module](../typechecker/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
 - [Analyzer Module](../analyzer/ARCHITECTURE.md)
@@ -41,11 +42,13 @@ graph TD
     application --> syntax
     application --> parser
     application --> semantics
+    application --> typechecker
     interpreter --> syntax
     interpreter --> semantics
     formatter --> syntax
     analyzer --> syntax
     analyzer --> semantics
+    typechecker --> semantics
     semantics --> syntax
     parser --> syntax
     parser --> tokens
@@ -56,13 +59,17 @@ graph TD
     testkit -.test only.-> lexer
     testkit -.test only.-> syntax
     testkit -.test only.-> parser
+    interpreter -.test only.-> typechecker
+    analyzer -.test only.-> typechecker
 ```
 
 Notice `lexer` and `syntax` both depend on `tokens` but never on each other — that's deliberate, see
-[Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `syntax`:
-`formatter`/`interpreter`/`analyzer` walk the AST `syntax` defines but never build one, so none of
-them depend on `parser` — only `application` (the composition root) and `testkit` (test fixtures)
-do.
+[Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `syntax` and
+`typechecker` out of `semantics`: `formatter`/`interpreter`/`analyzer` walk the AST `syntax` defines
+and read a `SemanticModel`, but none of them build a tree or run the checker that produces one — so
+only `application` (the composition root) depends on `parser`/`typechecker` in production. `testkit`
+reaches `parser` (and `interpreter`/`analyzer` reach `typechecker`) only from their own test source
+sets, to build fixtures.
 
 ## Pipeline data flow
 
@@ -74,7 +81,7 @@ through validation. Formatting instead reads token trivia off the same lexer/par
 flowchart LR
     Source["Source text\n(Reader)"] --> Lexer["Lexer\n(TokenSource)"]
     Lexer --> Parser["parser.StatementSyntaxReader\n(StatementSource)"]
-    Parser --> Semantics["SemanticContext.validate\n(one statement)"]
+    Parser --> Semantics["typechecker.SemanticContext.validate\n(one statement)"]
     Semantics -->|success| Interpreter
     Semantics -->|success| Analyzer["StaticAnalyzer"]
     Semantics -->|failure| Diagnostics["Diagnostic\n(CommandResult.failure)"]

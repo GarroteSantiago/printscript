@@ -2,6 +2,7 @@ module org.printscript.application {
   requires org.printscript.syntax;
   requires org.printscript.parser;
   requires org.printscript.semantics;
+  requires org.printscript.typechecker;
   requires transitive org.printscript.interpreter;
   requires transitive org.printscript.formatter;
   requires transitive org.printscript.analyzer;
