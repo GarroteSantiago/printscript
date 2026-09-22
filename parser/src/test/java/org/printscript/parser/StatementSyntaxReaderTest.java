@@ -1,4 +1,4 @@
-package org.printscript.syntax;
+package org.printscript.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

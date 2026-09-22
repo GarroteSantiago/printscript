@@ -33,7 +33,8 @@ direction; the full graph (and why `lexer`/`syntax` don't depend on each other) 
 | [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`). |
 | [`tokens`](tokens/ARCHITECTURE.md) | The token contract (`Token`, `TokenType`, `TokenSource`) shared by `lexer` and `syntax` without either depending on the other. |
 | [`lexer`](lexer/ARCHITECTURE.md) | Scans source text into tokens (`Lexer`). |
-| [`syntax`](syntax/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`) and owns the AST node types. |
+| [`syntax`](syntax/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |
+| [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`, `SyntaxTreeBuilder`) — the only production implementation of `StatementSource`. |
 | [`semantics`](semantics/ARCHITECTURE.md) | Type checking, symbol resolution, builtin resolution (`SemanticContext`). |
 | [`interpreter`](interpreter/ARCHITECTURE.md) | Executes validated statements (`Interpreter`), immutable runtime state. |
 | [`formatter`](formatter/ARCHITECTURE.md) | Lossless, trivia-based source rewriting (`PrintScriptFormatter`). |

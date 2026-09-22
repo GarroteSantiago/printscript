@@ -1,4 +1,4 @@
-package org.printscript.syntax;
+package org.printscript.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.printscript.lexer.KeywordTable;
+import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.IfStatementSyntax;

@@ -13,6 +13,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Tokens Module](../tokens/ARCHITECTURE.md)
 - [Lexer Module](../lexer/ARCHITECTURE.md)
 - [Syntax Module](../syntax/ARCHITECTURE.md)
+- [Parser Module](../parser/ARCHITECTURE.md)
 - [Semantics Module](../semantics/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
@@ -38,6 +39,7 @@ graph TD
     application --> interpreter
     application --> lexer
     application --> syntax
+    application --> parser
     application --> semantics
     interpreter --> syntax
     interpreter --> semantics
@@ -45,16 +47,22 @@ graph TD
     analyzer --> syntax
     analyzer --> semantics
     semantics --> syntax
+    parser --> syntax
+    parser --> tokens
     syntax --> tokens
     lexer --> tokens
     tokens --> diagnostics
     diagnostics --> source
     testkit -.test only.-> lexer
     testkit -.test only.-> syntax
+    testkit -.test only.-> parser
 ```
 
 Notice `lexer` and `syntax` both depend on `tokens` but never on each other — that's deliberate, see
-[Tokens Module](../tokens/ARCHITECTURE.md).
+[Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `syntax`:
+`formatter`/`interpreter`/`analyzer` walk the AST `syntax` defines but never build one, so none of
+them depend on `parser` — only `application` (the composition root) and `testkit` (test fixtures)
+do.
 
 ## Pipeline data flow
 
@@ -65,7 +73,7 @@ through validation. Formatting instead reads token trivia off the same lexer/par
 ```mermaid
 flowchart LR
     Source["Source text\n(Reader)"] --> Lexer["Lexer\n(TokenSource)"]
-    Lexer --> Parser["StatementSyntaxReader\n(StatementSource)"]
+    Lexer --> Parser["parser.StatementSyntaxReader\n(StatementSource)"]
     Parser --> Semantics["SemanticContext.validate\n(one statement)"]
     Semantics -->|success| Interpreter
     Semantics -->|success| Analyzer["StaticAnalyzer"]

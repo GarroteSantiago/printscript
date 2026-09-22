@@ -2,9 +2,9 @@ package org.printscript.testkit;
 
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
+import org.printscript.parser.StatementSyntaxReader;
+import org.printscript.parser.SyntaxTreeBuilder;
 import org.printscript.syntax.StatementSource;
-import org.printscript.syntax.StatementSyntaxReader;
-import org.printscript.syntax.SyntaxTreeBuilder;
 import org.printscript.syntax.nodes.ProgramSyntax;
 
 /**

@@ -1,7 +1,8 @@
-package org.printscript.syntax;
+package org.printscript.parser;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.printscript.syntax.StatementSource;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 

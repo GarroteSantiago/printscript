@@ -1,4 +1,4 @@
-package org.printscript.syntax;
+package org.printscript.parser;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

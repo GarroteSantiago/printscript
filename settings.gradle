@@ -17,6 +17,7 @@ include(
     'tokens',
     'lexer',
     'syntax',
+    'parser',
     'semantics',
     'interpreter',
     'formatter',

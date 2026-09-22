@@ -1,5 +1,6 @@
 module org.printscript.application {
   requires org.printscript.syntax;
+  requires org.printscript.parser;
   requires org.printscript.semantics;
   requires transitive org.printscript.interpreter;
   requires transitive org.printscript.formatter;

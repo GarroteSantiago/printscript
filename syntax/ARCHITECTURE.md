@@ -6,16 +6,20 @@ It does **not** depend on [lexer](../lexer/ARCHITECTURE.md) — the scanning imp
 
 Responsibilities:
 
-- parser
 - AST model
-- `StatementSource` — the pull-based port a statement producer (`StatementSyntaxReader`)
-  implements and a statement consumer (the composition root in
-  [application](../application/ARCHITECTURE.md)) depends on
+- `StatementSource` — the pull-based port a statement producer implements and a statement consumer
+  (the composition root in [application](../application/ARCHITECTURE.md)) depends on
 - `TypeAnnotationTable` — resolves a type-annotation lexeme to a `TypeName`; a swappable strategy
   (default `v1()`) consumed by [semantics](../semantics/ARCHITECTURE.md), not by anything in this
   module
 - concrete/lossless syntax representation when needed by formatting
 - statement and expression dispatch protocols
+
+The parser itself — `StatementSyntaxReader`/`SyntaxTreeBuilder` — lives in a separate
+[parser](../parser/ARCHITECTURE.md) module, not here. This module defines the tree shape and the
+port a parser implements; it never builds one. `formatter`, `interpreter`, and `analyzer` all
+depend on `syntax` (they walk the AST) but none of them depend on `parser` (they never build one —
+they receive an already-parsed tree from `application`).
 
 The syntax module `requires transitive` the tokens module: AST nodes hold `SyntaxToken` values directly,
 so anything consuming the syntax module's public API (semantics, formatter, interpreter, analyzer,
@@ -26,7 +30,9 @@ application) can reference token types without an explicit dependency of their o
 Whatever needs to go from raw text to statements — currently only the composition root in
 `application`, plus [testkit](../testkit/ARCHITECTURE.md) for tests — is responsible for
 constructing a concrete `Lexer` and handing it in. This is what lets `syntax` and `lexer` both
-depend on `tokens` without depending on each other.
+depend on `tokens` without depending on each other, and the same reasoning is why `parser` is a
+separate module from `syntax`: it lets `formatter`/`interpreter`/`analyzer` depend on the tree
+shape without ever depending on the code that builds one.
 
 Execution, validation, and analysis consume AST statements through a pull-based parser stream.
 
@@ -94,6 +100,7 @@ dispatches on the concrete node kind through `accept`/`StatementVisitor`/`Expres
 [docs/architecture.md](../docs/architecture.md) for why this shape is used repeatedly across the
 core.
 
-Representative tests: `src/test/java/org/printscript/syntax/ParserTest.java` (v1 grammar),
-`ParserV11Test.java` (`const`/`if`/`else`/boolean literals added in v1.1),
-`ParserDeclarationTest.java` (variable declaration edge cases).
+Representative tests: `src/test/java/org/printscript/syntax/TypeAnnotationTableTest.java`,
+`TypeNameTest.java`. Parser-specific tests (`ParserTest.java`, `ParserV11Test.java`,
+`ParserDeclarationTest.java`, `StatementSyntaxReaderTest.java`, `SyntaxTreeBuilderTest.java`) live
+in [parser](../parser/ARCHITECTURE.md) alongside the code they test.
