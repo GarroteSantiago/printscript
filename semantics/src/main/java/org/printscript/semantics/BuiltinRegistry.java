@@ -4,6 +4,13 @@ import java.util.Map;
 import java.util.Optional;
 import org.printscript.syntax.TypeName;
 
+/**
+ * Maps a callable name (`println`, `readInput`, `readEnv`) to its {@link BuiltinSignature} for a
+ * given language version — {@link #v1()} exposes only {@code println}; {@link #v1_1()} adds the two
+ * contextual builtins. Whether a builtin exists at all is decided here, at the semantic phase;
+ * {@code interpreter.BuiltinBehaviors} separately supplies *how* each one executes once semantics
+ * has already confirmed it is callable.
+ */
 public final class BuiltinRegistry {
   public static final String PRINTLN = "println";
   public static final String READ_INPUT = "readInput";

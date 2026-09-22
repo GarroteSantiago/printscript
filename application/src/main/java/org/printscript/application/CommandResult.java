@@ -4,6 +4,13 @@ import java.util.List;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Severity;
 
+/**
+ * The uniform result shape every {@link PrintScript} operation returns: either a {@code value} (on
+ * success) or accumulated {@link Diagnostic}s (on failure) — never both, and never a thrown
+ * exception. {@link #isSuccess()} checks severity rather than presence of diagnostics, since a
+ * successful {@code analyze} can still carry {@link Severity#WARNING} diagnostics alongside its
+ * value.
+ */
 public record CommandResult<T>(T value, List<Diagnostic> diagnostics) {
   public CommandResult {
     diagnostics = List.copyOf(diagnostics);

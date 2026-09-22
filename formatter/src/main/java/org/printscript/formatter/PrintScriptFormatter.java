@@ -21,6 +21,21 @@ import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.tokens.SyntaxToken;
 import org.printscript.tokens.TokenType;
 
+/**
+ * Rewrites source by flattening a statement into its tokens (each tagged with block-nesting {@code
+ * depth}) and rewriting only the leading trivia {@link SpacingRules} has an opinion about; every
+ * other character — including comments and untouched whitespace — is re-emitted byte for byte. This
+ * is a targeted trivia rewrite, not a pretty-printer: it never reconstructs source from the AST's
+ * structure alone.
+ *
+ * <p>{@link #newSession} starts a stateful {@link Session} that must see every statement of a
+ * program in order (it tracks the previous token and whether the previous statement was a {@code
+ * println}, both needed to decide the next statement's leading trivia) and must be finished with
+ * {@link Session#finish} to flush the trailing trivia before the EOF token. {@link
+ * #format(ProgramSyntax, FormatterConfigProvider)} is a convenience that drives a session over an
+ * already-built tree; {@code application.PrintScript}'s production path instead opens a session and
+ * feeds it statements as they stream off a {@code StatementSource}.
+ */
 public final class PrintScriptFormatter {
   private final SpacingRules spacingRules;
 

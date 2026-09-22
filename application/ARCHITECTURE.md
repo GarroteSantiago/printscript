@@ -45,3 +45,29 @@ requested version
 ```
 
 Future versions should be additive. A newer version may add syntax, types, built-ins, analyzer rules, or formatter options, but should not change the meaning of valid older-version programs.
+
+## Composition root wiring
+
+```mermaid
+graph TD
+    PrintScript["PrintScript.pipelineFor(version)"] --> Keywords["lexer.KeywordTable"]
+    PrintScript --> TypeAnn["syntax.TypeAnnotationTable"]
+    PrintScript --> BinOps["semantics.BinaryOperatorRules"]
+    PrintScript --> ArithOps["interpreter.ArithmeticOperators"]
+    PrintScript --> Naming["analyzer.NamingStyleRules"]
+    PrintScript --> Spacing["formatter.SpacingRules"]
+    Keywords --> Lexer["new lexer.Lexer(source, keywords)"]
+    Lexer --> Parser["new syntax.StatementSyntaxReader(lexer)"]
+    Parser --> SemCtx["semantics.SemanticContext.validate(statement)"]
+    SemCtx -->|success| Interp["interpreter.Interpreter.executeStatement"]
+    SemCtx -->|success| Analyzer["analyzer.StaticAnalyzer.analyze"]
+    SemCtx -->|success| Fmt["formatter.PrintScriptFormatter.Session.format"]
+```
+
+Everything on the left of `pipelineFor` is a version-specific strategy selected in exactly one
+place; everything it feeds into (`Lexer`, `SemanticContext`, `Interpreter`, `StaticAnalyzer`,
+`PrintScriptFormatter`) only ever receives a strategy, never decides one itself.
+
+Representative tests: `src/test/java/org/printscript/application/PrintScriptV11Test.java`
+(end-to-end v1.1 behavior across the whole pipeline), `JsonPrintScriptConfigReaderTest.java` (the
+JSON config schema), `LanguageVersionTest.java`.

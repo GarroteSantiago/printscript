@@ -37,6 +37,25 @@ import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.tokens.SyntaxException;
 
+/**
+ * The use-case facade and composition root for PrintScript: {@link #execute}, {@link #format},
+ * {@link #analyze}, and {@link #validate} are the only operations any interaction layer (currently
+ * the {@code cli} module) needs. Every method returns a {@link CommandResult} and never lets a
+ * {@link SyntaxException} or {@link RuntimeFailure} escape — both are caught here and converted to
+ * a failed {@code CommandResult} carrying the underlying {@link Diagnostic}.
+ *
+ * <p>This is the one place (besides {@code testkit}, for tests) allowed to construct a concrete
+ * {@code lexer.Lexer} and wire it into a {@code syntax.StatementSyntaxReader} — every stage in
+ * between depends only on the {@code TokenSource}/{@code StatementSource} ports. {@link
+ * #pipelineFor} is also where every per-version strategy ({@link KeywordTable}, {@link
+ * TypeAnnotationTable}, {@link BinaryOperatorRules}, {@link ArithmeticOperators}, {@link
+ * NamingStyleRules}, {@code SpacingRules}) gets selected for a requested {@link LanguageVersion} —
+ * none of the classes receiving them decide their own version-specific behavior. All four commands
+ * validate and process one statement at a time off a single {@code StatementSource}, rather than
+ * building a whole {@code ProgramSyntax} first: semantic validation for a statement must succeed
+ * before that statement is executed/formatted/analyzed, and a later statement is never even parsed
+ * once an earlier one has failed.
+ */
 public final class PrintScript {
   private static final String READING_STATEMENTS = "Reading statements";
 

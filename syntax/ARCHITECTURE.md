@@ -54,3 +54,46 @@ If recovery is needed later, semicolon should be the main synchronization point.
 AST nodes should be immutable language objects. They own structural invariants and dispatch, but not tool-specific behavior.
 
 The formatter needs access to syntax trivia. Comments and whitespace are trivia, not syntactic sugar.
+
+## AST shape and dispatch
+
+```mermaid
+classDiagram
+    class SyntaxNode {
+        <<sealed interface>>
+        +span() SourceSpan
+    }
+    class StatementSyntax {
+        <<non-sealed interface>>
+        +accept(StatementVisitor) R
+    }
+    class ExpressionSyntax {
+        <<non-sealed interface>>
+        +accept(ExpressionVisitor) R
+    }
+    class ProgramSyntax
+    SyntaxNode <|-- ProgramSyntax
+    SyntaxNode <|-- StatementSyntax
+    SyntaxNode <|-- ExpressionSyntax
+    StatementSyntax <|.. VariableDeclarationSyntax
+    StatementSyntax <|.. AssignmentSyntax
+    StatementSyntax <|.. IfStatementSyntax
+    StatementSyntax <|.. BlockStatementSyntax
+    StatementSyntax <|.. ExpressionStatementSyntax
+    ExpressionSyntax <|.. LiteralExpressionSyntax
+    ExpressionSyntax <|.. IdentifierExpressionSyntax
+    ExpressionSyntax <|.. BinaryExpressionSyntax
+    ExpressionSyntax <|.. CallExpressionSyntax
+```
+
+`SyntaxNode` is `sealed` to exactly these three branches; `StatementSyntax`/`ExpressionSyntax` are
+each `non-sealed` so new concrete node kinds (a future statement or expression form) can be added
+without reopening `SyntaxNode` itself. Every consumer (semantics, interpreter, formatter, analyzer)
+dispatches on the concrete node kind through `accept`/`StatementVisitor`/`ExpressionVisitor`, never
+`instanceof` — see the "Recurring pattern" section in
+[docs/architecture.md](../docs/architecture.md) for why this shape is used repeatedly across the
+core.
+
+Representative tests: `src/test/java/org/printscript/syntax/ParserTest.java` (v1 grammar),
+`ParserV11Test.java` (`const`/`if`/`else`/boolean literals added in v1.1),
+`ParserDeclarationTest.java` (variable declaration edge cases).

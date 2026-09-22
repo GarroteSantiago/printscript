@@ -22,6 +22,20 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
+/**
+ * Immutable symbol table plus the per-statement type checker. {@link #validate} never mutates
+ * {@code this}: it returns a {@link SemanticStatementResult} carrying the *next* context (with the
+ * statement's declarations folded in) so the composition root can validate a program
+ * statement-by-statement, interleaved with execution/formatting/analysis, without ever holding a
+ * context that reflects a statement that failed to validate. On any diagnostic, the returned next
+ * context is simply {@code this} unchanged — a failed statement never contributes symbols.
+ *
+ * <p>Type checking, symbol resolution, and built-in call resolution here all lean on
+ * constructor-injected, swappable strategies ({@link TypeAnnotationTable}, {@link
+ * BinaryOperatorRules}, {@link BuiltinRegistry}) rather than hardcoded rules, so a new language
+ * version is a new strategy selected by the {@code application} composition root, not a change to
+ * this class's dispatch logic.
+ */
 public final class SemanticContext {
   private final BuiltinRegistry builtins;
   private final TypeAnnotationTable typeAnnotations;

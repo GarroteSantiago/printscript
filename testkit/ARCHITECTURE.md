@@ -21,3 +21,5 @@ Design rules:
   it.
 - Keep it a thin convenience layer. It should not grow test assertions, fixtures with business
   meaning, or anything beyond "turn a string into pipeline data."
+
+Representative test: `src/test/java/org/printscript/testkit/TestSourcesTest.java`.

@@ -10,6 +10,16 @@ import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 
+/**
+ * The record of decisions {@link SemanticContext} made while validating a statement: each
+ * expression's resolved {@link TypeName} ({@link #typeOf}), each identifier's resolved {@link
+ * VariableSymbol} ({@link #resolveVariable}), and each call's resolved {@link BuiltinSignature}
+ * ({@link #resolveCall}) — keyed by AST node identity ({@code IdentityHashMap}, since two
+ * syntactically-equal-but-distinct nodes must not collide). Downstream stages (interpreter,
+ * formatter, analyzer) read these decisions instead of re-deriving them: e.g. {@code
+ * Interpreter.evaluateBinary} asks {@code typeOf(binary)} rather than re-inspecting runtime values
+ * to decide whether {@code +} means string concatenation or numeric addition.
+ */
 public final class SemanticModel {
   private final List<Diagnostic> diagnostics;
   private final Map<ExpressionSyntax, TypeName> expressionTypes;

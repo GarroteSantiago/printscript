@@ -22,6 +22,16 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
+/**
+ * Runs style/policy checks over already-validated statements — identifier naming (via the swappable
+ * {@link NamingStyleRules}, default {@link NamingStyleRules#v1()}) and argument-shape restrictions
+ * on {@code println}/{@code readInput} calls. Deliberately separate from {@code semantics}: type
+ * errors and undeclared variables are correctness, decided once and recorded in {@link
+ * SemanticModel}; this class only judges style and policy on top of an already-valid program, and
+ * reads {@link SemanticModel#resolveCall} rather than re-resolving which builtin a call targets.
+ * All three {@code analyze} overloads walk the same statement; they differ only in how diagnostics
+ * are collected (a returned list vs. a {@link Consumer} for streaming callers).
+ */
 public final class StaticAnalyzer {
   private final NamingStyleRules namingStyleRules;
 

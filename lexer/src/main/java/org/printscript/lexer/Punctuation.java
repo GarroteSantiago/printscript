@@ -5,6 +5,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * A single-character punctuation symbol the lexer recognizes ({@code :}, {@code ;}, {@code =}, the
+ * four arithmetic operators, and the four bracket characters). {@link #lookup} is how {@code Lexer}
+ * tells "this character is punctuation" apart from identifiers/digits/quotes; {@link
+ * PunctuationTable} then classifies *which* {@link TokenType} it becomes.
+ */
 public interface Punctuation {
   char symbol();
 

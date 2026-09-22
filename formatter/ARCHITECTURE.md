@@ -40,3 +40,7 @@ previous token's `TokenType`, and `FormatterConfig`. It is constructor-injected 
 [application](../application/ARCHITECTURE.md), instead of being a hardcoded `switch` over token
 types. A version that adds a new token kind needing its own spacing rule extends `SpacingRules`, not
 `PrintScriptFormatter`'s dispatch logic.
+
+Representative tests: `src/test/java/org/printscript/formatter/PrintScriptFormatterTest.java`
+(v1 spacing/trivia rules), `PrintScriptFormatterV11Test.java` (block indentation and brace
+placement added in v1.1).

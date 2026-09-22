@@ -37,3 +37,7 @@ composition root in `application`) rather than hardcoded `switch`/`if` chains:
   the type this rule already assigned during validation (`SemanticModel.typeOf`). Keep that rule
   here, not duplicated at the interpreter level — the interpreter should only ever *act on* a type
   decision, never *make* one.
+
+Representative tests: `src/test/java/org/printscript/semantics/SemanticContextV11Test.java`
+(the v1.1 builtins/const/if rules), `SemanticContextDeclarationTest.java` (declaration/type-checking
+rules), `BinaryOperatorRulesTest.java`.

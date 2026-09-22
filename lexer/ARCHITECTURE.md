@@ -28,3 +28,6 @@ hardcoded in `Lexer`'s scanning logic. It lives behind `KeywordTable`, construct
 `Lexer` (default `v1()`), selected by the composition root in
 [application](../application/ARCHITECTURE.md). A future version adding keywords only needs a new
 `KeywordTable`, not a change to `Lexer` itself.
+
+Representative tests: `src/test/java/org/printscript/lexer/LexerTest.java` (scanning behavior),
+`KeywordTableTest.java`/`KeywordTableBuilderTest.java` (per-version keyword sets).

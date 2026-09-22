@@ -4,6 +4,14 @@ import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
 
+/**
+ * Whole-program convenience over {@link SemanticContext#validate}: folds a {@link ProgramSyntax}'s
+ * statements through successive contexts and merges their diagnostics into one {@link
+ * SemanticModel}, stopping at the first statement that fails. Like {@code
+ * syntax.SyntaxTreeBuilder}, this is not the production validation path — {@code
+ * application.PrintScript} validates directly off a {@code StatementSource}, one statement at a
+ * time, interleaved with execution/formatting/analysis. Used mainly by this module's own tests.
+ */
 public final class SemanticModelBuilder {
   private final BuiltinRegistry builtins;
   private final TypeAnnotationTable typeAnnotations;

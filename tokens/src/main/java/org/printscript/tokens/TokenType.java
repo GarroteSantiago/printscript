@@ -2,6 +2,15 @@ package org.printscript.tokens;
 
 import java.util.List;
 
+/**
+ * A kind of lexical token (keyword, operator, literal shape, punctuation, EOF, ...). Modeled as an
+ * interface with one singleton constant per kind — instead of a Java {@code enum} — so that adding
+ * a token kind is checked by the compiler: every {@link TokenTypeVisitor} implementation (in {@code
+ * lexer}, {@code interpreter}, {@code formatter}, ...) must add the corresponding {@code visitX}
+ * method, which an {@code enum}'s {@code switch} would only catch if every call site remembered to
+ * make it exhaustive. Dispatch always goes through {@link #accept}, never through {@code
+ * instanceof}/reference-equality checks on these constants.
+ */
 public interface TokenType {
   <R> R accept(TokenTypeVisitor<R> visitor);
 

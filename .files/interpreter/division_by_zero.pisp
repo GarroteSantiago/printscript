@@ -1,3 +1,0 @@
-let numerator: number = 12;
-let denominator: number = 0;
-println("Result: " + numerator / denominator);
