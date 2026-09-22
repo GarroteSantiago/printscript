@@ -1,6 +1,6 @@
 module org.printscript.interpreter {
-  requires org.printscript.syntax;
-  requires org.printscript.semantics;
+  requires transitive org.printscript.syntax;
+  requires transitive org.printscript.semantics;
 
   exports org.printscript.interpreter;
 }

@@ -1,5 +1,5 @@
 module org.printscript.formatter {
-  requires org.printscript.syntax;
+  requires transitive org.printscript.syntax;
 
   exports org.printscript.formatter;
 }

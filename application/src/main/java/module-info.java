@@ -1,9 +1,9 @@
-module org.prinstscript.application {
+module org.printscript.application {
   requires org.printscript.syntax;
   requires org.printscript.semantics;
-  requires org.printscript.interpreter;
-  requires org.printscript.formatter;
-  requires org.printscript.analyzer;
+  requires transitive org.printscript.interpreter;
+  requires transitive org.printscript.formatter;
+  requires transitive org.printscript.analyzer;
   requires org.printscript.lexer;
   requires com.fasterxml.jackson.core;
   requires com.fasterxml.jackson.databind;
