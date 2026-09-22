@@ -5,10 +5,12 @@ import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
 import org.printscript.syntax.TypeName;
+import org.printscript.syntax.TypeNameVisitor;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
@@ -16,6 +18,7 @@ import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class Interpreter {
@@ -67,37 +70,60 @@ public final class Interpreter {
 
   private RuntimeEnvironment execute(
       StatementSyntax statement, RuntimeEnvironment environment, SemanticModel semanticModel) {
-    return switch (statement) {
-      case VariableDeclarationSyntax declaration ->
-          declaration
-              .initializer()
-              .map(
-                  initializer ->
-                      environment.put(
-                          declaration.identifier().semanticLexeme(),
-                          evaluate(initializer, environment, semanticModel)))
-              .orElse(environment);
-      case AssignmentSyntax assignment ->
-          environment.put(
-              assignment.identifier().semanticLexeme(),
-              evaluate(assignment.value(), environment, semanticModel));
-      case ExpressionStatementSyntax expressionStatement -> {
-        evaluate(expressionStatement.expression(), environment, semanticModel);
-        yield environment;
+    return statement.accept(new StatementExecutor(environment, semanticModel));
+  }
+
+  private final class StatementExecutor implements StatementVisitor<RuntimeEnvironment> {
+    private final RuntimeEnvironment environment;
+    private final SemanticModel semanticModel;
+
+    StatementExecutor(RuntimeEnvironment environment, SemanticModel semanticModel) {
+      this.environment = environment;
+      this.semanticModel = semanticModel;
+    }
+
+    @Override
+    public RuntimeEnvironment visitVariableDeclaration(VariableDeclarationSyntax declaration) {
+      return declaration
+          .initializer()
+          .map(
+              initializer ->
+                  environment.put(
+                      declaration.identifier().semanticLexeme(),
+                      evaluate(initializer, environment, semanticModel)))
+          .orElse(environment);
+    }
+
+    @Override
+    public RuntimeEnvironment visitAssignment(AssignmentSyntax assignment) {
+      return environment.put(
+          assignment.identifier().semanticLexeme(),
+          evaluate(assignment.value(), environment, semanticModel));
+    }
+
+    @Override
+    public RuntimeEnvironment visitExpressionStatement(
+        ExpressionStatementSyntax expressionStatement) {
+      evaluate(expressionStatement.expression(), environment, semanticModel);
+      return environment;
+    }
+
+    @Override
+    public RuntimeEnvironment visitIf(IfStatementSyntax ifStatement) {
+      RuntimeValue condition = evaluate(ifStatement.condition(), environment, semanticModel);
+      boolean value = ((RuntimeValue.BooleanValue) condition).value();
+      if (value) {
+        return executeBlock(ifStatement.thenBlock(), environment, semanticModel);
+      } else if (ifStatement.elseBlock().isPresent()) {
+        return executeBlock(ifStatement.elseBlock().get(), environment, semanticModel);
       }
-      case IfStatementSyntax ifStatement -> {
-        RuntimeValue condition = evaluate(ifStatement.condition(), environment, semanticModel);
-        boolean value = ((RuntimeValue.BooleanValue) condition).value();
-        if (value) {
-          yield executeBlock(ifStatement.thenBlock(), environment, semanticModel);
-        } else if (ifStatement.elseBlock().isPresent()) {
-          yield executeBlock(ifStatement.elseBlock().get(), environment, semanticModel);
-        } else {
-          yield environment;
-        }
-      }
-      case BlockStatementSyntax block -> executeBlock(block, environment, semanticModel);
-    };
+      return environment;
+    }
+
+    @Override
+    public RuntimeEnvironment visitBlock(BlockStatementSyntax block) {
+      return executeBlock(block, environment, semanticModel);
+    }
   }
 
   private RuntimeEnvironment executeBlock(
@@ -115,35 +141,73 @@ public final class Interpreter {
 
   private RuntimeValue evaluate(
       ExpressionSyntax expression, RuntimeEnvironment environment, SemanticModel semanticModel) {
-    return switch (expression) {
-      case LiteralExpressionSyntax literal ->
-          switch (literal.literalType()) {
-            case NUMBER ->
-                new RuntimeValue.NumberValue(new BigDecimal(literal.literal().semanticLexeme()));
-            case STRING -> new RuntimeValue.StringValue(literal.literal().semanticLexeme());
-            case BOOLEAN ->
-                new RuntimeValue.BooleanValue("true".equals(literal.literal().semanticLexeme()));
-          };
-      case IdentifierExpressionSyntax identifier ->
-          environment
-              .find(identifier.identifier().semanticLexeme())
-              .orElseThrow(
-                  () ->
-                      runtime(
-                          "Variable '"
-                              + identifier.identifier().semanticLexeme()
-                              + "' is not declared",
-                          identifier));
-      case BinaryExpressionSyntax binary -> evaluateBinary(binary, environment, semanticModel);
-      case CallExpressionSyntax call -> evaluateCall(call, environment, semanticModel);
-    };
+    return expression.accept(new ExpressionEvaluator(environment, semanticModel));
+  }
+
+  private final class ExpressionEvaluator implements ExpressionVisitor<RuntimeValue> {
+    private final RuntimeEnvironment environment;
+    private final SemanticModel semanticModel;
+
+    ExpressionEvaluator(RuntimeEnvironment environment, SemanticModel semanticModel) {
+      this.environment = environment;
+      this.semanticModel = semanticModel;
+    }
+
+    @Override
+    public RuntimeValue visitLiteral(LiteralExpressionSyntax literal) {
+      return literal.literalType().accept(new LiteralValue(literal));
+    }
+
+    @Override
+    public RuntimeValue visitIdentifier(IdentifierExpressionSyntax identifier) {
+      return environment
+          .find(identifier.identifier().semanticLexeme())
+          .orElseThrow(
+              () ->
+                  runtime(
+                      "Variable '" + identifier.identifier().semanticLexeme() + "' is not declared",
+                      identifier));
+    }
+
+    @Override
+    public RuntimeValue visitBinary(BinaryExpressionSyntax binary) {
+      return evaluateBinary(binary, environment, semanticModel);
+    }
+
+    @Override
+    public RuntimeValue visitCall(CallExpressionSyntax call) {
+      return evaluateCall(call, environment, semanticModel);
+    }
+  }
+
+  private static final class LiteralValue implements TypeNameVisitor<RuntimeValue> {
+    private final LiteralExpressionSyntax literal;
+
+    LiteralValue(LiteralExpressionSyntax literal) {
+      this.literal = literal;
+    }
+
+    @Override
+    public RuntimeValue visitNumber() {
+      return new RuntimeValue.NumberValue(new BigDecimal(literal.literal().semanticLexeme()));
+    }
+
+    @Override
+    public RuntimeValue visitString() {
+      return new RuntimeValue.StringValue(literal.literal().semanticLexeme());
+    }
+
+    @Override
+    public RuntimeValue visitBoolean() {
+      return new RuntimeValue.BooleanValue("true".equals(literal.literal().semanticLexeme()));
+    }
   }
 
   private RuntimeValue evaluateBinary(
       BinaryExpressionSyntax binary, RuntimeEnvironment environment, SemanticModel semanticModel) {
     RuntimeValue left = evaluate(binary.left(), environment, semanticModel);
     RuntimeValue right = evaluate(binary.right(), environment, semanticModel);
-    if (semanticModel.typeOf(binary).orElse(null) == TypeName.STRING) {
+    if (TypeName.STRING.equals(semanticModel.typeOf(binary).orElse(null))) {
       return new RuntimeValue.StringValue(stringify(left) + stringify(right));
     }
     BigDecimal leftNumber = ((RuntimeValue.NumberValue) left).value();
@@ -166,40 +230,60 @@ public final class Interpreter {
     }
     String name = call.callee().semanticLexeme();
     RuntimeValue argument = evaluate(call.arguments().getFirst(), environment, semanticModel);
-    return switch (name) {
-      case "println" -> {
-        output.println(stringify(argument));
-        yield RuntimeValue.UnitValue.INSTANCE;
-      }
-      case "readInput" -> {
-        String raw;
-        try {
-          raw = input.readLine(stringify(argument));
-        } catch (UnsupportedOperationException unsupported) {
-          RuntimeFailure failure = runtime(unsupported.getMessage(), call);
-          failure.initCause(unsupported);
-          throw failure;
-        }
-        yield parseValue(raw, call, semanticModel);
-      }
-      case "readEnv" -> {
-        String variableName = stringify(argument);
-        String raw;
-        try {
-          raw =
-              env.get(variableName)
-                  .orElseThrow(
-                      () ->
-                          runtime("Environment variable '" + variableName + "' is not set", call));
-        } catch (UnsupportedOperationException unsupported) {
-          RuntimeFailure failure = runtime(unsupported.getMessage(), call);
-          failure.initCause(unsupported);
-          throw failure;
-        }
-        yield parseValue(raw, call, semanticModel);
-      }
-      default -> throw runtime("Unknown callable '" + name + "'", call);
-    };
+    BuiltinBehavior behavior =
+        BuiltinBehaviors.find(name)
+            .orElseThrow(() -> runtime("Unknown callable '" + name + "'", call));
+    return behavior.invoke(argument, new InvocationContext(call, semanticModel));
+  }
+
+  private final class InvocationContext implements BuiltinRuntimeContext {
+    private final CallExpressionSyntax call;
+    private final SemanticModel semanticModel;
+
+    InvocationContext(CallExpressionSyntax call, SemanticModel semanticModel) {
+      this.call = call;
+      this.semanticModel = semanticModel;
+    }
+
+    @Override
+    public CallExpressionSyntax call() {
+      return call;
+    }
+
+    @Override
+    public SemanticModel semanticModel() {
+      return semanticModel;
+    }
+
+    @Override
+    public OutputPort output() {
+      return output;
+    }
+
+    @Override
+    public InputPort input() {
+      return input;
+    }
+
+    @Override
+    public EnvironmentPort env() {
+      return env;
+    }
+
+    @Override
+    public String stringify(RuntimeValue value) {
+      return Interpreter.this.stringify(value);
+    }
+
+    @Override
+    public RuntimeValue parseValue(String raw) {
+      return Interpreter.this.parseValue(raw, call, semanticModel);
+    }
+
+    @Override
+    public RuntimeFailure runtimeFailure(String message) {
+      return runtime(message, call);
+    }
   }
 
   private RuntimeValue parseValue(
@@ -208,35 +292,68 @@ public final class Interpreter {
         semanticModel
             .typeOf(call)
             .orElseThrow(() -> runtime("Could not resolve a type for '" + raw + "'", call));
-    return switch (target) {
-      case STRING -> new RuntimeValue.StringValue(raw);
-      case NUMBER -> {
-        try {
-          yield new RuntimeValue.NumberValue(new BigDecimal(raw));
-        } catch (NumberFormatException exception) {
-          RuntimeFailure failure = runtime("Expected a number but got '" + raw + "'", call);
-          failure.initCause(exception);
-          throw failure;
-        }
+    return target.accept(new ParsedValue(raw, call));
+  }
+
+  private final class ParsedValue implements TypeNameVisitor<RuntimeValue> {
+    private final String raw;
+    private final CallExpressionSyntax call;
+
+    ParsedValue(String raw, CallExpressionSyntax call) {
+      this.raw = raw;
+      this.call = call;
+    }
+
+    @Override
+    public RuntimeValue visitString() {
+      return new RuntimeValue.StringValue(raw);
+    }
+
+    @Override
+    public RuntimeValue visitNumber() {
+      try {
+        return new RuntimeValue.NumberValue(new BigDecimal(raw));
+      } catch (NumberFormatException exception) {
+        RuntimeFailure failure = runtime("Expected a number but got '" + raw + "'", call);
+        failure.initCause(exception);
+        throw failure;
       }
-      case BOOLEAN -> {
-        boolean isTrue = "true".equals(raw);
-        boolean isFalse = "false".equals(raw);
-        if (isTrue || isFalse) {
-          yield new RuntimeValue.BooleanValue(isTrue);
-        }
-        throw runtime("Expected a boolean but got '" + raw + "'", call);
+    }
+
+    @Override
+    public RuntimeValue visitBoolean() {
+      boolean isTrue = "true".equals(raw);
+      boolean isFalse = "false".equals(raw);
+      if (isTrue || isFalse) {
+        return new RuntimeValue.BooleanValue(isTrue);
       }
-    };
+      throw runtime("Expected a boolean but got '" + raw + "'", call);
+    }
   }
 
   private String stringify(RuntimeValue value) {
-    return switch (value) {
-      case RuntimeValue.NumberValue number -> number.value().stripTrailingZeros().toPlainString();
-      case RuntimeValue.StringValue string -> string.value();
-      case RuntimeValue.BooleanValue bool -> String.valueOf(bool.value());
-      case RuntimeValue.UnitValue ignored -> "";
-    };
+    return value.accept(
+        new RuntimeValueVisitor<String>() {
+          @Override
+          public String visitNumber(RuntimeValue.NumberValue number) {
+            return number.value().stripTrailingZeros().toPlainString();
+          }
+
+          @Override
+          public String visitString(RuntimeValue.StringValue string) {
+            return string.value();
+          }
+
+          @Override
+          public String visitBoolean(RuntimeValue.BooleanValue bool) {
+            return String.valueOf(bool.value());
+          }
+
+          @Override
+          public String visitUnit(RuntimeValue.UnitValue unit) {
+            return "";
+          }
+        });
   }
 
   private RuntimeFailure runtime(String message, ExpressionSyntax expression) {

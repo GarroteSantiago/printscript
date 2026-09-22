@@ -10,4 +10,9 @@ public record LiteralExpressionSyntax(SyntaxToken literal, TypeName literalType)
   public SourceSpan span() {
     return literal.span();
   }
+
+  @Override
+  public <R> R accept(ExpressionVisitor<R> visitor) {
+    return visitor.visitLiteral(this);
+  }
 }

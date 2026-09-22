@@ -10,4 +10,9 @@ public record BinaryExpressionSyntax(
   public SourceSpan span() {
     return new SourceSpan(left.span().start(), right.span().end());
   }
+
+  @Override
+  public <R> R accept(ExpressionVisitor<R> visitor) {
+    return visitor.visitBinary(this);
+  }
 }

@@ -3,17 +3,20 @@ package org.printscript.interpreter;
 import java.math.BigDecimal;
 import org.printscript.syntax.TypeName;
 
-public sealed interface RuntimeValue
-    permits RuntimeValue.NumberValue,
-        RuntimeValue.StringValue,
-        RuntimeValue.BooleanValue,
-        RuntimeValue.UnitValue {
+public interface RuntimeValue {
   TypeName type();
+
+  <R> R accept(RuntimeValueVisitor<R> visitor);
 
   record NumberValue(BigDecimal value) implements RuntimeValue {
     @Override
     public TypeName type() {
       return TypeName.NUMBER;
+    }
+
+    @Override
+    public <R> R accept(RuntimeValueVisitor<R> visitor) {
+      return visitor.visitNumber(this);
     }
   }
 
@@ -22,12 +25,22 @@ public sealed interface RuntimeValue
     public TypeName type() {
       return TypeName.STRING;
     }
+
+    @Override
+    public <R> R accept(RuntimeValueVisitor<R> visitor) {
+      return visitor.visitString(this);
+    }
   }
 
   record BooleanValue(boolean value) implements RuntimeValue {
     @Override
     public TypeName type() {
       return TypeName.BOOLEAN;
+    }
+
+    @Override
+    public <R> R accept(RuntimeValueVisitor<R> visitor) {
+      return visitor.visitBoolean(this);
     }
   }
 
@@ -37,6 +50,11 @@ public sealed interface RuntimeValue
     @Override
     public TypeName type() {
       return null;
+    }
+
+    @Override
+    public <R> R accept(RuntimeValueVisitor<R> visitor) {
+      return visitor.visitUnit(this);
     }
   }
 }

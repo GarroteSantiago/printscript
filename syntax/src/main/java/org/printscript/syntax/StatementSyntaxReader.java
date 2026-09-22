@@ -194,11 +194,11 @@ public final class StatementSyntaxReader implements StatementSource {
   }
 
   private boolean check(TokenType type) {
-    return current.type() == type;
+    return current.type().equals(type);
   }
 
   private boolean checkNext(TokenType type) {
-    return next.type() == type;
+    return next.type().equals(type);
   }
 
   private Token advance() {

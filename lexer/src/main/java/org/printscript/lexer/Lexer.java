@@ -129,7 +129,7 @@ public final class Lexer implements TokenSource {
       text.append(advance());
     }
     String lexeme = text.toString();
-    TokenType type = keywords.classify(lexeme);
+    TokenType type = keywords.find(lexeme).orElse(TokenType.IDENTIFIER);
     return token(type, lexeme, lexeme, leadingTrivia, start);
   }
 

@@ -8,4 +8,9 @@ public record IdentifierExpressionSyntax(SyntaxToken identifier) implements Expr
   public SourceSpan span() {
     return identifier.span();
   }
+
+  @Override
+  public <R> R accept(ExpressionVisitor<R> visitor) {
+    return visitor.visitIdentifier(this);
+  }
 }

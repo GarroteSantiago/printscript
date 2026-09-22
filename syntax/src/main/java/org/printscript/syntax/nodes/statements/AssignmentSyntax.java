@@ -11,4 +11,9 @@ public record AssignmentSyntax(
   public SourceSpan span() {
     return new SourceSpan(identifier.span().start(), semicolon.span().end());
   }
+
+  @Override
+  public <R> R accept(StatementVisitor<R> visitor) {
+    return visitor.visitAssignment(this);
+  }
 }

@@ -5,11 +5,13 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
+import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.SemanticModel;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
@@ -17,6 +19,7 @@ import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class StaticAnalyzer {
@@ -51,40 +54,69 @@ public final class StaticAnalyzer {
       SemanticModel semanticModel,
       AnalyzerConfig config,
       Consumer<Diagnostic> diagnostics) {
-    switch (statement) {
-      case VariableDeclarationSyntax declaration -> {
-        checkName(
-            declaration.identifier().semanticLexeme(),
-            declaration.identifier().span(),
-            config,
-            diagnostics);
-        declaration
-            .initializer()
-            .ifPresent(initializer -> checkCalls(initializer, semanticModel, config, diagnostics));
+    statement.accept(new StatementAnalyzer(semanticModel, config, diagnostics));
+  }
+
+  private final class StatementAnalyzer implements StatementVisitor<Void> {
+    private final SemanticModel semanticModel;
+    private final AnalyzerConfig config;
+    private final Consumer<Diagnostic> diagnostics;
+
+    StatementAnalyzer(
+        SemanticModel semanticModel, AnalyzerConfig config, Consumer<Diagnostic> diagnostics) {
+      this.semanticModel = semanticModel;
+      this.config = config;
+      this.diagnostics = diagnostics;
+    }
+
+    @Override
+    public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
+      checkName(
+          declaration.identifier().semanticLexeme(),
+          declaration.identifier().span(),
+          config,
+          diagnostics);
+      declaration
+          .initializer()
+          .ifPresent(initializer -> checkCalls(initializer, semanticModel, config, diagnostics));
+      return null;
+    }
+
+    @Override
+    public Void visitAssignment(AssignmentSyntax assignment) {
+      checkCalls(assignment.value(), semanticModel, config, diagnostics);
+      return null;
+    }
+
+    @Override
+    public Void visitExpressionStatement(ExpressionStatementSyntax expressionStatement) {
+      checkCalls(expressionStatement.expression(), semanticModel, config, diagnostics);
+      return null;
+    }
+
+    @Override
+    public Void visitIf(IfStatementSyntax ifStatement) {
+      checkCalls(ifStatement.condition(), semanticModel, config, diagnostics);
+      for (StatementSyntax inner : ifStatement.thenBlock().statements()) {
+        analyze(inner, semanticModel, config, diagnostics);
       }
-      case AssignmentSyntax assignment ->
-          checkCalls(assignment.value(), semanticModel, config, diagnostics);
-      case ExpressionStatementSyntax expressionStatement ->
-          checkCalls(expressionStatement.expression(), semanticModel, config, diagnostics);
-      case IfStatementSyntax ifStatement -> {
-        checkCalls(ifStatement.condition(), semanticModel, config, diagnostics);
-        for (StatementSyntax inner : ifStatement.thenBlock().statements()) {
-          analyze(inner, semanticModel, config, diagnostics);
-        }
-        ifStatement
-            .elseBlock()
-            .ifPresent(
-                elseBlock -> {
-                  for (StatementSyntax inner : elseBlock.statements()) {
-                    analyze(inner, semanticModel, config, diagnostics);
-                  }
-                });
+      ifStatement
+          .elseBlock()
+          .ifPresent(
+              elseBlock -> {
+                for (StatementSyntax inner : elseBlock.statements()) {
+                  analyze(inner, semanticModel, config, diagnostics);
+                }
+              });
+      return null;
+    }
+
+    @Override
+    public Void visitBlock(BlockStatementSyntax block) {
+      for (StatementSyntax inner : block.statements()) {
+        analyze(inner, semanticModel, config, diagnostics);
       }
-      case BlockStatementSyntax block -> {
-        for (StatementSyntax inner : block.statements()) {
-          analyze(inner, semanticModel, config, diagnostics);
-        }
-      }
+      return null;
     }
   }
 
@@ -94,33 +126,54 @@ public final class StaticAnalyzer {
       AnalyzerConfig config,
       Consumer<Diagnostic> diagnostics) {
     List<CallExpressionSyntax> calls = new ArrayList<>();
-    collectCalls(expression, calls);
+    expression.accept(new CallCollector(calls));
     for (CallExpressionSyntax call : calls) {
       checkCallArgumentShape(
-          call, "println", config.restrictPrintlnToSimpleArguments(), semanticModel, diagnostics);
+          call,
+          BuiltinRegistry.PRINTLN,
+          config.restrictPrintlnToSimpleArguments(),
+          semanticModel,
+          diagnostics);
       checkCallArgumentShape(
           call,
-          "readInput",
+          BuiltinRegistry.READ_INPUT,
           config.restrictReadInputToSimpleArguments(),
           semanticModel,
           diagnostics);
     }
   }
 
-  private void collectCalls(ExpressionSyntax expression, List<CallExpressionSyntax> out) {
-    switch (expression) {
-      case CallExpressionSyntax call -> {
-        out.add(call);
-        for (ExpressionSyntax argument : call.arguments()) {
-          collectCalls(argument, out);
-        }
+  private static final class CallCollector implements ExpressionVisitor<Void> {
+    private final List<CallExpressionSyntax> out;
+
+    CallCollector(List<CallExpressionSyntax> out) {
+      this.out = out;
+    }
+
+    @Override
+    public Void visitLiteral(LiteralExpressionSyntax literal) {
+      return null;
+    }
+
+    @Override
+    public Void visitIdentifier(IdentifierExpressionSyntax identifier) {
+      return null;
+    }
+
+    @Override
+    public Void visitBinary(BinaryExpressionSyntax binary) {
+      binary.left().accept(this);
+      binary.right().accept(this);
+      return null;
+    }
+
+    @Override
+    public Void visitCall(CallExpressionSyntax call) {
+      out.add(call);
+      for (ExpressionSyntax argument : call.arguments()) {
+        argument.accept(this);
       }
-      case BinaryExpressionSyntax binary -> {
-        collectCalls(binary.left(), out);
-        collectCalls(binary.right(), out);
-      }
-      case LiteralExpressionSyntax ignored -> {}
-      case IdentifierExpressionSyntax ignored -> {}
+      return null;
     }
   }
 

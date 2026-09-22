@@ -15,4 +15,9 @@ public record BlockStatementSyntax(
   public SourceSpan span() {
     return new SourceSpan(leftBrace.span().start(), rightBrace.span().end());
   }
+
+  @Override
+  public <R> R accept(StatementVisitor<R> visitor) {
+    return visitor.visitBlock(this);
+  }
 }

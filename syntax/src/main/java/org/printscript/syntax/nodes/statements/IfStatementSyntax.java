@@ -19,4 +19,9 @@ public record IfStatementSyntax(
     SourceSpan end = elseBlock.map(BlockStatementSyntax::span).orElse(thenBlock.span());
     return new SourceSpan(ifKeyword.span().start(), end.end());
   }
+
+  @Override
+  public <R> R accept(StatementVisitor<R> visitor) {
+    return visitor.visitIf(this);
+  }
 }

@@ -10,10 +10,11 @@ public interface BinaryOperatorRules {
 
   static BinaryOperatorRules v1() {
     return (operator, left, right) -> {
-      if (operator == TokenType.PLUS && (left == TypeName.STRING || right == TypeName.STRING)) {
+      if (TokenType.PLUS.equals(operator)
+          && (TypeName.STRING.equals(left) || TypeName.STRING.equals(right))) {
         return Optional.of(TypeName.STRING);
       }
-      if (left == TypeName.NUMBER && right == TypeName.NUMBER) {
+      if (TypeName.NUMBER.equals(left) && TypeName.NUMBER.equals(right)) {
         return Optional.of(TypeName.NUMBER);
       }
       return Optional.empty();

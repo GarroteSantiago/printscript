@@ -11,6 +11,7 @@ import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
@@ -18,6 +19,7 @@ import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 public final class SemanticContext {
@@ -69,76 +71,100 @@ public final class SemanticContext {
       StatementSyntax statement,
       Map<String, VariableSymbol> nextSymbols,
       SemanticModel.Builder model) {
-    switch (statement) {
-      case VariableDeclarationSyntax declaration -> {
-        String name = declaration.identifier().semanticLexeme();
-        TypeName declaredType = typeAnnotations.resolve(declaration.type().semanticLexeme());
-        if (nextSymbols.containsKey(name)) {
+    statement.accept(new StatementValidator(nextSymbols, model));
+  }
+
+  private final class StatementValidator implements StatementVisitor<Void> {
+    private final Map<String, VariableSymbol> nextSymbols;
+    private final SemanticModel.Builder model;
+
+    StatementValidator(Map<String, VariableSymbol> nextSymbols, SemanticModel.Builder model) {
+      this.nextSymbols = nextSymbols;
+      this.model = model;
+    }
+
+    @Override
+    public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
+      String name = declaration.identifier().semanticLexeme();
+      TypeName declaredType = typeAnnotations.resolve(declaration.type().semanticLexeme());
+      if (nextSymbols.containsKey(name)) {
+        model.addDiagnostic(
+            error("Variable '" + name + "' is already declared", declaration.span()));
+        return null;
+      }
+      if (declaration.initializer().isEmpty()) {
+        if (declaration.isConst()) {
           model.addDiagnostic(
-              error("Variable '" + name + "' is already declared", declaration.span()));
-          return;
-        }
-        if (declaration.initializer().isEmpty()) {
-          if (declaration.isConst()) {
-            model.addDiagnostic(
-                error("const variable '" + name + "' requires an initializer", declaration.span()));
-            return;
-          }
-          nextSymbols.put(
-              name, new VariableSymbol(name, declaredType, !declaration.isConst(), declaration));
-          return;
-        }
-        ExpressionSyntax initializer = declaration.initializer().get();
-        TypeName initializerType =
-            typeOf(initializer, nextSymbols, model, Optional.of(declaredType));
-        if (initializerType == null) return;
-        if (initializerType != declaredType) {
-          model.addDiagnostic(
-              error(
-                  "Cannot assign " + printable(initializerType) + " to " + printable(declaredType),
-                  initializer.span()));
-          return;
+              error("const variable '" + name + "' requires an initializer", declaration.span()));
+          return null;
         }
         nextSymbols.put(
             name, new VariableSymbol(name, declaredType, !declaration.isConst(), declaration));
+        return null;
       }
-      case AssignmentSyntax assignment -> {
-        String name = assignment.identifier().semanticLexeme();
-        VariableSymbol symbol = nextSymbols.get(name);
-        if (symbol == null) {
-          model.addDiagnostic(error("Variable '" + name + "' is not declared", assignment.span()));
-          return;
-        }
-        if (!symbol.mutable()) {
-          model.addDiagnostic(
-              error("Cannot assign to const variable '" + name + "'", assignment.span()));
-          return;
-        }
-        TypeName valueType =
-            typeOf(assignment.value(), nextSymbols, model, Optional.of(symbol.type()));
-        if (valueType != null && valueType != symbol.type()) {
-          model.addDiagnostic(
-              error(
-                  "Cannot assign " + printable(valueType) + " to " + printable(symbol.type()),
-                  assignment.value().span()));
-        }
+      ExpressionSyntax initializer = declaration.initializer().get();
+      TypeName initializerType = typeOf(initializer, nextSymbols, model, Optional.of(declaredType));
+      if (initializerType == null) return null;
+      if (!initializerType.equals(declaredType)) {
+        model.addDiagnostic(
+            error(
+                "Cannot assign " + printable(initializerType) + " to " + printable(declaredType),
+                initializer.span()));
+        return null;
       }
-      case ExpressionStatementSyntax expressionStatement ->
-          typeOf(expressionStatement.expression(), nextSymbols, model);
-      case IfStatementSyntax ifStatement -> {
-        TypeName conditionType = typeOf(ifStatement.condition(), nextSymbols, model);
-        if (conditionType != null && conditionType != TypeName.BOOLEAN) {
-          model.addDiagnostic(
-              error(
-                  "if condition must be boolean, got " + printable(conditionType),
-                  ifStatement.condition().span()));
-        }
-        validateBlock(ifStatement.thenBlock(), nextSymbols, model);
-        ifStatement
-            .elseBlock()
-            .ifPresent(elseBlock -> validateBlock(elseBlock, nextSymbols, model));
+      nextSymbols.put(
+          name, new VariableSymbol(name, declaredType, !declaration.isConst(), declaration));
+      return null;
+    }
+
+    @Override
+    public Void visitAssignment(AssignmentSyntax assignment) {
+      String name = assignment.identifier().semanticLexeme();
+      VariableSymbol symbol = nextSymbols.get(name);
+      if (symbol == null) {
+        model.addDiagnostic(error("Variable '" + name + "' is not declared", assignment.span()));
+        return null;
       }
-      case BlockStatementSyntax block -> validateBlock(block, nextSymbols, model);
+      if (!symbol.mutable()) {
+        model.addDiagnostic(
+            error("Cannot assign to const variable '" + name + "'", assignment.span()));
+        return null;
+      }
+      TypeName valueType =
+          typeOf(assignment.value(), nextSymbols, model, Optional.of(symbol.type()));
+      if (valueType != null && !valueType.equals(symbol.type())) {
+        model.addDiagnostic(
+            error(
+                "Cannot assign " + printable(valueType) + " to " + printable(symbol.type()),
+                assignment.value().span()));
+      }
+      return null;
+    }
+
+    @Override
+    public Void visitExpressionStatement(ExpressionStatementSyntax expressionStatement) {
+      typeOf(expressionStatement.expression(), nextSymbols, model);
+      return null;
+    }
+
+    @Override
+    public Void visitIf(IfStatementSyntax ifStatement) {
+      TypeName conditionType = typeOf(ifStatement.condition(), nextSymbols, model);
+      if (conditionType != null && !TypeName.BOOLEAN.equals(conditionType)) {
+        model.addDiagnostic(
+            error(
+                "if condition must be boolean, got " + printable(conditionType),
+                ifStatement.condition().span()));
+      }
+      validateBlock(ifStatement.thenBlock(), nextSymbols, model);
+      ifStatement.elseBlock().ifPresent(elseBlock -> validateBlock(elseBlock, nextSymbols, model));
+      return null;
+    }
+
+    @Override
+    public Void visitBlock(BlockStatementSyntax block) {
+      validateBlock(block, nextSymbols, model);
+      return null;
     }
   }
 
@@ -165,15 +191,44 @@ public final class SemanticContext {
       Map<String, VariableSymbol> symbols,
       SemanticModel.Builder model,
       Optional<TypeName> expected) {
-    TypeName type =
-        switch (expression) {
-          case LiteralExpressionSyntax literal -> literal.literalType();
-          case IdentifierExpressionSyntax identifier -> identifierType(identifier, symbols, model);
-          case BinaryExpressionSyntax binary -> binaryType(binary, symbols, model);
-          case CallExpressionSyntax call -> callType(call, symbols, model, expected);
-        };
+    TypeName type = expression.accept(new ExpressionTyper(symbols, model, expected));
     model.setType(expression, type);
     return type;
+  }
+
+  private final class ExpressionTyper implements ExpressionVisitor<TypeName> {
+    private final Map<String, VariableSymbol> symbols;
+    private final SemanticModel.Builder model;
+    private final Optional<TypeName> expected;
+
+    ExpressionTyper(
+        Map<String, VariableSymbol> symbols,
+        SemanticModel.Builder model,
+        Optional<TypeName> expected) {
+      this.symbols = symbols;
+      this.model = model;
+      this.expected = expected;
+    }
+
+    @Override
+    public TypeName visitLiteral(LiteralExpressionSyntax literal) {
+      return literal.literalType();
+    }
+
+    @Override
+    public TypeName visitIdentifier(IdentifierExpressionSyntax identifier) {
+      return identifierType(identifier, symbols, model);
+    }
+
+    @Override
+    public TypeName visitBinary(BinaryExpressionSyntax binary) {
+      return binaryType(binary, symbols, model);
+    }
+
+    @Override
+    public TypeName visitCall(CallExpressionSyntax call) {
+      return callType(call, symbols, model, expected);
+    }
   }
 
   private TypeName identifierType(
@@ -242,7 +297,7 @@ public final class SemanticContext {
       TypeName parameterType = signature.parameterTypes().get(i);
       TypeName actual = typeOf(call.arguments().get(i), symbols, model, Optional.of(parameterType));
       if (actual == null) return null;
-      if (!signature.printsAnyType() && actual != parameterType) {
+      if (!signature.printsAnyType() && !actual.equals(parameterType)) {
         model.addDiagnostic(
             error(
                 "Callable '"
@@ -273,6 +328,6 @@ public final class SemanticContext {
   }
 
   private String printable(TypeName typeName) {
-    return typeName == null ? "unit" : typeName.name().toLowerCase(Locale.ROOT);
+    return typeName == null ? "unit" : typeName.toString().toLowerCase(Locale.ROOT);
   }
 }

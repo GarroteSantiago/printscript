@@ -8,6 +8,7 @@ import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
+import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
 import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.syntax.nodes.statements.AssignmentSyntax;
@@ -15,6 +16,7 @@ import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
 import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.tokens.SyntaxToken;
 import org.printscript.tokens.TokenType;
@@ -101,40 +103,66 @@ public final class PrintScriptFormatter {
   }
 
   private void addStatement(StatementSyntax statement, List<PositionedToken> tokens, int depth) {
-    switch (statement) {
-      case VariableDeclarationSyntax declaration -> {
-        tokens.add(new PositionedToken(declaration.keyword(), depth));
-        tokens.add(new PositionedToken(declaration.identifier(), depth));
-        tokens.add(new PositionedToken(declaration.colon(), depth));
-        tokens.add(new PositionedToken(declaration.type(), depth));
-        if (declaration.equals().isPresent()) {
-          tokens.add(new PositionedToken(declaration.equals().get(), depth));
-          addExpression(declaration.initializer().orElseThrow(), tokens, depth);
-        }
-        tokens.add(new PositionedToken(declaration.semicolon(), depth));
+    statement.accept(new StatementFlattener(tokens, depth));
+  }
+
+  private final class StatementFlattener implements StatementVisitor<Void> {
+    private final List<PositionedToken> tokens;
+    private final int depth;
+
+    StatementFlattener(List<PositionedToken> tokens, int depth) {
+      this.tokens = tokens;
+      this.depth = depth;
+    }
+
+    @Override
+    public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
+      tokens.add(new PositionedToken(declaration.keyword(), depth));
+      tokens.add(new PositionedToken(declaration.identifier(), depth));
+      tokens.add(new PositionedToken(declaration.colon(), depth));
+      tokens.add(new PositionedToken(declaration.type(), depth));
+      if (declaration.equals().isPresent()) {
+        tokens.add(new PositionedToken(declaration.equals().get(), depth));
+        addExpression(declaration.initializer().orElseThrow(), tokens, depth);
       }
-      case AssignmentSyntax assignment -> {
-        tokens.add(new PositionedToken(assignment.identifier(), depth));
-        tokens.add(new PositionedToken(assignment.equals(), depth));
-        addExpression(assignment.value(), tokens, depth);
-        tokens.add(new PositionedToken(assignment.semicolon(), depth));
+      tokens.add(new PositionedToken(declaration.semicolon(), depth));
+      return null;
+    }
+
+    @Override
+    public Void visitAssignment(AssignmentSyntax assignment) {
+      tokens.add(new PositionedToken(assignment.identifier(), depth));
+      tokens.add(new PositionedToken(assignment.equals(), depth));
+      addExpression(assignment.value(), tokens, depth);
+      tokens.add(new PositionedToken(assignment.semicolon(), depth));
+      return null;
+    }
+
+    @Override
+    public Void visitExpressionStatement(ExpressionStatementSyntax expressionStatement) {
+      addExpression(expressionStatement.expression(), tokens, depth);
+      tokens.add(new PositionedToken(expressionStatement.semicolon(), depth));
+      return null;
+    }
+
+    @Override
+    public Void visitIf(IfStatementSyntax ifStatement) {
+      tokens.add(new PositionedToken(ifStatement.ifKeyword(), depth));
+      tokens.add(new PositionedToken(ifStatement.leftParen(), depth));
+      addExpression(ifStatement.condition(), tokens, depth);
+      tokens.add(new PositionedToken(ifStatement.rightParen(), depth));
+      addBlock(ifStatement.thenBlock(), tokens, depth);
+      if (ifStatement.elseKeyword().isPresent()) {
+        tokens.add(new PositionedToken(ifStatement.elseKeyword().get(), depth));
+        addBlock(ifStatement.elseBlock().orElseThrow(), tokens, depth);
       }
-      case ExpressionStatementSyntax expressionStatement -> {
-        addExpression(expressionStatement.expression(), tokens, depth);
-        tokens.add(new PositionedToken(expressionStatement.semicolon(), depth));
-      }
-      case IfStatementSyntax ifStatement -> {
-        tokens.add(new PositionedToken(ifStatement.ifKeyword(), depth));
-        tokens.add(new PositionedToken(ifStatement.leftParen(), depth));
-        addExpression(ifStatement.condition(), tokens, depth);
-        tokens.add(new PositionedToken(ifStatement.rightParen(), depth));
-        addBlock(ifStatement.thenBlock(), tokens, depth);
-        if (ifStatement.elseKeyword().isPresent()) {
-          tokens.add(new PositionedToken(ifStatement.elseKeyword().get(), depth));
-          addBlock(ifStatement.elseBlock().orElseThrow(), tokens, depth);
-        }
-      }
-      case BlockStatementSyntax block -> addBlock(block, tokens, depth);
+      return null;
+    }
+
+    @Override
+    public Void visitBlock(BlockStatementSyntax block) {
+      addBlock(block, tokens, depth);
+      return null;
     }
   }
 
@@ -147,24 +175,47 @@ public final class PrintScriptFormatter {
   }
 
   private void addExpression(ExpressionSyntax expression, List<PositionedToken> tokens, int depth) {
-    switch (expression) {
-      case LiteralExpressionSyntax literal ->
-          tokens.add(new PositionedToken(literal.literal(), depth));
-      case IdentifierExpressionSyntax identifier ->
-          tokens.add(new PositionedToken(identifier.identifier(), depth));
-      case BinaryExpressionSyntax binary -> {
-        addExpression(binary.left(), tokens, depth);
-        tokens.add(new PositionedToken(binary.operator(), depth));
-        addExpression(binary.right(), tokens, depth);
+    expression.accept(new ExpressionFlattener(tokens, depth));
+  }
+
+  private final class ExpressionFlattener implements ExpressionVisitor<Void> {
+    private final List<PositionedToken> tokens;
+    private final int depth;
+
+    ExpressionFlattener(List<PositionedToken> tokens, int depth) {
+      this.tokens = tokens;
+      this.depth = depth;
+    }
+
+    @Override
+    public Void visitLiteral(LiteralExpressionSyntax literal) {
+      tokens.add(new PositionedToken(literal.literal(), depth));
+      return null;
+    }
+
+    @Override
+    public Void visitIdentifier(IdentifierExpressionSyntax identifier) {
+      tokens.add(new PositionedToken(identifier.identifier(), depth));
+      return null;
+    }
+
+    @Override
+    public Void visitBinary(BinaryExpressionSyntax binary) {
+      addExpression(binary.left(), tokens, depth);
+      tokens.add(new PositionedToken(binary.operator(), depth));
+      addExpression(binary.right(), tokens, depth);
+      return null;
+    }
+
+    @Override
+    public Void visitCall(CallExpressionSyntax call) {
+      tokens.add(new PositionedToken(call.callee(), depth));
+      tokens.add(new PositionedToken(call.leftParen(), depth));
+      for (ExpressionSyntax argument : call.arguments()) {
+        addExpression(argument, tokens, depth);
       }
-      case CallExpressionSyntax call -> {
-        tokens.add(new PositionedToken(call.callee(), depth));
-        tokens.add(new PositionedToken(call.leftParen(), depth));
-        for (ExpressionSyntax argument : call.arguments()) {
-          addExpression(argument, tokens, depth);
-        }
-        tokens.add(new PositionedToken(call.rightParen(), depth));
-      }
+      tokens.add(new PositionedToken(call.rightParen(), depth));
+      return null;
     }
   }
 
@@ -182,7 +233,7 @@ public final class PrintScriptFormatter {
       return token.leadingTrivia();
     }
     if (containsComment(token.leadingTrivia())) {
-      if (previous.type() == TokenType.SEMICOLON) {
+      if (TokenType.SEMICOLON.equals(previous.type())) {
         return config
             .spacesAfterSemicolon()
             .map(
@@ -192,7 +243,7 @@ public final class PrintScriptFormatter {
       }
       return token.leadingTrivia();
     }
-    if (previousStatementIsPrintln && previous.type() == TokenType.SEMICOLON) {
+    if (previousStatementIsPrintln && TokenType.SEMICOLON.equals(previous.type())) {
       Optional<String> blankLines = config.blankLinesBeforePrintln().map(n -> "\n".repeat(n + 1));
       if (blankLines.isPresent()) {
         return blankLines.get();
@@ -206,7 +257,7 @@ public final class PrintScriptFormatter {
     if (previous == null || containsComment(eof.leadingTrivia())) {
       return eof.leadingTrivia();
     }
-    if (previous.type() == TokenType.SEMICOLON && !hasLineBreak(eof.leadingTrivia())) {
+    if (TokenType.SEMICOLON.equals(previous.type()) && !hasLineBreak(eof.leadingTrivia())) {
       return config
           .spacesAfterSemicolon()
           .map(spaces -> "\n" + " ".repeat(spaces))

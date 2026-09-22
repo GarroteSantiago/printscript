@@ -10,4 +10,9 @@ public record ExpressionStatementSyntax(ExpressionSyntax expression, SyntaxToken
   public SourceSpan span() {
     return new SourceSpan(expression.span().start(), semicolon.span().end());
   }
+
+  @Override
+  public <R> R accept(StatementVisitor<R> visitor) {
+    return visitor.visitExpressionStatement(this);
+  }
 }

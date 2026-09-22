@@ -16,11 +16,16 @@ public record VariableDeclarationSyntax(
     SyntaxToken semicolon)
     implements StatementSyntax {
   public boolean isConst() {
-    return keyword.type() == TokenType.CONST;
+    return TokenType.CONST.equals(keyword.type());
   }
 
   @Override
   public SourceSpan span() {
     return new SourceSpan(keyword.span().start(), semicolon.span().end());
+  }
+
+  @Override
+  public <R> R accept(StatementVisitor<R> visitor) {
+    return visitor.visitVariableDeclaration(this);
   }
 }

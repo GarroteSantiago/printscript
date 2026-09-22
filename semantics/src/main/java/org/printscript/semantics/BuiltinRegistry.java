@@ -5,9 +5,9 @@ import java.util.Optional;
 import org.printscript.syntax.TypeName;
 
 public final class BuiltinRegistry {
-  private static final String PRINTLN = "println";
-  private static final String READ_INPUT = "readInput";
-  private static final String READ_ENV = "readEnv";
+  public static final String PRINTLN = "println";
+  public static final String READ_INPUT = "readInput";
+  public static final String READ_ENV = "readEnv";
   private final Map<String, BuiltinSignature> signatures;
 
   private BuiltinRegistry(Map<String, BuiltinSignature> signatures) {

@@ -1,78 +1,108 @@
 package org.printscript.lexer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.tokens.TokenType;
 
 class KeywordTableTest {
+  private static final String LET = "let";
+
   @Test
-  void v1ClassifiesLetAsTheLetKeyword() {
-    assertEquals(TokenType.LET, KeywordTable.v1().classify("let"), "expected let to be a keyword");
+  void ofFindsAGivenEntryWithoutAnyVersionWiring() {
+    KeywordTable table = KeywordTable.of(Map.of(LET, TokenType.LET));
+
+    assertEquals(Optional.of(TokenType.LET), table.find(LET), "expected the given entry");
   }
 
   @Test
-  void v1ClassifiesNumberAsATypeAnnotation() {
-    assertEquals(TokenType.TYPE, KeywordTable.v1().classify("number"), "expected number as type");
+  void ofDoesNotFindAnUnindexedWord() {
+    KeywordTable table = KeywordTable.of(Map.of(LET, TokenType.LET));
+
+    assertTrue(table.find("total").isEmpty(), "expected no match for an unindexed word");
   }
 
   @Test
-  void v1ClassifiesStringAsATypeAnnotation() {
-    assertEquals(TokenType.TYPE, KeywordTable.v1().classify("string"), "expected string as type");
-  }
-
-  @Test
-  void v1ClassifiesUnknownWordsAsIdentifiers() {
+  void v1FindsLetAsTheLetKeyword() {
     assertEquals(
-        TokenType.IDENTIFIER, KeywordTable.v1().classify("total"), "expected an identifier");
+        Optional.of(TokenType.LET), KeywordTable.v1().find(LET), "expected let to be a keyword");
+  }
+
+  @Test
+  void v1FindsNumberAsATypeAnnotation() {
+    assertEquals(
+        Optional.of(TokenType.TYPE), KeywordTable.v1().find("number"), "expected number as type");
+  }
+
+  @Test
+  void v1FindsStringAsATypeAnnotation() {
+    assertEquals(
+        Optional.of(TokenType.TYPE), KeywordTable.v1().find("string"), "expected string as type");
+  }
+
+  @Test
+  void v1DoesNotFindUnknownWords() {
+    assertTrue(KeywordTable.v1().find("total").isEmpty(), "expected no reserved word match");
   }
 
   @Test
   void v1DoesNotRecognizeConstAsAKeyword() {
-    assertEquals(
-        TokenType.IDENTIFIER,
-        KeywordTable.v1().classify("const"),
-        "expected v1 to treat const as a plain identifier");
+    assertTrue(
+        KeywordTable.v1().find("const").isEmpty(),
+        "expected v1 to not treat const as a reserved word");
   }
 
   @Test
-  void v11ClassifiesConstAsAKeyword() {
+  void v11FindsConstAsAKeyword() {
     assertEquals(
-        TokenType.CONST, KeywordTable.v1_1().classify("const"), "expected const as a keyword");
+        Optional.of(TokenType.CONST),
+        KeywordTable.v1_1().find("const"),
+        "expected const as a keyword");
   }
 
   @Test
-  void v11ClassifiesIfAsAKeyword() {
-    assertEquals(TokenType.IF, KeywordTable.v1_1().classify("if"), "expected if as a keyword");
+  void v11FindsIfAsAKeyword() {
+    assertEquals(
+        Optional.of(TokenType.IF), KeywordTable.v1_1().find("if"), "expected if as a keyword");
   }
 
   @Test
-  void v11ClassifiesElseAsAKeyword() {
+  void v11FindsElseAsAKeyword() {
     assertEquals(
-        TokenType.ELSE, KeywordTable.v1_1().classify("else"), "expected else as a keyword");
+        Optional.of(TokenType.ELSE),
+        KeywordTable.v1_1().find("else"),
+        "expected else as a keyword");
   }
 
   @Test
-  void v11ClassifiesBooleanAsATypeAnnotation() {
+  void v11FindsBooleanAsATypeAnnotation() {
     assertEquals(
-        TokenType.TYPE, KeywordTable.v1_1().classify("boolean"), "expected boolean as a type");
+        Optional.of(TokenType.TYPE),
+        KeywordTable.v1_1().find("boolean"),
+        "expected boolean as a type");
   }
 
   @Test
-  void v11ClassifiesTrueAsABooleanLiteral() {
+  void v11FindsTrueAsABooleanLiteral() {
     assertEquals(
-        TokenType.BOOLEAN, KeywordTable.v1_1().classify("true"), "expected true as a boolean");
+        Optional.of(TokenType.BOOLEAN),
+        KeywordTable.v1_1().find("true"),
+        "expected true as a boolean");
   }
 
   @Test
-  void v11ClassifiesFalseAsABooleanLiteral() {
+  void v11FindsFalseAsABooleanLiteral() {
     assertEquals(
-        TokenType.BOOLEAN, KeywordTable.v1_1().classify("false"), "expected false as a boolean");
+        Optional.of(TokenType.BOOLEAN),
+        KeywordTable.v1_1().find("false"),
+        "expected false as a boolean");
   }
 
   @Test
-  void v11ClassifiesUnknownWordsAsIdentifiers() {
-    assertEquals(
-        TokenType.IDENTIFIER, KeywordTable.v1_1().classify("total"), "expected an identifier");
+  void v11DoesNotFindUnknownWords() {
+    assertTrue(KeywordTable.v1_1().find("total").isEmpty(), "expected no reserved word match");
   }
 }

@@ -18,4 +18,9 @@ public record CallExpressionSyntax(
   public SourceSpan span() {
     return new SourceSpan(callee.span().start(), rightParen.span().end());
   }
+
+  @Override
+  public <R> R accept(ExpressionVisitor<R> visitor) {
+    return visitor.visitCall(this);
+  }
 }
