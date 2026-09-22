@@ -27,6 +27,16 @@ class ExpressionSyntaxSpanTest {
         BinaryExpressionSyntax.class, assignment.value(), "expected a binary expression");
   }
 
+  private IdentifierExpressionSyntax identifierFromBinary() {
+    return assertInstanceOf(
+        IdentifierExpressionSyntax.class, binaryFromAssignment().left(), "expected an identifier");
+  }
+
+  private LiteralExpressionSyntax literalFromBinary() {
+    return assertInstanceOf(
+        LiteralExpressionSyntax.class, binaryFromAssignment().right(), "expected a literal");
+  }
+
   private CallExpressionSyntax callExpression() {
     var expressionStatement =
         assertInstanceOf(
@@ -67,11 +77,7 @@ class ExpressionSyntaxSpanTest {
 
   @Test
   void identifierExpressionSpanMatchesItsToken() {
-    var identifier =
-        assertInstanceOf(
-            IdentifierExpressionSyntax.class,
-            binaryFromAssignment().left(),
-            "expected an identifier");
+    var identifier = identifierFromBinary();
 
     assertEquals(
         identifier.identifier().span(), identifier.span(), "expected the identifier's own span");
@@ -79,9 +85,7 @@ class ExpressionSyntaxSpanTest {
 
   @Test
   void literalExpressionSpanMatchesItsToken() {
-    var literal =
-        assertInstanceOf(
-            LiteralExpressionSyntax.class, binaryFromAssignment().right(), "expected a literal");
+    var literal = literalFromBinary();
 
     assertEquals(literal.literal().span(), literal.span(), "expected the literal's own span");
   }
