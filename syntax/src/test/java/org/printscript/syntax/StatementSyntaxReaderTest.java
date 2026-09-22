@@ -4,17 +4,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.printscript.testkit.TestSources;
 import org.printscript.tokens.SyntaxException;
 
 class StatementSyntaxReaderTest {
+  private SyntaxException expectSyntaxException(Executable executable, String failureMessage) {
+    return assertThrows(SyntaxException.class, executable, failureMessage);
+  }
+
   @Test
   void nextThrowsWhenNoStatementsRemain() {
     var statements = TestSources.statementsOf("");
 
     SyntaxException exception =
-        assertThrows(
-            SyntaxException.class, statements::next, "expected calling next() at EOF to fail");
+        expectSyntaxException(statements::next, "expected calling next() at EOF to fail");
 
     assertEquals(
         "Expected statement", exception.getMessage(), "expected the 'no statements left' message");
@@ -23,8 +27,7 @@ class StatementSyntaxReaderTest {
   @Test
   void primaryThrowsWhenNoExpressionMatches() {
     SyntaxException exception =
-        assertThrows(
-            SyntaxException.class,
+        expectSyntaxException(
             () -> TestSources.programOf(";"),
             "expected a lone ';' to fail to parse as an expression statement");
 

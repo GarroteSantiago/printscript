@@ -36,13 +36,26 @@ class StatementSyntaxSpanTest {
         IfStatementSyntax.class, program.statements().get(2), "expected an if statement");
   }
 
+  private VariableDeclarationSyntax variableDeclaration() {
+    return assertInstanceOf(
+        VariableDeclarationSyntax.class, program.statements().getFirst(), "expected a declaration");
+  }
+
+  private AssignmentSyntax assignment() {
+    return assertInstanceOf(
+        AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+  }
+
+  private ExpressionStatementSyntax expressionStatement() {
+    return assertInstanceOf(
+        ExpressionStatementSyntax.class,
+        program.statements().get(3),
+        "expected an expression statement");
+  }
+
   @Test
   void variableDeclarationSpanStartsAtKeyword() {
-    var declaration =
-        assertInstanceOf(
-            VariableDeclarationSyntax.class,
-            program.statements().getFirst(),
-            "expected a declaration");
+    var declaration = variableDeclaration();
 
     assertEquals(
         declaration.keyword().span().start(),
@@ -52,11 +65,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void variableDeclarationSpanEndsAtSemicolon() {
-    var declaration =
-        assertInstanceOf(
-            VariableDeclarationSyntax.class,
-            program.statements().getFirst(),
-            "expected a declaration");
+    var declaration = variableDeclaration();
 
     assertEquals(
         declaration.semicolon().span().end(),
@@ -66,9 +75,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void assignmentSpanStartsAtIdentifier() {
-    var assignment =
-        assertInstanceOf(
-            AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+    var assignment = assignment();
 
     assertEquals(
         assignment.identifier().span().start(),
@@ -78,9 +85,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void assignmentSpanEndsAtSemicolon() {
-    var assignment =
-        assertInstanceOf(
-            AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+    var assignment = assignment();
 
     assertEquals(
         assignment.semicolon().span().end(),
@@ -90,9 +95,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void assignmentAcceptDispatchesToVisitAssignment() {
-    var assignment =
-        assertInstanceOf(
-            AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+    var assignment = assignment();
 
     assertEquals(
         "assignment",
@@ -102,11 +105,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void expressionStatementSpanStartsAtExpression() {
-    var expressionStatement =
-        assertInstanceOf(
-            ExpressionStatementSyntax.class,
-            program.statements().get(3),
-            "expected an expression statement");
+    var expressionStatement = expressionStatement();
 
     assertEquals(
         expressionStatement.expression().span().start(),
@@ -116,11 +115,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   void expressionStatementSpanEndsAtSemicolon() {
-    var expressionStatement =
-        assertInstanceOf(
-            ExpressionStatementSyntax.class,
-            program.statements().get(3),
-            "expected an expression statement");
+    var expressionStatement = expressionStatement();
 
     assertEquals(
         expressionStatement.semicolon().span().end(),
@@ -174,14 +169,17 @@ class StatementSyntaxSpanTest {
         "expected span to end at the else block when present");
   }
 
+  private IfStatementSyntax ifStatementWithoutElse() {
+    var programWithoutElse = TestSources.programOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
+    return assertInstanceOf(
+        IfStatementSyntax.class,
+        programWithoutElse.statements().get(1),
+        "expected an if statement");
+  }
+
   @Test
   void ifStatementWithoutElseSpanEndsAtThenBlock() {
-    var programWithoutElse = TestSources.programOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
-    var ifStatement =
-        assertInstanceOf(
-            IfStatementSyntax.class,
-            programWithoutElse.statements().get(1),
-            "expected an if statement");
+    var ifStatement = ifStatementWithoutElse();
 
     assertEquals(
         ifStatement.thenBlock().span().end(),
