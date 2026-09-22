@@ -77,9 +77,9 @@ Note `RuntimeFailure`'s diagnostic normally carries the call-site
 locally and rethrow as `RuntimeFailure` with the expression's span, rather
 than changing `unsupportedInput()`/`unsupportedEnvironment()` themselves.
 
-## 3. Module name typo: `org.prinstscript.application`
+## 3. Module name typo: `org.prinstscript.application` — FIXED
 
-`application/src/main/java/module-info.java` declares:
+`application/src/main/java/module-info.java` declared:
 
 ```java
 module org.prinstscript.application {   // "prinstscript", missing the 'e' in "print"
@@ -94,31 +94,40 @@ but it's a landmine: the day a second module adds
 name, matching the pattern every other module follows), the build fails
 with a module-not-found error that's non-obvious to root-cause.
 
-**Fix**: rename the module to `org.printscript.application` in both
+**Fix, applied**: the module is now `org.printscript.application` in both
 `application/src/main/java/module-info.java` and the `requires` line in
 `cli/src/main/java/module-info.java`.
 
-## 4. `application`'s module-info doesn't mirror Gradle's `api` transitivity
+## 4. `application`'s module-info doesn't mirror Gradle's `api` transitivity — FIXED
 
-`application/build.gradle` declares `formatter` and `analyzer` as `api
+`application/build.gradle` declared `formatter` and `analyzer` as `api
 project(...)` (meaning Gradle re-exposes their classes to whoever depends on
 `application`, i.e. `cli`), while `syntax`, `semantics`, `interpreter`, and
-`lexer` are `implementation` (not re-exposed). But
-`application/src/main/java/module-info.java` uses a plain `requires` for
-*all* of them — none are `requires transitive`. So at the Gradle/classpath
-level, `cli` can reach `formatter`/`analyzer` types transitively; at the
-JPMS/module level, it cannot (matches what `cli`'s own `module-info.java`
-already has to work around by explicitly `requires`-ing `diagnostics` and
-`interpreter` directly, since `application` doesn't re-export those either).
-Two sources of truth for the same "does this get re-exposed" decision,
-currently disagreeing for `formatter`/`analyzer`.
+`lexer` were all `implementation` (not re-exposed). But
+`application/src/main/java/module-info.java` used a plain `requires` for
+*all* of them — none were `requires transitive`. So at the Gradle/classpath
+level, `cli` could reach `formatter`/`analyzer` types transitively; at the
+JPMS/module level, it could not (matching what `cli`'s own `module-info.java`
+had to work around by explicitly `requires`-ing `diagnostics` and
+`interpreter` directly, since `application` didn't re-export those either).
 
-**Fix**: either add `requires transitive org.printscript.formatter;` and
-`requires transitive org.printscript.analyzer;` to `application`'s
-module-info to match the `api` declarations in `build.gradle`, or (if the
-intent is that `cli` should always declare what it directly imports,
-regardless of what `application` re-exports) downgrade `formatter` and
-`analyzer` from `api` to `implementation` in `application/build.gradle` so
-both descriptors agree that nothing is transitively re-exposed. Pick
-whichever matches the actual intent — right now the two build
-descriptions of the same module contradict each other.
+Checking `PrintScript`'s actual public signatures settled which side was
+right: `execute` returns `CommandResult<RuntimeEnvironment>` and takes
+`InputPort`/`EnvironmentPort` (`interpreter`); `format`/`PrintScriptConfigReader`
+take/return `FormatterConfigProvider` (`formatter`); `analyze`/
+`PrintScriptConfigReader` take/return `AnalyzerConfig` (`analyzer`) — all
+three modules' types genuinely leak into `application`'s public API, while
+`syntax`/`semantics`/`lexer` types never do (they're confined to the private
+`LanguagePipeline` record and package-private wiring).
+
+**Fix, applied**: `application/build.gradle` now also declares `interpreter`
+as `api` (matching the existing `formatter`/`analyzer` `api` declarations),
+and `application/src/main/java/module-info.java` now declares `requires
+transitive` for `interpreter`, `formatter`, and `analyzer` — `syntax`,
+`semantics`, and `lexer` correctly stay as plain, non-transitive `requires`.
+`diagnostics`/`tokens` types (e.g. `Diagnostic` in `CommandResult`) don't need
+their own line here: they're already re-exposed transitively through
+`interpreter`/`formatter`/`analyzer`'s own `requires transitive` chains down
+to `syntax`/`tokens`/`diagnostics` (see [Tokens Module](../tokens/ARCHITECTURE.md)
+and [Semantics Module](../semantics/ARCHITECTURE.md), which had the same class
+of gap and were fixed the same way).
