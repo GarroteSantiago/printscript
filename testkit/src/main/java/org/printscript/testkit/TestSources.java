@@ -7,6 +7,13 @@ import org.printscript.syntax.StatementSyntaxReader;
 import org.printscript.syntax.SyntaxTreeBuilder;
 import org.printscript.syntax.nodes.ProgramSyntax;
 
+/**
+ * Test-only helper that centralizes "turn this string into pipeline data" — the {@code new
+ * StatementSyntaxReader(new Lexer(source))} wiring every test fixture across the repo otherwise
+ * needs. This is the one place outside the {@code application} composition root allowed to
+ * construct a concrete {@code Lexer}; keep it that way rather than letting a production module
+ * depend on {@code lexer} just to build test data.
+ */
 public final class TestSources {
   private TestSources() {}
 

@@ -1,25 +1,35 @@
-# App Module
+# CLI Module
 
-The app module is the CLI adapter.
+The `cli` module is the CLI adapter — the only module allowed to depend on
+[Application Module](../application/ARCHITECTURE.md). See the [root README](../README.md) and
+[docs/architecture.md](../docs/architecture.md) for how this fits into the rest of the system.
 
 The CLI should only handle:
 
-- argument parsing
+- argument parsing (`org.example.cli.App`, built on picocli)
 - file, stdin, and stdout wiring
 - command selection
-- TOML config loading
+- JSON config loading
 - terminal-friendly progress rendering
 - terminal-friendly diagnostic rendering
 
 It should not contain language logic.
 
-Commands:
+Commands (see `App.ExecuteCommand`/`FormatCommand`/`AnalyzeCommand`/`ValidateCommand`):
 
 - `execute`: validate and run source
 - `format`: rewrite source formatting through the formatter
 - `analyze`: run semantic validation plus analyzer rules
 - `validate`: parse and run semantic validation only
 
-Configuration files should use TOML. The CLI owns TOML loading and converts configuration files into immutable core config objects.
+Configuration files use JSON. The CLI owns JSON loading (`application.JsonPrintScriptConfigReader`,
+selected here and injected behind the `application.PrintScriptConfigReader` port) and converts
+configuration files into immutable core config objects (`formatter.FormatterConfig`,
+`analyzer.AnalyzerConfig`). See `JsonPrintScriptConfigReader`'s Javadoc for the exact key schema.
 
-Progress must be reported through a port so the core remains independent from CLI.
+Progress is reported through `application.ProgressReporter`, and `readInput`/`readEnv` reach real
+stdin/the process environment only through `interpreter.InputPort`/`EnvironmentPort` — both
+constructed in `App` and nowhere else — so the core remains independent from the CLI and from any
+concrete I/O.
+
+Representative test: `src/test/java/org/example/cli/AppTest.java`.

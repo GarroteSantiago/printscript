@@ -23,6 +23,14 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+/**
+ * The CLI adapter: argument parsing, file/stdin/stdout wiring, and terminal rendering of
+ * diagnostics and progress. Every subcommand ({@link ExecuteCommand}, {@link FormatCommand}, {@link
+ * AnalyzeCommand}, {@link ValidateCommand}) does the I/O plumbing and then delegates the actual
+ * work to a single shared {@link PrintScript} instance — no language logic lives here. {@code
+ * readInput}/{@code readEnv} reach real stdin/the process environment only through {@link
+ * InputPort}/{@link EnvironmentPort}, constructed here and nowhere else in this class's call chain.
+ */
 @Command(
     name = "printscript",
     mixinStandardHelpOptions = true,

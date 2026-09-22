@@ -51,3 +51,7 @@ strings, all four operators valid for numbers) lives in exactly one place —
 `instanceof` check. If you're tempted to add a runtime type check to decide operator behavior here,
 that logic almost certainly belongs in `BinaryOperatorRules` instead, consulted once during
 validation.
+
+Representative tests: `src/test/java/org/printscript/interpreter/InterpreterV11Test.java`
+(const/if/boolean/readInput/readEnv behavior), `InterpreterRuntimeFailureTest.java` (division by
+zero, unset env vars, malformed `readInput`/`readEnv` input all surfacing as `RuntimeFailure`).

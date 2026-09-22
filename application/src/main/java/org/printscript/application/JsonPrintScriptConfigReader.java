@@ -13,6 +13,21 @@ import org.printscript.analyzer.NamingStyle;
 import org.printscript.formatter.FormatterConfig;
 import org.printscript.formatter.FormatterConfigProvider;
 
+/**
+ * The production {@link PrintScriptConfigReader}: reads a flat JSON object and maps its keys to
+ * {@link FormatterConfig}/{@link AnalyzerConfig} fields. A key that is absent, rather than {@code
+ * false}/missing, is what leaves a formatter rule at {@code Optional.empty()} — this class never
+ * substitutes a default for a key the file didn't mention. Formatter keys recognized today: {@code
+ * enforce-spacing-around-equals} / {@code enforce-no-spacing-around-equals}, {@code
+ * mandatory-space-surrounding-operations}, {@code line-breaks-after-println}, {@code
+ * indent-inside-if}, {@code enforce-spacing-before-colon-in-declaration} / {@code
+ * enforce-spacing-after-colon-in-declaration}, {@code mandatory-single-space-separation}, {@code
+ * mandatory-line-break-after-statement}, {@code if-brace-same-line} / {@code if-brace-below-line}.
+ * Analyzer keys: {@code identifier_format} ({@code "camel case"} or anything else for snake case;
+ * its mere presence turns naming checks on), {@code mandatory-variable-or-literal-in-println},
+ * {@code mandatory-variable-or-literal-in-readInput}. Semicolon spacing has no corresponding key in
+ * this schema and stays permanently unconfigured.
+ */
 public final class JsonPrintScriptConfigReader implements PrintScriptConfigReader {
   private final ObjectMapper mapper = new ObjectMapper();
 

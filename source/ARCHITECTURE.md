@@ -14,3 +14,6 @@ Design rules:
   `diagnostics`.
 - Immutable value types only. No behavior beyond simple invariants (e.g. positions cannot be
   negative).
+
+Representative tests: `src/test/java/org/printscript/source/SourcePositionTest.java`,
+`SourceSpanTest.java`.

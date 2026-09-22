@@ -21,6 +21,23 @@ import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.syntax.nodes.statements.StatementVisitor;
 import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
+/**
+ * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link
+ * RuntimeEnvironment}) is immutable: {@link #executeStatement} returns a new environment rather
+ * than mutating one in place, so PrintScript variables can still be reassigned while the
+ * interpreter's own state is always a value, not a mutable object.
+ *
+ * <p>This class never re-derives a type decision that {@link SemanticModel} already recorded — e.g.
+ * {@code evaluateBinary} reads {@code semanticModel.typeOf(binary)} to decide string concatenation
+ * vs. numeric addition, rather than inspecting the runtime values itself. The only per-version
+ * strategy this class owns is {@link ArithmeticOperators} (constructor-injected, default {@link
+ * ArithmeticOperators#v1()}); everything else version-specific was already resolved by the time a
+ * {@link ProgramSyntax}/statement reaches here. I/O is reached only through the {@link
+ * OutputPort}/{@link InputPort}/{@link EnvironmentPort} ports, never directly — the 2-argument
+ * constructor's defaults reject {@code readInput}/{@code readEnv} with an {@link
+ * UnsupportedOperationException} for callers (such as {@code format}/{@code analyze}/{@code
+ * validate}) that never wire real I/O in.
+ */
 public final class Interpreter {
   private final OutputPort output;
   private final ArithmeticOperators operators;

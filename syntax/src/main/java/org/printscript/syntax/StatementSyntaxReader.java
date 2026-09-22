@@ -22,6 +22,15 @@ import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
 
+/**
+ * Recursive-descent parser: the sole production implementation of {@link StatementSource}. Pulls
+ * from a {@link TokenSource} — never constructs a {@code Lexer} itself, so this class works against
+ * any token producer — and keeps a one-token lookahead ({@code current}/{@code next}) to
+ * disambiguate an assignment (`identifier =`) from an expression statement. Expression parsing
+ * implements a fixed two-level precedence (addition/subtraction over multiplication/division; no
+ * further operators exist in this grammar). There is no error recovery: the first malformed
+ * construct throws a {@link org.printscript.tokens.SyntaxException} and parsing stops.
+ */
 public final class StatementSyntaxReader implements StatementSource {
   private final TokenSource tokenSource;
   private Token current;

@@ -2,6 +2,12 @@ package org.printscript.lexer;
 
 import org.printscript.tokens.TokenType;
 
+/**
+ * Classifies a scanned {@link Punctuation} symbol into its {@link TokenType}, via {@link
+ * PunctuationVisitor} double-dispatch rather than a switch over {@link Punctuation#symbol()}.
+ * Unlike {@link KeywordTable}, this has had only one version so far — {@link #v1()} — since no
+ * language version has changed what a punctuation character means.
+ */
 @FunctionalInterface
 public interface PunctuationTable {
   TokenType classify(Punctuation punctuation);

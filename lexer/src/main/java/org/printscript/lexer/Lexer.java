@@ -13,6 +13,15 @@ import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
 
+/**
+ * Character-level scanner: the sole production implementation of {@link TokenSource}. Scans lazily,
+ * one {@link #next()} call at a time, over a {@link Reader} — never materializes the whole token
+ * stream up front. Fails fast with a {@link SyntaxException} on the first unrecognized character or
+ * unterminated string/number rather than attempting recovery. Which lexemes count as keywords is
+ * not hardcoded here; it is delegated to the constructor-injected {@link KeywordTable} (default
+ * {@link KeywordTable#v1()}), so a new language version's keyword set never requires a change to
+ * this scanning logic.
+ */
 public final class Lexer implements TokenSource {
   private static final char NEWLINE = '\n';
   private static final char COMMENT_MARKER = '#';

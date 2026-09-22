@@ -5,6 +5,14 @@ import java.math.MathContext;
 import org.printscript.tokens.TokenType;
 import org.printscript.tokens.TokenTypeVisitor;
 
+/**
+ * What a binary operator ({@code +}/{@code -}/{@code *}/{@code /}) computes given two numeric
+ * operands — the swappable, version-specific counterpart to {@link
+ * org.printscript.semantics.BinaryOperatorRules}, which already decided *that* the operator applies
+ * to these operand types before this interface is asked to compute the result. {@link #v1()} uses
+ * {@link java.math.MathContext#DECIMAL128} decimal division and throws {@link ArithmeticException}
+ * on division by zero, which {@code Interpreter} converts to a {@link RuntimeFailure}.
+ */
 @FunctionalInterface
 public interface ArithmeticOperators {
   BigDecimal apply(TokenType operator, BigDecimal left, BigDecimal right);

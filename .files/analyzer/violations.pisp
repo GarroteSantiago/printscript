@@ -1,2 +1,0 @@
-let badName: string = "Ada";
-println("Hello " + badName);

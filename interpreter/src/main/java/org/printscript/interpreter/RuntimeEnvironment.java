@@ -4,6 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Immutable variable bindings. {@link #put} returns a new {@code RuntimeEnvironment} rather than
+ * mutating this one — the interpreter is always replacing its state object, never mutating it in
+ * place, which is what lets {@link Interpreter#executeStatement} be called safely across statements
+ * from a streaming {@code StatementSource}.
+ */
 public record RuntimeEnvironment(Map<String, RuntimeValue> values) {
   public RuntimeEnvironment {
     values = Map.copyOf(values);
