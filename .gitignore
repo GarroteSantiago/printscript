@@ -10,8 +10,6 @@ target/
 
 # Allowed
 !.envrc
-!.files/
-!.files/**
 !.github/
 !.github/**
 !.githooks/
