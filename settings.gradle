@@ -18,6 +18,7 @@ include(
     'lexer',
     'syntax',
     'semantics',
+    'typechecker',
     'interpreter',
     'formatter',
     'analyzer',

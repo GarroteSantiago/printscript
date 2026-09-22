@@ -1,5 +1,7 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
+import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.semantics.SemanticModel;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.nodes.ProgramSyntax;
 import org.printscript.syntax.nodes.statements.StatementSyntax;

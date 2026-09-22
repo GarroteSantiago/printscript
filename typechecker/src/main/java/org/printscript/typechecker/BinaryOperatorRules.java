@@ -1,4 +1,4 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import java.util.Optional;
 import org.printscript.syntax.TypeName;

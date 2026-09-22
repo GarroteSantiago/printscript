@@ -14,6 +14,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Lexer Module](../lexer/ARCHITECTURE.md)
 - [Syntax Module](../syntax/ARCHITECTURE.md)
 - [Semantics Module](../semantics/ARCHITECTURE.md)
+- [Typechecker Module](../typechecker/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
 - [Analyzer Module](../analyzer/ARCHITECTURE.md)
@@ -39,11 +40,13 @@ graph TD
     application --> lexer
     application --> syntax
     application --> semantics
+    application --> typechecker
     interpreter --> syntax
     interpreter --> semantics
     formatter --> syntax
     analyzer --> syntax
     analyzer --> semantics
+    typechecker --> semantics
     semantics --> syntax
     syntax --> tokens
     lexer --> tokens
@@ -51,10 +54,15 @@ graph TD
     diagnostics --> source
     testkit -.test only.-> lexer
     testkit -.test only.-> syntax
+    interpreter -.test only.-> typechecker
+    analyzer -.test only.-> typechecker
 ```
 
 Notice `lexer` and `syntax` both depend on `tokens` but never on each other — that's deliberate, see
-[Tokens Module](../tokens/ARCHITECTURE.md).
+[Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `typechecker` out of
+`semantics`: `interpreter`/`analyzer` read a `SemanticModel` but never run the checker that produces
+one, so only `application` (composition root) depends on `typechecker` in production — `interpreter`
+and `analyzer` only reach it from their own test source sets, to build fixtures.
 
 ## Pipeline data flow
 
@@ -66,7 +74,7 @@ through validation. Formatting instead reads token trivia off the same lexer/par
 flowchart LR
     Source["Source text\n(Reader)"] --> Lexer["Lexer\n(TokenSource)"]
     Lexer --> Parser["StatementSyntaxReader\n(StatementSource)"]
-    Parser --> Semantics["SemanticContext.validate\n(one statement)"]
+    Parser --> Semantics["typechecker.SemanticContext.validate\n(one statement)"]
     Semantics -->|success| Interpreter
     Semantics -->|success| Analyzer["StaticAnalyzer"]
     Semantics -->|failure| Diagnostics["Diagnostic\n(CommandResult.failure)"]

@@ -7,4 +7,5 @@ dependencies {
     api project(':syntax')
     api project(':semantics')
     testImplementation project(':testkit')
+    testImplementation project(':typechecker')
 }

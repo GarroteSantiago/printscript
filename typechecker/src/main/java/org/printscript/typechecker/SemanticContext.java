@@ -1,4 +1,4 @@
-package org.printscript.semantics;
+package org.printscript.typechecker;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
+import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.semantics.BuiltinSignature;
+import org.printscript.semantics.SemanticModel;
+import org.printscript.semantics.VariableSymbol;
 import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.syntax.TypeName;
 import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;

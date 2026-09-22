@@ -47,7 +47,7 @@ or string concatenation by inspecting runtime values. That decision was already 
 semantic validation, and recorded in the `SemanticModel` passed in — the interpreter just reads
 `semanticModel.typeOf(binary)`. This is deliberate: the type-compatibility rule (`+` also valid for
 strings, all four operators valid for numbers) lives in exactly one place —
-`semantics.BinaryOperatorRules` — instead of being re-implemented here as a duplicate runtime
+`typechecker.BinaryOperatorRules` — instead of being re-implemented here as a duplicate runtime
 `instanceof` check. If you're tempted to add a runtime type check to decide operator behavior here,
 that logic almost certainly belongs in `BinaryOperatorRules` instead, consulted once during
 validation.
