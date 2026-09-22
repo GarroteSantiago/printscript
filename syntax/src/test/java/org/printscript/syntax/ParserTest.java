@@ -52,6 +52,19 @@ class ParserTest {
   }
 
   @Test
+  void programSpanStartsAtFirstStatement() {
+    assertEquals(
+        program.statements().getFirst().span().start(),
+        program.span().start(),
+        "expected span to start at the first statement");
+  }
+
+  @Test
+  void programSpanEndsAtEof() {
+    assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
+  }
+
+  @Test
   void parsesFirstStatementAsVariableDeclaration() {
     assertInstanceOf(
         VariableDeclarationSyntax.class,
