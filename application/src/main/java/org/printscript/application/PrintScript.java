@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.NamingStyleRules;
 import org.printscript.analyzer.StaticAnalyzer;
+import org.printscript.ast.StatementSource;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
@@ -29,13 +31,11 @@ import org.printscript.parser.StatementSyntaxReader;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
-import org.printscript.syntax.StatementSource;
-import org.printscript.syntax.TypeAnnotationTable;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.tokens.SyntaxException;
 import org.printscript.typechecker.BinaryOperatorRules;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
+import org.printscript.types.TypeAnnotationTable;
 
 /**
  * The use-case facade and composition root for PrintScript: {@link #execute}, {@link #format},
@@ -45,7 +45,7 @@ import org.printscript.typechecker.SemanticStatementResult;
  * a failed {@code CommandResult} carrying the underlying {@link Diagnostic}.
  *
  * <p>This is the one place (besides {@code testkit}, for tests) allowed to construct a concrete
- * {@code lexer.Lexer} and wire it into a {@code syntax.StatementSyntaxReader} — every stage in
+ * {@code lexer.Lexer} and wire it into a {@code parser.StatementSyntaxReader} — every stage in
  * between depends only on the {@code TokenSource}/{@code StatementSource} ports. {@link
  * #pipelineFor} is also where every per-version strategy ({@link KeywordTable}, {@link
  * TypeAnnotationTable}, {@link BinaryOperatorRules}, {@link ArithmeticOperators}, {@link

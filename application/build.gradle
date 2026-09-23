@@ -8,7 +8,7 @@ dependencies {
     api project(':analyzer')
     api project(':interpreter')
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    implementation project(':syntax')
+    implementation project(':ast')
     implementation project(':parser')
     implementation project(':semantics')
     implementation project(':typechecker')

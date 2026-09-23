@@ -1,7 +1,7 @@
 # Parser Module
 
-The parser module is the sole production implementation of `syntax.StatementSource`. It owns
-turning a token stream into the AST that [syntax](../syntax/ARCHITECTURE.md) defines — nothing
+The parser module is the sole production implementation of `ast.StatementSource`. It owns
+turning a token stream into the AST that [ast](../ast/ARCHITECTURE.md) defines — nothing
 else in this repo builds a tree.
 
 Responsibilities:
@@ -11,10 +11,11 @@ Responsibilities:
 - `SyntaxTreeBuilder` — drains a `StatementSource` into a fully materialized `ProgramSyntax`, for
   callers that want the whole tree at once instead of streaming statement-by-statement
 
-Split out from `syntax` on purpose. `formatter`, `interpreter`, and `analyzer` all walk the AST
-`syntax` defines, but none of them parse — they receive an already-built tree from `application`'s
+Split out from `ast` on purpose. `formatter`, `interpreter`, and `analyzer` all walk the AST
+`ast` defines, but none of them parse — they receive an already-built tree from `application`'s
 composition root, one statement at a time. Before this split, those three modules pulled in the
-parser transitively through `syntax` even though they never referenced it. Depending on `parser` at
+parser transitively through `ast` (then still named `syntax`) even though they never referenced
+it. Depending on `parser` at
 all is now a signal that a consumer builds trees, not just walks them; today that's only
 `application` (the composition root) and [testkit](../testkit/ARCHITECTURE.md) (test fixtures).
 

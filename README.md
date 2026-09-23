@@ -24,16 +24,17 @@ and 80% JaCoCo test coverage on every module (see [`justfile`](justfile) and
 
 Each module has its own `ARCHITECTURE.md` — responsibilities, dependencies, design rules, and
 pointers to the classes and tests worth reading first. Arrows below are the real Gradle dependency
-direction; the full graph (and why `lexer`/`syntax` don't depend on each other) is in
+direction; the full graph (and why `lexer`/`parser` don't depend on each other) is in
 [`docs/architecture.md`](docs/architecture.md#module-dependency-graph).
 
 | Module | Responsibility |
 |---|---|
 | [`source`](source/ARCHITECTURE.md) | Source-position/span value types. Zero dependencies. |
 | [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`). |
-| [`tokens`](tokens/ARCHITECTURE.md) | The token contract (`Token`, `TokenType`, `TokenSource`) shared by `lexer` and `syntax` without either depending on the other. |
+| [`tokens`](tokens/ARCHITECTURE.md) | The token-streaming contract (`Token`, `TokenType`, `TokenSource`, `SyntaxException`) shared by `lexer` and `parser` without either depending on the other. |
 | [`lexer`](lexer/ARCHITECTURE.md) | Scans source text into tokens (`Lexer`). |
-| [`syntax`](syntax/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |
+| [`types`](types/ARCHITECTURE.md) | The type-system vocabulary (`TypeName`, `TypeAnnotationTable`). Zero dependencies. |
+| [`ast`](ast/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |
 | [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`, `SyntaxTreeBuilder`) — the only production implementation of `StatementSource`. |
 | [`semantics`](semantics/ARCHITECTURE.md) | The result of semantic analysis (`SemanticModel`) and its vocabulary (`BuiltinRegistry`, `VariableSymbol`) — not the checker itself. |
 | [`typechecker`](typechecker/ARCHITECTURE.md) | Type checking, symbol resolution, builtin resolution (`SemanticContext`) — the sole production producer of a `SemanticModel`. |

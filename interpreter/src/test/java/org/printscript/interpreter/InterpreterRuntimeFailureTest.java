@@ -8,16 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.syntax.TypeAnnotationTable;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
 import org.printscript.testkit.TestSources;
 import org.printscript.tokens.TokenType;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
+import org.printscript.types.TypeAnnotationTable;
 
 class InterpreterRuntimeFailureTest {
   private static final InputPort FAILING_INPUT =
@@ -212,7 +212,7 @@ class InterpreterRuntimeFailureTest {
   @Test
   void numberValueReportsTheNumberTypeName() {
     assertEquals(
-        org.printscript.syntax.TypeName.NUMBER,
+        org.printscript.types.TypeName.NUMBER,
         new RuntimeValue.NumberValue(BigDecimal.ONE).type(),
         "expected the number type name");
   }
@@ -220,7 +220,7 @@ class InterpreterRuntimeFailureTest {
   @Test
   void stringValueReportsTheStringTypeName() {
     assertEquals(
-        org.printscript.syntax.TypeName.STRING,
+        org.printscript.types.TypeName.STRING,
         new RuntimeValue.StringValue("x").type(),
         "expected the string type name");
   }
@@ -228,7 +228,7 @@ class InterpreterRuntimeFailureTest {
   @Test
   void booleanValueReportsTheBooleanTypeName() {
     assertEquals(
-        org.printscript.syntax.TypeName.BOOLEAN,
+        org.printscript.types.TypeName.BOOLEAN,
         new RuntimeValue.BooleanValue(true).type(),
         "expected the boolean type name");
   }

@@ -12,7 +12,8 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Diagnostics Module](../diagnostics/ARCHITECTURE.md)
 - [Tokens Module](../tokens/ARCHITECTURE.md)
 - [Lexer Module](../lexer/ARCHITECTURE.md)
-- [Syntax Module](../syntax/ARCHITECTURE.md)
+- [Types Module](../types/ARCHITECTURE.md)
+- [AST Module](../ast/ARCHITECTURE.md)
 - [Parser Module](../parser/ARCHITECTURE.md)
 - [Semantics Module](../semantics/ARCHITECTURE.md)
 - [Typechecker Module](../typechecker/ARCHITECTURE.md)
@@ -39,43 +40,39 @@ graph TD
     application --> analyzer
     application --> interpreter
     application --> lexer
-    application --> syntax
+    application --> ast
     application --> parser
     application --> semantics
     application --> typechecker
-    interpreter --> syntax
+    interpreter --> ast
     interpreter --> semantics
-    formatter --> syntax
-    analyzer --> syntax
+    formatter --> ast
+    analyzer --> ast
     analyzer --> semantics
     typechecker --> semantics
-    semantics --> syntax
-    parser --> syntax
+    semantics --> ast
+    semantics --> types
+    parser --> ast
     parser --> tokens
-    syntax --> tokens
+    ast --> tokens
+    ast --> types
     lexer --> tokens
     tokens --> diagnostics
     diagnostics --> source
-    testkit -.test only.-> lexer
-    testkit -.test only.-> syntax
-    testkit -.test only.-> parser
-    interpreter -.test only.-> typechecker
-    analyzer -.test only.-> typechecker
 ```
 
-Notice `lexer` and `syntax` both depend on `tokens` but never on each other — that's deliberate, see
-[Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `syntax` and
-`typechecker` out of `semantics`: `formatter`/`interpreter`/`analyzer` walk the AST `syntax` defines
-and read a `SemanticModel`, but none of them build a tree or run the checker that produces one — so
-only `application` (the composition root) depends on `parser`/`typechecker` in production. `testkit`
-reaches `parser` (and `interpreter`/`analyzer` reach `typechecker`) only from their own test source
-sets, to build fixtures.
+Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,
+see [Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `ast`,
+`typechecker` out of `semantics`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
+walk the AST `ast` defines and read a `SemanticModel`, but none of them build a tree or run the
+checker that produces one. `types` has zero dependencies — pure vocabulary, no tree or stream
+shape attached.
 
 ## Pipeline data flow
 
 What actually happens when `application.PrintScript` runs a command, for the statements that make it
 through validation. Formatting instead reads token trivia off the same lexer/parser stages; see
-[Syntax Module](../syntax/ARCHITECTURE.md) for that second consumption path.
+[AST Module](../ast/ARCHITECTURE.md) for that second consumption path.
 
 ```mermaid
 flowchart LR
@@ -92,8 +89,8 @@ flowchart LR
 
 Six otherwise-unrelated "closed set of kinds" types across the core follow the same shape, so it's
 documented once here instead of six times: `tokens.TokenType`, `lexer.Punctuation`,
-`syntax.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
-`syntax.nodes.expressions.ExpressionSyntax` / `syntax.nodes.statements.StatementSyntax`. Each is
+`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
+`ast.nodes.expressions.ExpressionSyntax` / `ast.nodes.statements.StatementSyntax`. Each is
 modeled as an interface with one singleton constant (or sealed subtype) per kind and an
 `accept(XVisitor<R>)` method, rather than a Java `enum` with a `switch`.
 

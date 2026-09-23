@@ -1,8 +1,8 @@
 package org.printscript.typechecker;
 
 import java.util.Optional;
-import org.printscript.syntax.TypeName;
 import org.printscript.tokens.TokenType;
+import org.printscript.types.TypeName;
 
 /**
  * The single source of truth for what result type, if any, a binary operator produces given its

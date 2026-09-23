@@ -7,14 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.syntax.TypeName;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
 import org.printscript.tokens.SyntaxException;
+import org.printscript.types.TypeName;
 
 class ParserV11Test {
   private static final String SOURCE_IF_WITHOUT_ELSE =

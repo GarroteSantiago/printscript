@@ -5,12 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.statements.AssignmentSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.statements.AssignmentSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
 import org.printscript.tokens.TokenType;
 

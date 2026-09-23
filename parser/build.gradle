@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    api project(':syntax')
+    api project(':ast')
     api project(':tokens')
     testImplementation project(':testkit')
 }

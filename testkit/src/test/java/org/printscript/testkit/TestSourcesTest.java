@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 
 class TestSourcesTest {
   @Test

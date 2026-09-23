@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.syntax.TypeAnnotationTable;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
+import org.printscript.types.TypeAnnotationTable;
 
 class StaticAnalyzerV11Test {
   private List<Diagnostic> analyze(String source, AnalyzerConfig config) {

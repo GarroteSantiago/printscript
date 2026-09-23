@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.printscript.syntax.TypeName;
 import org.printscript.tokens.TokenType;
+import org.printscript.types.TypeName;
 
 class BinaryOperatorRulesTest {
   private final BinaryOperatorRules rules = BinaryOperatorRules.v1();

@@ -1,11 +1,11 @@
 package org.printscript.testkit;
 
+import org.printscript.ast.StatementSource;
+import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
 import org.printscript.parser.SyntaxTreeBuilder;
-import org.printscript.syntax.StatementSource;
-import org.printscript.syntax.nodes.ProgramSyntax;
 
 /**
  * Test-only helper that centralizes "turn this string into pipeline data" — the {@code new

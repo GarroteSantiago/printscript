@@ -1,25 +1,25 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionVisitor;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.ast.nodes.statements.AssignmentSyntax;
+import org.printscript.ast.nodes.statements.BlockStatementSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.ast.nodes.statements.StatementVisitor;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.TypeName;
-import org.printscript.syntax.TypeNameVisitor;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.syntax.nodes.statements.AssignmentSyntax;
-import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementVisitor;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.types.TypeName;
+import org.printscript.types.TypeNameVisitor;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link

@@ -10,7 +10,7 @@ Responsibilities:
 Design rules:
 
 - Depend only on `tokens` (`requires transitive`, since `Lexer implements TokenSource` is part of
-  this module's public API). Never depend on `syntax` — `syntax` depends on `tokens`, the same as
+  this module's public API). Never depend on `parser` — `parser` depends on `tokens`, the same as
   this module does, and the two must not depend on each other.
 - Consumers (the composition root in [application](../application/ARCHITECTURE.md), or
   [testkit](../testkit/ARCHITECTURE.md) for tests) construct a concrete `Lexer` and hand it to

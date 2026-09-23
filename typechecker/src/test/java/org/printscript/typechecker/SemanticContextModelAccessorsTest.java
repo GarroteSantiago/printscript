@@ -5,19 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.semantics.BuiltinSignature;
 import org.printscript.semantics.SemanticModel;
 import org.printscript.semantics.VariableSymbol;
-import org.printscript.syntax.TypeAnnotationTable;
-import org.printscript.syntax.TypeName;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
+import org.printscript.types.TypeAnnotationTable;
+import org.printscript.types.TypeName;
 
 class SemanticContextModelAccessorsTest {
   @Test

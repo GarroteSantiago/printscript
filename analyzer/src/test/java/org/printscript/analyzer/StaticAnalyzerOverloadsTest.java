@@ -5,14 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.syntax.TypeAnnotationTable;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticModelBuilder;
+import org.printscript.types.TypeAnnotationTable;
 
 class StaticAnalyzerOverloadsTest {
   @Test

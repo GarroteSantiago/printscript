@@ -1,7 +1,7 @@
 package org.printscript.interpreter;
 
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
 
 /** What a {@link BuiltinBehavior} needs from the interpreter to do its work. */
 public interface BuiltinRuntimeContext {

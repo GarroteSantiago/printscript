@@ -2,9 +2,9 @@ package org.printscript.parser;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.printscript.syntax.StatementSource;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.ast.StatementSource;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 
 /**
  * Drains a {@link StatementSource} into a fully materialized {@link ProgramSyntax}. The production
