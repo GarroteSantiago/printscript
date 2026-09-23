@@ -9,7 +9,7 @@ import org.printscript.types.TypeName;
  * operand types — an absent result means the combination is a type error. {@code
  * interpreter.Interpreter} deliberately does not reimplement this decision at runtime; it only acts
  * on the {@link TypeName} this rule already assigned during validation (via {@link
- * org.printscript.semantics.SemanticModel#typeOf}). If a change is tempted at the interpreter level
+ * org.printscript.typetable.SemanticModel#typeOf}). If a change is tempted at the interpreter level
  * to decide operator behavior from runtime values, it almost certainly belongs here instead.
  */
 @FunctionalInterface

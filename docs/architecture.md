@@ -15,7 +15,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Types Module](../types/ARCHITECTURE.md)
 - [AST Module](../ast/ARCHITECTURE.md)
 - [Parser Module](../parser/ARCHITECTURE.md)
-- [Semantics Module](../semantics/ARCHITECTURE.md)
+- [Typetable Module](../typetable/ARCHITECTURE.md)
 - [Typechecker Module](../typechecker/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
@@ -42,16 +42,16 @@ graph TD
     application --> lexer
     application --> ast
     application --> parser
-    application --> semantics
+    application --> typetable
     application --> typechecker
     interpreter --> ast
-    interpreter --> semantics
+    interpreter --> typetable
     formatter --> ast
     analyzer --> ast
-    analyzer --> semantics
-    typechecker --> semantics
-    semantics --> ast
-    semantics --> types
+    analyzer --> typetable
+    typechecker --> typetable
+    typetable --> ast
+    typetable --> types
     parser --> ast
     parser --> tokens
     ast --> tokens
@@ -63,7 +63,7 @@ graph TD
 
 Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,
 see [Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `ast`,
-`typechecker` out of `semantics`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
+`typechecker` out of `typetable`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
 walk the AST `ast` defines and read a `SemanticModel`, but none of them build a tree or run the
 checker that produces one. `types` has zero dependencies — pure vocabulary, no tree or stream
 shape attached.

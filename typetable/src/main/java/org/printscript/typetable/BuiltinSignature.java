@@ -1,7 +1,7 @@
-package org.printscript.semantics;
+package org.printscript.typetable;
 
 import java.util.List;
-import org.printscript.syntax.TypeName;
+import org.printscript.types.TypeName;
 
 public record BuiltinSignature(
     String name,

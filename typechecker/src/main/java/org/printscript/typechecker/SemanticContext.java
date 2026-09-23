@@ -19,12 +19,12 @@ import org.printscript.ast.nodes.statements.StatementVisitor;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.BuiltinSignature;
-import org.printscript.semantics.SemanticModel;
-import org.printscript.semantics.VariableSymbol;
 import org.printscript.types.TypeAnnotationTable;
 import org.printscript.types.TypeName;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.BuiltinSignature;
+import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.VariableSymbol;
 
 /**
  * Immutable symbol table plus the per-statement type checker. {@link #validate} never mutates

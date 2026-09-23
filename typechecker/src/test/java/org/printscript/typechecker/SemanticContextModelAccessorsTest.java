@@ -11,13 +11,13 @@ import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.BuiltinSignature;
-import org.printscript.semantics.SemanticModel;
-import org.printscript.semantics.VariableSymbol;
 import org.printscript.testkit.TestSources;
 import org.printscript.types.TypeAnnotationTable;
 import org.printscript.types.TypeName;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.BuiltinSignature;
+import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.VariableSymbol;
 
 class SemanticContextModelAccessorsTest {
   @Test

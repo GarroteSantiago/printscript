@@ -9,7 +9,7 @@ Responsibilities:
 - configurable analyzer rules
 - exact source positions for findings
 
-Semantic correctness belongs in the semantics module. The analyzer should focus on style and policy.
+Semantic correctness belongs to [typechecker](../typechecker/ARCHITECTURE.md)/[typetable](../typetable/ARCHITECTURE.md). The analyzer should focus on style and policy.
 
 Example rules:
 

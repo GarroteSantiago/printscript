@@ -2,9 +2,9 @@ package org.printscript.typechecker;
 
 import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.statements.StatementSyntax;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticModel;
 import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
 
 /**
  * Whole-program convenience over {@link SemanticContext#validate}: folds a {@link ProgramSyntax}'s

@@ -19,7 +19,7 @@ include(
     'types',
     'ast',
     'parser',
-    'semantics',
+    'typetable',
     'typechecker',
     'interpreter',
     'formatter',

@@ -7,9 +7,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.diagnostics.Diagnostic;
-import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
+import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerTest {
   private List<Diagnostic> diagnostics;

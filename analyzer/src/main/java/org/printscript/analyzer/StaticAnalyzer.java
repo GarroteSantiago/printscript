@@ -19,13 +19,13 @@ import org.printscript.ast.nodes.statements.StatementVisitor;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticModel;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
 
 /**
  * Runs style/policy checks over already-validated statements — identifier naming (via the swappable
  * {@link NamingStyleRules}, default {@link NamingStyleRules#v1()}) and argument-shape restrictions
- * on {@code println}/{@code readInput} calls. Deliberately separate from {@code semantics}: type
+ * on {@code println}/{@code readInput} calls. Deliberately separate from {@code typetable}: type
  * errors and undeclared variables are correctness, decided once and recorded in {@link
  * SemanticModel}; this class only judges style and policy on top of an already-valid program, and
  * reads {@link SemanticModel#resolveCall} rather than re-resolving which builtin a call targets.

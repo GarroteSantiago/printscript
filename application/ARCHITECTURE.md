@@ -15,9 +15,9 @@ Responsibilities:
 - pass immutable config objects to tools
 - coordinate progress reporting
 - collect diagnostics
-- orchestrate ast, types, semantics, interpreter, formatter, and analyzer
+- orchestrate ast, types, typetable, interpreter, formatter, and analyzer
 - own `CommandResult`, `LanguageVersion`, and `ProgressReporter` — these are orchestration-only
-  concepts, used nowhere in the language core (lexer, ast, types, semantics, interpreter, formatter,
+  concepts, used nowhere in the language core (lexer, ast, types, typetable, interpreter, formatter,
   analyzer), so they belong to the module that actually uses them rather than a shared foundation
   module
 

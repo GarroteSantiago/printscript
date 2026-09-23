@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticModel;
 import org.printscript.testkit.TestSources;
 import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
 
 class SemanticContextDeclarationTest {
   private SemanticModel build(String source) {

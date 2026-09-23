@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticModelBuilder;
 import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerOverloadsTest {
   @Test

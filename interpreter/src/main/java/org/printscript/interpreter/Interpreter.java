@@ -17,9 +17,9 @@ import org.printscript.ast.nodes.statements.StatementVisitor;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
-import org.printscript.semantics.SemanticModel;
 import org.printscript.types.TypeName;
 import org.printscript.types.TypeNameVisitor;
+import org.printscript.typetable.SemanticModel;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link

@@ -1,14 +1,14 @@
-package org.printscript.semantics;
+package org.printscript.typetable;
 
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionSyntax;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.diagnostics.Diagnostic;
-import org.printscript.syntax.TypeName;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.types.TypeName;
 
 /**
  * The record of decisions {@link SemanticContext} made while validating a statement: each

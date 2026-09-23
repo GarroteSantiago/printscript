@@ -1,7 +1,7 @@
 # Typechecker Module
 
 The typechecker module is the sole production implementation of semantic analysis: it turns an AST
-statement into a [semantics](../semantics/ARCHITECTURE.md) `SemanticModel`, or a diagnostic
+statement into a [typetable](../typetable/ARCHITECTURE.md) `SemanticModel`, or a diagnostic
 explaining why it couldn't.
 
 Responsibilities:
@@ -22,11 +22,12 @@ Responsibilities:
   decision at runtime; it only acts on the `TypeName` this rule already assigned during validation
   (via `SemanticModel.typeOf`).
 
-Split out from `semantics` on purpose. `interpreter` and `analyzer` both need to read a
-`SemanticModel` — neither one re-derives a type decision or a symbol resolution — but neither one
-runs the checker itself; they receive an already-validated model from `application`'s composition
-root. Before this split, both modules pulled in `SemanticContext`/`SemanticModelBuilder`/
-`BinaryOperatorRules` transitively through `semantics` even though neither referenced them.
+Split out from `typetable` (then still named `semantics`) on purpose. `interpreter` and `analyzer`
+both need to read a `SemanticModel` — neither one re-derives a type decision or a symbol
+resolution — but neither one runs the checker itself; they receive an already-validated model from
+`application`'s composition root. Before this split, both modules pulled in
+`SemanticContext`/`SemanticModelBuilder`/`BinaryOperatorRules` transitively through that module
+even though neither referenced them.
 Depending on `typechecker` at all is now a signal that a consumer runs analysis, not just reads its
 result; today that's only `application` (composition root) and, for test fixtures that build a model
 directly, `interpreter`'s and `analyzer`'s own test source sets.

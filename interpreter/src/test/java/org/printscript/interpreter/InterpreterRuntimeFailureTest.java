@@ -12,12 +12,12 @@ import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.semantics.BuiltinRegistry;
 import org.printscript.testkit.TestSources;
 import org.printscript.tokens.TokenType;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
 import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
 
 class InterpreterRuntimeFailureTest {
   private static final InputPort FAILING_INPUT =

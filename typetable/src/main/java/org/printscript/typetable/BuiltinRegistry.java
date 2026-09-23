@@ -1,8 +1,8 @@
-package org.printscript.semantics;
+package org.printscript.typetable;
 
 import java.util.Map;
 import java.util.Optional;
-import org.printscript.syntax.TypeName;
+import org.printscript.types.TypeName;
 
 /**
  * Maps a callable name (`println`, `readInput`, `readEnv`) to its {@link BuiltinSignature} for a

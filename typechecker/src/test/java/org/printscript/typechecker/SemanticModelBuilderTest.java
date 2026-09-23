@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticModel;
 import org.printscript.testkit.TestSources;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
 
 class SemanticModelBuilderTest {
   private SemanticModel semanticModel;
