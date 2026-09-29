@@ -2,14 +2,12 @@ package org.printscript.repl;
 
 import java.util.List;
 import java.util.function.Consumer;
-import org.printscript.ast.StatementSource;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.interpreter.ArithmeticOperators;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
 import org.printscript.interpreter.RuntimeFailure;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
 import org.printscript.typetable.ValidatedStatement;
@@ -23,17 +21,17 @@ import org.printscript.typetable.ValidatedStatement;
  * variables holding onto those values between calls, the same role a REPL driver plays in any
  * language with an immutable core (e.g. GHCi holding the current typing context between commands).
  *
- * <p>{@link #step} evaluates exactly one statement pulled from a caller-supplied {@link
- * StatementSource} and never throws: a syntax error, a semantic error, or a runtime failure are all
- * reported as diagnostics, and the session's state is left exactly as it was before the failing
- * statement — the same "a failed statement never contributes symbols" rule {@code SemanticContext}
- * already documents for batch validation.
+ * <p>{@link #step} validates and executes one already-parsed {@code statement} and never throws: a
+ * semantic error or a runtime failure is reported as diagnostics, and the session's state is left
+ * exactly as it was before the failing statement — the same "a failed statement never contributes
+ * symbols" rule {@code SemanticContext} already documents for batch validation.
  *
- * <p>One known rough edge: after a syntax error, the underlying {@code StatementSyntaxReader}'s
- * one-token lookahead may not be sitting cleanly at the next statement's first token, so a badly
- * malformed line can cascade into a second, spurious diagnostic before the session recovers. The
- * language core deliberately has no parser recovery for batch compilation; a REPL that resyncs
- * perfectly after any malformed input is future work, not required for a first working REPL.
+ * <p>Parsing is deliberately not this class's job: a syntax error can leave the {@code
+ * StatementSyntaxReader}/{@code Lexer} pair that produced the statement in a cursor state that
+ * cannot safely be pulled from again (its one-token lookahead can get stuck re-failing on the same
+ * token forever). Recovering from that means discarding and rebuilding that pair over the same
+ * underlying {@code Reader} — a decision only {@link Repl}, which owns their construction, can
+ * make. This class only ever receives a {@link StatementSyntax} that already parsed successfully.
  */
 public final class ReplSession {
   private final Interpreter interpreter;
@@ -51,18 +49,11 @@ public final class ReplSession {
   }
 
   /**
-   * Parses, validates, and executes one statement pulled from {@code statements}. Caller must have
-   * already checked {@code statements.hasNext()}. Returns an empty list on success; a non-empty
-   * list of diagnostics on any failure, with the session's state unchanged.
+   * Validates and executes one already-parsed {@code statement}. Returns an empty list on success;
+   * a non-empty list of diagnostics on a semantic or runtime failure, with the session's state
+   * unchanged.
    */
-  public List<Diagnostic> step(StatementSource statements) {
-    StatementSyntax statement;
-    try {
-      statement = statements.next();
-    } catch (SyntaxException exception) {
-      return List.of(exception.diagnostic());
-    }
-
+  public List<Diagnostic> step(StatementSyntax statement) {
     SemanticStatementResult validated = context.validate(statement);
     if (!validated.isSuccess()) {
       return validated.diagnostics();

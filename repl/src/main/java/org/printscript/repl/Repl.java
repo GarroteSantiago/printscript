@@ -6,10 +6,12 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.printscript.ast.StatementSource;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
+import org.printscript.tokens.SyntaxException;
 
 /**
  * The REPL adapter: a second, thin composition root alongside {@code cli}, reading statements
@@ -21,6 +23,21 @@ import org.printscript.parser.StatementSyntaxReader;
  * Interpreter#executeAll}) those methods already build on internally, so it composes them itself
  * instead of asking {@code toolchain} to grow a new, REPL-specific API. All session state (see
  * {@link ReplSession}) lives here, never in the language core.
+ *
+ * <p>This class, not {@link ReplSession}, owns the {@code Lexer}/{@code StatementSyntaxReader} pair
+ * and is responsible for recovering after a syntax error: {@code StatementSyntaxReader}'s one-token
+ * lookahead can be left sitting on a token that can't start any statement, and re-parsing from that
+ * same spot would just fail identically forever rather than reaching the next valid statement (or
+ * real EOF). Recovery only rebuilds the {@code StatementSyntaxReader} wrapper, not the {@code
+ * Lexer} underneath it: the {@code Lexer} itself is still perfectly positioned to keep scanning
+ * right after the character that failed it (it always reads one character past whatever it just
+ * classified, including a rejected one, before throwing) — discarding it too, and building a brand
+ * new one over the same {@code Reader}, would needlessly throw away that position and lose more of
+ * the remaining input than necessary. Even so, the {@code StatementSyntaxReader}'s own
+ * already-fetched lookahead tokens are lost on every rebuild, so a single malformed statement can
+ * still cost a few subsequent tokens before the read loop resynchronizes — the read loop is
+ * guaranteed to make forward progress and eventually reach real EOF, never to hang, but is not a
+ * lossless recovery.
  */
 public final class Repl {
   private static final String PROMPT = "ps> ";
@@ -44,11 +61,23 @@ public final class Repl {
     out.print(PROMPT);
     out.flush();
 
-    StatementSource statements = new StatementSyntaxReader(new Lexer(input, keywords));
+    Lexer lexer = new Lexer(input, keywords);
+    StatementSource statements = new StatementSyntaxReader(lexer);
     ReplSession session = new ReplSession(v11, out::println);
 
     while (statements.hasNext()) {
-      List<Diagnostic> diagnostics = session.step(statements);
+      StatementSyntax statement;
+      try {
+        statement = statements.next();
+      } catch (SyntaxException exception) {
+        err.println(render(exception.diagnostic()));
+        statements = new StatementSyntaxReader(lexer);
+        out.print(PROMPT);
+        out.flush();
+        continue;
+      }
+
+      List<Diagnostic> diagnostics = session.step(statement);
       for (Diagnostic diagnostic : diagnostics) {
         err.println(render(diagnostic));
       }

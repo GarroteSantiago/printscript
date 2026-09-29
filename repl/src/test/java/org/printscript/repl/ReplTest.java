@@ -7,7 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 class ReplTest {
   private record RunResult(String out, String err) {}
@@ -75,5 +77,46 @@ class ReplTest {
     assertTrue(
         result.out().contains("block"),
         "expected a block statement spanning several lines of the reader to execute");
+  }
+
+  private RunResult runProgramWithAStandaloneUnrecognizedCharacter() {
+    return run("let x: number = 1;\n@\nprintln(\"after\");\n", false);
+  }
+
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  public void aStandaloneUnrecognizedCharacterIsReportedAsADiagnostic() {
+    assertTrue(
+        runProgramWithAStandaloneUnrecognizedCharacter().err().contains("Unexpected character"),
+        "expected the bad character to be reported, not silently swallowed");
+  }
+
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  public void theStatementAfterAStandaloneUnrecognizedCharacterStillRuns() {
+    assertTrue(
+        runProgramWithAStandaloneUnrecognizedCharacter().out().contains("after"),
+        "expected the next statement, on its own line after the bad character, to still run");
+  }
+
+  /**
+   * A syntax error embedded inside a multi-token compound statement (here, a `>` the grammar
+   * doesn't support, inside an `if` condition) is a much harder case: recovering from it can cost
+   * several subsequent tokens — occasionally an entire following statement — before the read loop
+   * resynchronizes, because {@code StatementSyntaxReader}'s already-fetched lookahead is lost on
+   * every failed resync attempt and there is no way to ask it to back up rather than discard. What
+   * is guaranteed regardless is that the loop always terminates rather than hanging, which is what
+   * this asserts via a timeout; see {@link Repl}'s class doc for why this is not a full recovery
+   * guarantee.
+   */
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  public void aSyntaxErrorInsideAMultiTokenStatementNeverHangsTheSession() {
+    RunResult result =
+        run("let a: number = 7;\nif (a > 3) { println(\"x\"); }\nprintln(\"done\");\n", true);
+
+    assertTrue(
+        result.err().contains("Unexpected character"),
+        "expected the malformed condition to be reported: " + result.err());
   }
 }

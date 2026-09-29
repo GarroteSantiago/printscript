@@ -21,11 +21,13 @@ Responsibilities:
 
 - `Repl`: the composition root and entry point (`main`). Wires a `Reader`/`PrintStream` trio —
   `System.in`/`System.out`/`System.err` in production, in-memory streams in tests — into a
-  persistent `Lexer`/`StatementSyntaxReader` pair and a `ReplSession`, and drives the prompt loop.
+  persistent `Lexer` and a `ReplSession`, and drives the prompt loop. Also owns syntax-error
+  recovery (see below); parsing is not `ReplSession`'s job precisely because that recovery decision
+  belongs to whoever constructs the `Lexer`/`StatementSyntaxReader` pair.
 - `ReplSession`: owns the `SemanticContext`/`RuntimeEnvironment` state across statements. `step`
-  parses, validates, and executes exactly one statement and never throws — a syntax error, a
-  semantic error, or a runtime failure are all reported as diagnostics, with the session's state
-  left exactly as it was before the failing statement.
+  takes one already-parsed statement, validates and executes it, and never throws — a semantic
+  error or a runtime failure is reported as diagnostics, with the session's state left exactly as
+  it was before the failing statement.
 - `SingleValidatedStatementSource`: adapts one already-validated statement into the
   `typetable.ValidatedStatementSource` port `Interpreter#executeAll` expects, so `ReplSession` can
   execute one statement at a time through that exact same public entry point instead of needing a
@@ -36,11 +38,23 @@ several typed lines) is handled for free: the parser's lookahead simply blocks f
 that `Reader` exactly as it already does for `toolchain.PrintScript` reading a whole file — no
 REPL-specific buffering logic was needed for this.
 
-Known rough edge: after a syntax error, the underlying `StatementSyntaxReader`'s one-token lookahead
-may not be sitting cleanly at the next statement's first token, so a badly malformed line can
-cascade into a second, spurious diagnostic before the session recovers. The language core
-deliberately has no parser recovery for batch compilation; a REPL that resyncs perfectly after any
-malformed input is future work.
+**Syntax-error recovery and its limits.** A naive REPL that just kept calling `next()` on the same
+`StatementSyntaxReader` after a syntax error would hang forever: that reader's one-token lookahead
+can get stuck sitting on a token that can't start any statement, so every subsequent call throws the
+identical exception without ever advancing — verified directly, this is not a hypothetical. `Repl`
+recovers by rebuilding the `StatementSyntaxReader` wrapper (not the `Lexer` underneath it — the
+`Lexer` is always left correctly positioned right after whatever character failed it, so discarding
+it too would lose more input than necessary) on every syntax error, which guarantees the read loop
+always makes forward progress and eventually reaches real EOF. This is not a lossless recovery,
+though: a simple, self-contained bad token (a stray character forming its own malformed
+"statement") recovers cleanly, with the next statement running normally. A syntax error embedded
+inside a multi-token compound statement (e.g. an unsupported operator inside an `if` condition) can
+cost several subsequent tokens — occasionally an entire following statement — before the loop
+resynchronizes, because each rebuild discards whatever lookahead the previous attempt had already
+fetched, and there's no way to ask the parser to back up rather than discard. Actually fixing that
+would mean giving `parser.StatementSyntaxReader` some form of external resynchronization, which
+conflicts with the language core's stated "no parser recovery" design and would need to be decided
+at that level, not patched around here.
 
 Representative tests: `src/test/java/org/printscript/repl/ReplSessionTest.java` (state threading,
 error recovery), `src/test/java/org/printscript/repl/ReplTest.java` (the full loop over in-memory

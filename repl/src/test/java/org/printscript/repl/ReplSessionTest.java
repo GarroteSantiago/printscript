@@ -20,7 +20,7 @@ class ReplSessionTest {
     ReplSession session = new ReplSession(false, output::add);
     StatementSource statements = TestSources.statementsOf("let x: number = 1;");
 
-    List<Diagnostic> diagnostics = session.step(statements);
+    List<Diagnostic> diagnostics = session.step(statements.next());
 
     assertTrue(diagnostics.isEmpty(), "expected no diagnostics for a valid declaration");
   }
@@ -33,8 +33,8 @@ class ReplSessionTest {
     ReplSession session = new ReplSession(false, output::add);
     StatementSource statements = TestSources.statementsOf("let x: number = 5; println(x + 1);");
 
-    List<Diagnostic> first = session.step(statements);
-    List<Diagnostic> second = session.step(statements);
+    List<Diagnostic> first = session.step(statements.next());
+    List<Diagnostic> second = session.step(statements.next());
 
     return new VariablePersistenceResult(first, second, output);
   }
@@ -72,9 +72,9 @@ class ReplSessionTest {
     StatementSource statements =
         TestSources.statementsOf("let x: string = 1; let y: number = 2; println(y);");
 
-    List<Diagnostic> failed = session.step(statements);
-    List<Diagnostic> recovered = session.step(statements);
-    List<Diagnostic> third = session.step(statements);
+    List<Diagnostic> failed = session.step(statements.next());
+    List<Diagnostic> recovered = session.step(statements.next());
+    List<Diagnostic> third = session.step(statements.next());
 
     return new SemanticErrorResult(failed, recovered, third, output);
   }
@@ -127,9 +127,9 @@ class ReplSessionTest {
     StatementSource statements =
         TestSources.statementsOf("let x: number = 10; let y: number = 1 / 0; println(x);");
 
-    List<Diagnostic> declared = session.step(statements);
-    List<Diagnostic> failed = session.step(statements);
-    List<Diagnostic> after = session.step(statements);
+    List<Diagnostic> declared = session.step(statements.next());
+    List<Diagnostic> failed = session.step(statements.next());
+    List<Diagnostic> after = session.step(statements.next());
 
     return new RuntimeFailureResult(declared, failed, after, output);
   }
@@ -179,7 +179,7 @@ class ReplSessionTest {
     StatementSource statements =
         TestSources.statementsOf("if (true) { println(\"yes\"); }", KeywordTable.v1_1());
 
-    List<Diagnostic> diagnostics = session.step(statements);
+    List<Diagnostic> diagnostics = session.step(statements.next());
 
     return new BlockStatementResult(diagnostics, output);
   }
