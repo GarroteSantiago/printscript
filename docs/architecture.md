@@ -4,7 +4,7 @@ This document is the entrypoint for the architecture notes. Start at the [root R
 for build/run instructions and a quick module index; come here for the design rules and the module
 dependency graph that don't fit a one-line summary.
 
-PrintScript should be built as a small language core surrounded by replaceable interaction adapters. The current adapter is the CLI, but the core must not depend on CLI concepts. Future adapters could be a REST API, editor plugin, web UI, Gradle plugin, or language server.
+PrintScript should be built as a small language core surrounded by replaceable interaction adapters. The current adapters are the CLI and the REPL, but the core must not depend on either's concepts. Future adapters could be a REST API, editor plugin, web UI, Gradle plugin, or language server.
 
 ## Architecture Notes
 
@@ -22,6 +22,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Analyzer Module](../analyzer/ARCHITECTURE.md)
 - [Toolchain Module](../toolchain/ARCHITECTURE.md)
 - [CLI Module](../cli/ARCHITECTURE.md)
+- [REPL Module](../repl/ARCHITECTURE.md)
 - [Testkit Module](../testkit/ARCHITECTURE.md)
 
 See also [findings-review.md](findings-review.md) for known, not-yet-fixed inconsistencies between
@@ -40,10 +41,20 @@ needs the type in scope. `cli` used to also depend on `interpreter` directly, ju
 `toolchain`'s own `InputSource`/`EnvironmentSource` ports (mirroring `ProgressReporter`), adapted
 internally, so that edge is gone.
 
+`repl` is a second adapter that deliberately does *not* depend on `toolchain`: `toolchain.PrintScript`
+only exposes whole-program operations, with no way to get a `SemanticContext`/`RuntimeEnvironment`
+back out between statements, which a REPL needs. Rather than growing `toolchain` a REPL-specific
+stateful API, `repl` is its own thin composition root straight over the language core, the same way
+`toolchain` itself is — see [REPL Module](../repl/ARCHITECTURE.md).
+
 ```mermaid
 graph TD
     cli["cli (adapter)"] --> toolchain
     cli --> diagnostics
+    repl["repl (adapter)"] --> lexer
+    repl --> parser
+    repl --> typechecker
+    repl --> interpreter
     toolchain --> formatter
     toolchain --> analyzer
     toolchain --> interpreter

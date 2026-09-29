@@ -43,6 +43,7 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | [`analyzer`](analyzer/ARCHITECTURE.md) | Configurable style/policy checks on top of an already-valid program (`StaticAnalyzer`). |
 | [`toolchain`](toolchain/ARCHITECTURE.md) | The composition root and public facade (`PrintScript`), CLI-independent. |
 | [`cli`](cli/ARCHITECTURE.md) | The command-line adapter (`App`) — the only module allowed to depend on `toolchain`. |
+| [`repl`](repl/ARCHITECTURE.md) | The interactive read-eval-print-loop adapter (`Repl`) — a second, thin composition root straight over the language core, since it needs per-statement state `toolchain.PrintScript` doesn't expose. |
 | [`testkit`](testkit/ARCHITECTURE.md) | Test-only helper for turning a string into pipeline data (`TestSources`). |
 
 ## Building, testing, running
@@ -64,6 +65,10 @@ just run "execute --source=path/to/file.pisp --version=1.0"
 just run "format --source=path/to/file.pisp --version=1.0"
 just run "analyze --source=path/to/file.pisp --version=1.0 --config=path/to/config.json"
 just run "validate --source=path/to/file.pisp --version=1.0"
+
+# Run the interactive REPL (pass "1.1" for v1.1, defaults to v1.0):
+./gradlew :repl:run --console=plain -q
+./gradlew :repl:run --console=plain -q --args="1.1"
 ```
 
 `format`/`analyze` take a JSON config file — see

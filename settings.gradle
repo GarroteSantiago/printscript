@@ -26,5 +26,6 @@ include(
     'analyzer',
     'toolchain',
     'cli',
+    'repl',
     'testkit'
 )

@@ -1,0 +1,19 @@
+plugins {
+    id 'buildlogic.java-application-conventions'
+}
+
+dependencies {
+    implementation project(':lexer')
+    implementation project(':parser')
+    implementation project(':typechecker')
+    implementation project(':interpreter')
+    testImplementation project(':testkit')
+}
+
+application {
+    mainClass = 'org.printscript.repl.Repl'
+}
+
+tasks.named('run', JavaExec) {
+    standardInput = System.in
+}
