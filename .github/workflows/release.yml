@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.2.0 or v1.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  tag:
+    name: Create tag & GitHub release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.normalize.outputs.tag }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Normalize and validate version
+        id: normalize
+        run: |
+          v="${{ inputs.version }}"
+          v="${v#v}"
+          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'${{ inputs.version }}' is not a valid version (expected X.Y.Z or vX.Y.Z)"
+            exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure tag doesn't already exist
+        run: |
+          if git rev-parse "${{ steps.normalize.outputs.tag }}" >/dev/null 2>&1; then
+            echo "::error::Tag ${{ steps.normalize.outputs.tag }} already exists"
+            exit 1
+          fi
+
+      - name: Bump build.gradle version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          sed -i "s/version = '.*'/version = '${{ steps.normalize.outputs.version }}'/" build.gradle
+          if git diff --quiet -- build.gradle; then
+            echo "build.gradle already at ${{ steps.normalize.outputs.version }}, nothing to commit."
+          else
+            git add build.gradle
+            git commit -m "chore(release): bump version to ${{ steps.normalize.outputs.version }}"
+            git push origin HEAD:main
+          fi
+
+      - name: Create and push tag
+        run: |
+          git tag -a "${{ steps.normalize.outputs.tag }}" -m "Release ${{ steps.normalize.outputs.tag }}"
+          git push origin "${{ steps.normalize.outputs.tag }}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.normalize.outputs.tag }}" \
+            --title "${{ steps.normalize.outputs.tag }}" \
+            --generate-notes
+
+  publish:
+    name: Publish
+    needs: tag
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
