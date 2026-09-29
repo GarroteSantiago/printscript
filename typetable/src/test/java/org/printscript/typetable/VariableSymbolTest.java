@@ -19,23 +19,23 @@ class VariableSymbolTest {
   }
 
   @Test
-  void nameReturnsTheConstructedName() {
+  public void nameReturnsTheConstructedName() {
     assertEquals("x", symbol().name(), "expected name() to return the constructed value");
   }
 
   @Test
-  void typeReturnsTheConstructedType() {
+  public void typeReturnsTheConstructedType() {
     assertEquals(
         TypeName.NUMBER, symbol().type(), "expected type() to return the constructed value");
   }
 
   @Test
-  void mutableReturnsTheConstructedMutability() {
+  public void mutableReturnsTheConstructedMutability() {
     assertFalse(symbol().mutable(), "expected a 'let' declaration to resolve to immutable");
   }
 
   @Test
-  void declarationReturnsTheConstructedDeclarationSite() {
+  public void declarationReturnsTheConstructedDeclarationSite() {
     VariableDeclarationSyntax declaration = declaration();
 
     assertSame(

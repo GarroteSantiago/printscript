@@ -16,7 +16,7 @@ import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerOverloadsTest {
   @Test
-  void programOverloadAnalyzesEveryStatementInTheProgram() {
+  public void programOverloadAnalyzesEveryStatementInTheProgram() {
     var program = TestSources.programOf("let badName: string = \"x\";\nprintln(badName);");
     var model = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
 
@@ -27,7 +27,7 @@ class StaticAnalyzerOverloadsTest {
   }
 
   @Test
-  void statementOverloadReturnsCollectedDiagnostics() {
+  public void statementOverloadReturnsCollectedDiagnostics() {
     var statement = TestSources.statementsOf("let badName: string = \"x\";").next();
     var semantic = SemanticContext.empty(BuiltinRegistry.v1()).validate(statement);
 
@@ -40,7 +40,7 @@ class StaticAnalyzerOverloadsTest {
   }
 
   @Test
-  void blockStatementOverloadAnalyzesNestedStatementsDirectly() {
+  public void blockStatementOverloadAnalyzesNestedStatementsDirectly() {
     var statements =
         TestSources.statementsOf(
             """

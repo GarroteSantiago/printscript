@@ -6,22 +6,22 @@ import org.junit.jupiter.api.Test;
 
 class TypeNameTest {
   @Test
-  void numberToStringIsNumber() {
+  public void numberToStringIsNumber() {
     assertEquals("NUMBER", TypeName.NUMBER.toString(), "expected the NUMBER constant's name");
   }
 
   @Test
-  void stringToStringIsString() {
+  public void stringToStringIsString() {
     assertEquals("STRING", TypeName.STRING.toString(), "expected the STRING constant's name");
   }
 
   @Test
-  void booleanToStringIsBoolean() {
+  public void booleanToStringIsBoolean() {
     assertEquals("BOOLEAN", TypeName.BOOLEAN.toString(), "expected the BOOLEAN constant's name");
   }
 
   @Test
-  void numberAcceptDispatchesToVisitNumber() {
+  public void numberAcceptDispatchesToVisitNumber() {
     assertEquals(
         "number",
         TypeName.NUMBER.accept(NAMING_VISITOR),
@@ -29,7 +29,7 @@ class TypeNameTest {
   }
 
   @Test
-  void stringAcceptDispatchesToVisitString() {
+  public void stringAcceptDispatchesToVisitString() {
     assertEquals(
         "string",
         TypeName.STRING.accept(NAMING_VISITOR),
@@ -37,7 +37,7 @@ class TypeNameTest {
   }
 
   @Test
-  void booleanAcceptDispatchesToVisitBoolean() {
+  public void booleanAcceptDispatchesToVisitBoolean() {
     assertEquals(
         "boolean",
         TypeName.BOOLEAN.accept(NAMING_VISITOR),

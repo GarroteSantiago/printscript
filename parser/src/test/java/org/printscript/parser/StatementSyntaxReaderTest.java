@@ -14,7 +14,7 @@ class StatementSyntaxReaderTest {
   }
 
   @Test
-  void nextThrowsWhenNoStatementsRemain() {
+  public void nextThrowsWhenNoStatementsRemain() {
     var statements = TestSources.statementsOf("");
 
     SyntaxException exception =
@@ -25,7 +25,7 @@ class StatementSyntaxReaderTest {
   }
 
   @Test
-  void primaryThrowsWhenNoExpressionMatches() {
+  public void primaryThrowsWhenNoExpressionMatches() {
     SyntaxException exception =
         expectSyntaxException(
             () -> TestSources.programOf(";"),

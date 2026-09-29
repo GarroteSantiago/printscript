@@ -64,49 +64,49 @@ class ParserV11Test {
   }
 
   @Test
-  void parsesConstDeclarationAsImmutable() {
+  public void parsesConstDeclarationAsImmutable() {
     var declaration = parseDeclaration("const x: number = 1;");
 
     assertTrue(declaration.isConst(), "expected a const declaration");
   }
 
   @Test
-  void parsesLetDeclarationAsMutable() {
+  public void parsesLetDeclarationAsMutable() {
     var declaration = parseDeclaration("let x: number = 1;");
 
     assertFalse(declaration.isConst(), "expected a mutable declaration");
   }
 
   @Test
-  void parsesBooleanLiteral() {
+  public void parsesBooleanLiteral() {
     var literalType = parseInitializerLiteralType("let flag: boolean = true;");
 
     assertEquals(TypeName.BOOLEAN, literalType, "expected a boolean literal type");
   }
 
   @Test
-  void parsesIfWithoutElseHasNoElseBlock() {
+  public void parsesIfWithoutElseHasNoElseBlock() {
     var ifStatement = parseIfStatement(SOURCE_IF_WITHOUT_ELSE);
 
     assertTrue(ifStatement.elseBlock().isEmpty(), "expected no else block");
   }
 
   @Test
-  void parsesIfWithoutElseHasOneInnerStatement() {
+  public void parsesIfWithoutElseHasOneInnerStatement() {
     var ifStatement = parseIfStatement(SOURCE_IF_WITHOUT_ELSE);
 
     assertEquals(1, ifStatement.thenBlock().statements().size(), "expected one inner statement");
   }
 
   @Test
-  void parsesIfWithElseHasAnElseBlock() {
+  public void parsesIfWithElseHasAnElseBlock() {
     var ifStatement = parseIfStatement(SOURCE_IF_WITH_ELSE);
 
     assertTrue(ifStatement.elseBlock().isPresent(), "expected an else block");
   }
 
   @Test
-  void parsesIfWithElseHasOneElseStatement() {
+  public void parsesIfWithElseHasOneElseStatement() {
     var ifStatement = parseIfStatement(SOURCE_IF_WITH_ELSE);
 
     assertEquals(
@@ -116,7 +116,7 @@ class ParserV11Test {
   }
 
   @Test
-  void rejectsElseIf() {
+  public void rejectsElseIf() {
     String source =
         """
         let flag: boolean = true;
@@ -132,7 +132,7 @@ class ParserV11Test {
   }
 
   @Test
-  void rejectsIfWithoutBraces() {
+  public void rejectsIfWithoutBraces() {
     String source =
         """
         let flag: boolean = true;

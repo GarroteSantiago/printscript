@@ -11,7 +11,7 @@ import org.printscript.types.TypeName;
 
 class BuiltinSignatureTest {
   @Test
-  void canonicalConstructorDefaultsToNonContextual() {
+  public void canonicalConstructorDefaultsToNonContextual() {
     BuiltinSignature signature =
         new BuiltinSignature("identity", List.of(TypeName.NUMBER), TypeName.NUMBER);
 
@@ -19,7 +19,7 @@ class BuiltinSignatureTest {
   }
 
   @Test
-  void canonicalConstructorDefaultsToNonAnyType() {
+  public void canonicalConstructorDefaultsToNonAnyType() {
     BuiltinSignature signature =
         new BuiltinSignature("identity", List.of(TypeName.NUMBER), TypeName.NUMBER);
 
@@ -28,28 +28,28 @@ class BuiltinSignatureTest {
   }
 
   @Test
-  void contextualFactoryIsContextual() {
+  public void contextualFactoryIsContextual() {
     BuiltinSignature signature = BuiltinSignature.contextual("readInput", List.of(TypeName.STRING));
 
     assertTrue(signature.contextual(), "expected a contextual builtin");
   }
 
   @Test
-  void contextualFactoryHasNoFixedReturnType() {
+  public void contextualFactoryHasNoFixedReturnType() {
     BuiltinSignature signature = BuiltinSignature.contextual("readInput", List.of(TypeName.STRING));
 
     assertNull(signature.returnType(), "expected no fixed return type for a contextual builtin");
   }
 
   @Test
-  void printingFactoryAcceptsAnyPrintableType() {
+  public void printingFactoryAcceptsAnyPrintableType() {
     BuiltinSignature signature = BuiltinSignature.printing("println", TypeName.STRING);
 
     assertTrue(signature.printsAnyType(), "expected println to accept any printable type");
   }
 
   @Test
-  void printingFactoryUsesTheCanonicalParameterType() {
+  public void printingFactoryUsesTheCanonicalParameterType() {
     BuiltinSignature signature = BuiltinSignature.printing("println", TypeName.STRING);
 
     assertEquals(

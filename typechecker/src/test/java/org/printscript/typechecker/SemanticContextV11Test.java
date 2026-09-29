@@ -58,14 +58,14 @@ class SemanticContextV11Test {
   }
 
   @Test
-  void rejectsReassigningConstVariable() {
+  public void rejectsReassigningConstVariable() {
     var model = build(CONST_REASSIGNMENT);
 
     assertEquals(1, model.diagnostics().size(), EXPECTED_ONE_DIAGNOSTIC);
   }
 
   @Test
-  void reportsConstReassignmentMessage() {
+  public void reportsConstReassignmentMessage() {
     var model = build(CONST_REASSIGNMENT);
 
     assertEquals(
@@ -75,21 +75,21 @@ class SemanticContextV11Test {
   }
 
   @Test
-  void allowsReassigningLetVariable() {
+  public void allowsReassigningLetVariable() {
     var model = build(LET_REASSIGNMENT);
 
     assertTrue(model.diagnostics().isEmpty(), EXPECTED_NO_DIAGNOSTICS);
   }
 
   @Test
-  void rejectsNonBooleanIfCondition() {
+  public void rejectsNonBooleanIfCondition() {
     var model = build(NON_BOOLEAN_IF_CONDITION);
 
     assertEquals(1, model.diagnostics().size(), EXPECTED_ONE_DIAGNOSTIC);
   }
 
   @Test
-  void reportsNonBooleanIfConditionMessage() {
+  public void reportsNonBooleanIfConditionMessage() {
     var model = build(NON_BOOLEAN_IF_CONDITION);
 
     assertEquals(
@@ -99,21 +99,21 @@ class SemanticContextV11Test {
   }
 
   @Test
-  void allowsBooleanIfCondition() {
+  public void allowsBooleanIfCondition() {
     var model = build(BOOLEAN_IF_CONDITION);
 
     assertTrue(model.diagnostics().isEmpty(), EXPECTED_NO_DIAGNOSTICS);
   }
 
   @Test
-  void declarationsInsideBlockDoNotLeakOutsideTheBlock() {
+  public void declarationsInsideBlockDoNotLeakOutsideTheBlock() {
     var model = build(DECLARATION_LEAKING_OUT_OF_BLOCK);
 
     assertEquals(1, model.diagnostics().size(), EXPECTED_ONE_DIAGNOSTIC);
   }
 
   @Test
-  void reportsUndeclaredVariableMessageAfterBlockEnds() {
+  public void reportsUndeclaredVariableMessageAfterBlockEnds() {
     var model = build(DECLARATION_LEAKING_OUT_OF_BLOCK);
 
     assertEquals(
@@ -123,28 +123,28 @@ class SemanticContextV11Test {
   }
 
   @Test
-  void readInputResolvesToDeclaredVariableType() {
+  public void readInputResolvesToDeclaredVariableType() {
     var model = build("let flag: boolean = readInput(\"prompt\");");
 
     assertTrue(model.diagnostics().isEmpty(), EXPECTED_NO_DIAGNOSTICS);
   }
 
   @Test
-  void readInputResolvesToStringWhenUsedAsPrintlnArgument() {
+  public void readInputResolvesToStringWhenUsedAsPrintlnArgument() {
     var model = build("println(readInput(\"prompt\"));");
 
     assertTrue(model.diagnostics().isEmpty(), EXPECTED_NO_DIAGNOSTICS);
   }
 
   @Test
-  void rejectsReadInputAsBareStatement() {
+  public void rejectsReadInputAsBareStatement() {
     var model = build("readInput(\"prompt\");");
 
     assertEquals(1, model.diagnostics().size(), EXPECTED_ONE_DIAGNOSTIC);
   }
 
   @Test
-  void reportsReadInputBareStatementMessage() {
+  public void reportsReadInputBareStatementMessage() {
     var model = build("readInput(\"prompt\");");
 
     assertEquals(
@@ -154,7 +154,7 @@ class SemanticContextV11Test {
   }
 
   @Test
-  void rejectsReadInputAsBinaryOperand() {
+  public void rejectsReadInputAsBinaryOperand() {
     var model = build("let x: number = readInput(\"prompt\") + 1;");
 
     assertEquals(1, model.diagnostics().size(), EXPECTED_ONE_DIAGNOSTIC);

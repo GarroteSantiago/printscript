@@ -28,7 +28,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void reportsReadInputCalledWithComposedExpression() {
+  public void reportsReadInputCalledWithComposedExpression() {
     var diagnostics =
         analyze(
             "let prompt: string = \"p\";\nlet value: string = readInput(prompt + \"!\");",
@@ -38,7 +38,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void reportsReadInputComposedExpressionMessage() {
+  public void reportsReadInputComposedExpressionMessage() {
     var diagnostics =
         analyze(
             "let prompt: string = \"p\";\nlet value: string = readInput(prompt + \"!\");",
@@ -51,7 +51,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void allowsReadInputCalledWithLiteralArgument() {
+  public void allowsReadInputCalledWithLiteralArgument() {
     var diagnostics =
         analyze(
             "let value: string = readInput(\"prompt\");",
@@ -61,7 +61,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void doesNotReportWhenRuleIsDisabled() {
+  public void doesNotReportWhenRuleIsDisabled() {
     var diagnostics =
         analyze(
             "let prompt: string = \"p\";\nlet value: string = readInput(prompt + \"!\");",
@@ -71,7 +71,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void reportsReadInputArgumentShapeWhenNestedInsideAnIfBlock() {
+  public void reportsReadInputArgumentShapeWhenNestedInsideAnIfBlock() {
     var diagnostics =
         analyze(
             """
@@ -87,7 +87,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void reportsReadInputArgumentShapeWhenNestedInsideAnElseBlock() {
+  public void reportsReadInputArgumentShapeWhenNestedInsideAnElseBlock() {
     var diagnostics =
         analyze(
             """
@@ -105,7 +105,7 @@ class StaticAnalyzerV11Test {
   }
 
   @Test
-  void reportsReadInputArgumentShapeWhenUsedAsAnAssignmentValue() {
+  public void reportsReadInputArgumentShapeWhenUsedAsAnAssignmentValue() {
     var diagnostics =
         analyze(
             """

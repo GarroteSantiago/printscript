@@ -28,7 +28,7 @@ class InterpreterDeclarationTest {
   }
 
   @Test
-  void declarationWithoutInitializerCanBeAssignedAndPrinted() {
+  public void declarationWithoutInitializerCanBeAssignedAndPrinted() {
     List<String> output =
         run(
             """
@@ -41,7 +41,7 @@ class InterpreterDeclarationTest {
   }
 
   @Test
-  void printlnAcceptsANumberDirectly() {
+  public void printlnAcceptsANumberDirectly() {
     List<String> output =
         run(
             """

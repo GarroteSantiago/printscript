@@ -18,7 +18,7 @@ final class BuiltinBehaviors {
 
   private BuiltinBehaviors() {}
 
-  static Optional<BuiltinBehavior> find(String name) {
+  public static Optional<BuiltinBehavior> find(String name) {
     return Optional.ofNullable(BEHAVIORS.get(name));
   }
 

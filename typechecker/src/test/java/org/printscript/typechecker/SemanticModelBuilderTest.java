@@ -12,18 +12,18 @@ class SemanticModelBuilderTest {
   private SemanticModel semanticModel;
 
   @BeforeEach
-  void buildModelForInvalidAssignment() {
+  public void buildModelForInvalidAssignment() {
     var program = TestSources.programOf("let total: number = \"no\";");
     semanticModel = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
   }
 
   @Test
-  void rejectsAssigningStringToNumberVariable() {
+  public void rejectsAssigningStringToNumberVariable() {
     assertEquals(1, semanticModel.diagnostics().size(), "expected exactly one diagnostic");
   }
 
   @Test
-  void reportsTypeMismatchMessage() {
+  public void reportsTypeMismatchMessage() {
     assertEquals(
         "Cannot assign string to number",
         semanticModel.diagnostics().getFirst().message(),

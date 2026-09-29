@@ -37,7 +37,7 @@ import org.printscript.typetable.VariableSymbol;
  * <p>Type checking, symbol resolution, and built-in call resolution here all lean on
  * constructor-injected, swappable strategies ({@link TypeAnnotationTable}, {@link
  * BinaryOperatorRules}, {@link BuiltinRegistry}) rather than hardcoded rules, so a new language
- * version is a new strategy selected by the {@code application} composition root, not a change to
+ * version is a new strategy selected by the {@code toolchain} composition root, not a change to
  * this class's dispatch logic.
  */
 public final class SemanticContext {
@@ -75,7 +75,7 @@ public final class SemanticContext {
 
   /**
    * Selects the {@link BuiltinRegistry}/{@link TypeAnnotationTable} strategy pair for a language
-   * version, so callers (the {@code application} composition root) never need to import those types
+   * version, so callers (the {@code toolchain} composition root) never need to import those types
    * themselves just to pick a version.
    */
   public static SemanticContext forVersion(boolean v11) {

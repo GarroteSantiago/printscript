@@ -8,7 +8,7 @@ import org.printscript.ast.nodes.statements.StatementSyntax;
 
 /**
  * Drains a {@link StatementSource} into a fully materialized {@link ProgramSyntax}. The production
- * commands in {@code application.PrintScript} do not use this — they stream statement-by-statement
+ * commands in {@code toolchain.PrintScript} do not use this — they stream statement-by-statement
  * directly off the {@link StatementSource} so semantic validation and execution/formatting/analysis
  * interleave per statement. This class exists for callers that genuinely want the whole tree at
  * once, which today is only {@code testkit.TestSources#programOf} and this module's own tests.

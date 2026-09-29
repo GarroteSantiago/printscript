@@ -23,7 +23,7 @@ class SemanticContextDeclarationTest {
   }
 
   @Test
-  void allowsDeclarationWithoutInitializerFollowedByAssignment() {
+  public void allowsDeclarationWithoutInitializerFollowedByAssignment() {
     var model = build("""
             let result: number;
             result = 5;
@@ -33,14 +33,14 @@ class SemanticContextDeclarationTest {
   }
 
   @Test
-  void rejectsConstDeclarationWithoutInitializer() {
+  public void rejectsConstDeclarationWithoutInitializer() {
     var model = buildV11("const x: number;");
 
     assertEquals(1, model.diagnostics().size(), "expected one diagnostic");
   }
 
   @Test
-  void reportsConstWithoutInitializerMessage() {
+  public void reportsConstWithoutInitializerMessage() {
     var model = buildV11("const x: number;");
 
     assertEquals(
@@ -50,7 +50,7 @@ class SemanticContextDeclarationTest {
   }
 
   @Test
-  void allowsPrintlnCalledDirectlyWithANumber() {
+  public void allowsPrintlnCalledDirectlyWithANumber() {
     var model =
         build("""
             let result: number = 5;

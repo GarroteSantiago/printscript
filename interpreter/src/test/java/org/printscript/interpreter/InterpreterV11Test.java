@@ -43,7 +43,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void executesThenBranchWhenConditionIsTrue() {
+  public void executesThenBranchWhenConditionIsTrue() {
     List<String> output =
         run(
             """
@@ -61,7 +61,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void executesElseBranchWhenConditionIsFalse() {
+  public void executesElseBranchWhenConditionIsFalse() {
     List<String> output =
         run(
             """
@@ -79,7 +79,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void variablesDeclaredInsideBlockDoNotLeakButAssignmentsPersist() {
+  public void variablesDeclaredInsideBlockDoNotLeakButAssignmentsPersist() {
     List<String> output =
         run(
             """
@@ -97,7 +97,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void readInputParsesBooleanFromStdin() {
+  public void readInputParsesBooleanFromStdin() {
     List<String> output =
         run(
             """
@@ -111,7 +111,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void readInputFailsOnUnparseableBoolean() {
+  public void readInputFailsOnUnparseableBoolean() {
     RuntimeFailure failure =
         runAndCaptureFailure(
             "let flag: boolean = readInput(\"prompt\");",
@@ -125,7 +125,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void readEnvParsesNumberFromEnvironment() {
+  public void readEnvParsesNumberFromEnvironment() {
     List<String> output =
         run(
             """
@@ -139,7 +139,7 @@ class InterpreterV11Test {
   }
 
   @Test
-  void readEnvFailsWhenVariableIsMissing() {
+  public void readEnvFailsWhenVariableIsMissing() {
     RuntimeFailure failure =
         runAndCaptureFailure(
             "let count: number = readEnv(\"MISSING\");", FAILING_INPUT, EMPTY_ENVIRONMENT);

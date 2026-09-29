@@ -30,7 +30,7 @@ class ParserTest {
   private ExpressionStatementSyntax callStatement;
 
   @BeforeEach
-  void parseSource() {
+  public void parseSource() {
     program = TestSources.programOf(SOURCE);
     assignment = (AssignmentSyntax) program.statements().get(2);
     plus =
@@ -47,12 +47,12 @@ class ParserTest {
   }
 
   @Test
-  void parsesExpectedStatementCount() {
+  public void parsesExpectedStatementCount() {
     assertEquals(4, program.statements().size(), "expected 4 statements");
   }
 
   @Test
-  void programSpanStartsAtFirstStatement() {
+  public void programSpanStartsAtFirstStatement() {
     assertEquals(
         program.statements().getFirst().span().start(),
         program.span().start(),
@@ -60,12 +60,12 @@ class ParserTest {
   }
 
   @Test
-  void programSpanEndsAtEof() {
+  public void programSpanEndsAtEof() {
     assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
   }
 
   @Test
-  void parsesFirstStatementAsVariableDeclaration() {
+  public void parsesFirstStatementAsVariableDeclaration() {
     assertInstanceOf(
         VariableDeclarationSyntax.class,
         program.statements().get(0),
@@ -73,22 +73,22 @@ class ParserTest {
   }
 
   @Test
-  void parsesThirdStatementAsAssignment() {
+  public void parsesThirdStatementAsAssignment() {
     assertInstanceOf(AssignmentSyntax.class, program.statements().get(2), "expected an assignment");
   }
 
   @Test
-  void parsesAdditionAsTopLevelBinaryOperator() {
+  public void parsesAdditionAsTopLevelBinaryOperator() {
     assertEquals(TokenType.PLUS, plus.operator().type(), "expected top-level '+' operator");
   }
 
   @Test
-  void parsesDivisionAsHigherPrecedenceThanAddition() {
+  public void parsesDivisionAsHigherPrecedenceThanAddition() {
     assertEquals(TokenType.SLASH, divide.operator().type(), "expected nested '/' operator");
   }
 
   @Test
-  void parsesFourthStatementExpressionAsCall() {
+  public void parsesFourthStatementExpressionAsCall() {
     assertInstanceOf(
         CallExpressionSyntax.class, callStatement.expression(), "expected a call expression");
   }

@@ -31,7 +31,7 @@ class SemanticModelTest {
   }
 
   @Test
-  void typeOfReturnsTheResolvedTypeForATypedExpression() {
+  public void typeOfReturnsTheResolvedTypeForATypedExpression() {
     ExpressionSyntax literal = declaration().initializer().orElseThrow();
     var builder = SemanticModel.builder();
     builder.setType(literal, TypeName.NUMBER);
@@ -43,7 +43,7 @@ class SemanticModelTest {
   }
 
   @Test
-  void typeOfReturnsEmptyForAnExpressionNeverRecorded() {
+  public void typeOfReturnsEmptyForAnExpressionNeverRecorded() {
     ExpressionSyntax literal = declaration().initializer().orElseThrow();
 
     assertTrue(
@@ -52,7 +52,7 @@ class SemanticModelTest {
   }
 
   @Test
-  void resolveVariableReturnsTheResolvedSymbol() {
+  public void resolveVariableReturnsTheResolvedSymbol() {
     IdentifierExpressionSyntax identifier = identifier();
     VariableSymbol symbol = new VariableSymbol("x", TypeName.NUMBER, false, declaration());
     var builder = SemanticModel.builder();
@@ -65,14 +65,14 @@ class SemanticModelTest {
   }
 
   @Test
-  void resolveVariableReturnsEmptyForAnUnresolvedIdentifier() {
+  public void resolveVariableReturnsEmptyForAnUnresolvedIdentifier() {
     assertTrue(
         SemanticModel.builder().build().resolveVariable(identifier()).isEmpty(),
         "expected no resolution for an identifier the builder never saw");
   }
 
   @Test
-  void resolveCallReturnsTheResolvedSignature() {
+  public void resolveCallReturnsTheResolvedSignature() {
     CallExpressionSyntax call = call();
     BuiltinSignature signature = BuiltinRegistry.v1().find(BuiltinRegistry.PRINTLN).orElseThrow();
     var builder = SemanticModel.builder();
@@ -85,7 +85,7 @@ class SemanticModelTest {
   }
 
   @Test
-  void diagnosticsIncludesEveryAddedDiagnostic() {
+  public void diagnosticsIncludesEveryAddedDiagnostic() {
     Diagnostic diagnostic =
         Diagnostic.error(Phase.SEMANTIC, "undeclared variable", identifier().span());
     var builder = SemanticModel.builder();
@@ -98,13 +98,13 @@ class SemanticModelTest {
   }
 
   @Test
-  void builderHasErrorsIsFalseWithNoDiagnostics() {
+  public void builderHasErrorsIsFalseWithNoDiagnostics() {
     assertFalse(
         SemanticModel.builder().hasErrors(), "expected a fresh builder to report no errors");
   }
 
   @Test
-  void builderHasErrorsIsTrueAfterAddingADiagnostic() {
+  public void builderHasErrorsIsTrueAfterAddingADiagnostic() {
     var builder = SemanticModel.builder();
     builder.addDiagnostic(
         Diagnostic.error(Phase.SEMANTIC, "undeclared variable", identifier().span()));

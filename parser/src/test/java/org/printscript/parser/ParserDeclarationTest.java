@@ -18,14 +18,14 @@ class ParserDeclarationTest {
   }
 
   @Test
-  void parsesDeclarationWithoutInitializer() {
+  public void parsesDeclarationWithoutInitializer() {
     var declaration = declarationOf("let result: number;");
 
     assertTrue(declaration.initializer().isEmpty(), "expected no initializer");
   }
 
   @Test
-  void parsesDeclarationWithInitializer() {
+  public void parsesDeclarationWithInitializer() {
     var declaration = declarationOf("let result: number = 5;");
 
     assertFalse(declaration.initializer().isEmpty(), "expected an initializer");

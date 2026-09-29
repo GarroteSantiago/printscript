@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 class SourceSpanTest {
   @Test
-  void atFactoryUsesThePositionAsBothStartAndEnd() {
+  public void atFactoryUsesThePositionAsBothStartAndEnd() {
     SourcePosition position = new SourcePosition(2, 4, 7);
 
     SourceSpan span = SourceSpan.at(position);
@@ -15,7 +15,7 @@ class SourceSpanTest {
   }
 
   @Test
-  void atFactoryUsesThePositionAsTheEnd() {
+  public void atFactoryUsesThePositionAsTheEnd() {
     SourcePosition position = new SourcePosition(2, 4, 7);
 
     SourceSpan span = SourceSpan.at(position);
@@ -24,7 +24,7 @@ class SourceSpanTest {
   }
 
   @Test
-  void spanCanCoverARangeBetweenTwoPositions() {
+  public void spanCanCoverARangeBetweenTwoPositions() {
     SourcePosition start = new SourcePosition(1, 1, 0);
     SourcePosition end = new SourcePosition(1, 5, 4);
 

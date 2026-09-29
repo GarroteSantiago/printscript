@@ -10,7 +10,7 @@ import org.printscript.testkit.TestSources;
 
 class ProgramSyntaxTest {
   @Test
-  void spanStartsAtFirstStatementWhenStatementsArePresent() {
+  public void spanStartsAtFirstStatementWhenStatementsArePresent() {
     ProgramSyntax program = TestSources.programOf("let a: number = 1;\nprintln(a);\n");
 
     assertEquals(
@@ -20,14 +20,14 @@ class ProgramSyntaxTest {
   }
 
   @Test
-  void spanEndsAtEofWhenStatementsArePresent() {
+  public void spanEndsAtEofWhenStatementsArePresent() {
     ProgramSyntax program = TestSources.programOf("let a: number = 1;\nprintln(a);\n");
 
     assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
   }
 
   @Test
-  void spanIsEofSpanWhenThereAreNoStatements() {
+  public void spanIsEofSpanWhenThereAreNoStatements() {
     ProgramSyntax program = TestSources.programOf("");
 
     assertEquals(
@@ -47,7 +47,7 @@ class ProgramSyntaxTest {
   }
 
   @Test
-  void constructorCopiesTheStatementsListRatherThanAliasingIt() {
+  public void constructorCopiesTheStatementsListRatherThanAliasingIt() {
     assertEquals(
         1,
         copyBuiltFromMutableList().statements().size(),
@@ -55,7 +55,7 @@ class ProgramSyntaxTest {
   }
 
   @Test
-  void statementsListIsImmutable() {
+  public void statementsListIsImmutable() {
     ProgramSyntax copy = copyBuiltFromMutableList();
 
     assertThrows(

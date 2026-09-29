@@ -34,7 +34,7 @@ import org.printscript.tokens.TokenType;
  * println}, both needed to decide the next statement's leading trivia) and must be finished with
  * {@link Session#finish} to flush the trailing trivia before the EOF token. {@link
  * #format(ProgramSyntax, FormatterConfigProvider)} is a convenience that drives a session over an
- * already-built tree; {@code application.PrintScript}'s production path instead opens a session and
+ * already-built tree; {@code toolchain.PrintScript}'s production path instead opens a session and
  * feeds it statements as they stream off a {@code StatementSource}.
  */
 public final class PrintScriptFormatter {
@@ -143,7 +143,7 @@ public final class PrintScriptFormatter {
     private final List<PositionedToken> tokens;
     private final int depth;
 
-    StatementFlattener(List<PositionedToken> tokens, int depth) {
+    private StatementFlattener(List<PositionedToken> tokens, int depth) {
       this.tokens = tokens;
       this.depth = depth;
     }
@@ -215,7 +215,7 @@ public final class PrintScriptFormatter {
     private final List<PositionedToken> tokens;
     private final int depth;
 
-    ExpressionFlattener(List<PositionedToken> tokens, int depth) {
+    private ExpressionFlattener(List<PositionedToken> tokens, int depth) {
       this.tokens = tokens;
       this.depth = depth;
     }

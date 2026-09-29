@@ -24,7 +24,7 @@ import org.printscript.tokens.SyntaxToken;
 
 class SyntaxTreeBuilderTest {
   @Test
-  void preservesEverySourceCharacterAsTriviaOrTokenText() {
+  public void preservesEverySourceCharacterAsTriviaOrTokenText() {
     String source =
         """
                 # file comment

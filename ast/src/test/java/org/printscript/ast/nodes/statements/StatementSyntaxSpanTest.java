@@ -54,7 +54,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void variableDeclarationSpanStartsAtKeyword() {
+  public void variableDeclarationSpanStartsAtKeyword() {
     var declaration = variableDeclaration();
 
     assertEquals(
@@ -64,7 +64,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void variableDeclarationSpanEndsAtSemicolon() {
+  public void variableDeclarationSpanEndsAtSemicolon() {
     var declaration = variableDeclaration();
 
     assertEquals(
@@ -74,7 +74,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void assignmentSpanStartsAtIdentifier() {
+  public void assignmentSpanStartsAtIdentifier() {
     var assignment = assignment();
 
     assertEquals(
@@ -84,7 +84,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void assignmentSpanEndsAtSemicolon() {
+  public void assignmentSpanEndsAtSemicolon() {
     var assignment = assignment();
 
     assertEquals(
@@ -94,7 +94,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void assignmentAcceptDispatchesToVisitAssignment() {
+  public void assignmentAcceptDispatchesToVisitAssignment() {
     var assignment = assignment();
 
     assertEquals(
@@ -104,7 +104,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void expressionStatementSpanStartsAtExpression() {
+  public void expressionStatementSpanStartsAtExpression() {
     var expressionStatement = expressionStatement();
 
     assertEquals(
@@ -114,7 +114,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void expressionStatementSpanEndsAtSemicolon() {
+  public void expressionStatementSpanEndsAtSemicolon() {
     var expressionStatement = expressionStatement();
 
     assertEquals(
@@ -124,7 +124,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void blockStatementSpanStartsAtLeftBrace() {
+  public void blockStatementSpanStartsAtLeftBrace() {
     var block = ifStatement().thenBlock();
 
     assertEquals(
@@ -134,7 +134,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void blockStatementSpanEndsAtRightBrace() {
+  public void blockStatementSpanEndsAtRightBrace() {
     var block = ifStatement().thenBlock();
 
     assertEquals(
@@ -144,7 +144,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void blockStatementAcceptDispatchesToVisitBlock() {
+  public void blockStatementAcceptDispatchesToVisitBlock() {
     var block = ifStatement().thenBlock();
 
     assertEquals(
@@ -152,7 +152,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void ifStatementSpanStartsAtIfKeyword() {
+  public void ifStatementSpanStartsAtIfKeyword() {
     assertEquals(
         ifStatement().ifKeyword().span().start(),
         ifStatement().span().start(),
@@ -160,7 +160,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void ifStatementWithElseSpanEndsAtElseBlock() {
+  public void ifStatementWithElseSpanEndsAtElseBlock() {
     var ifStatement = ifStatement();
 
     assertEquals(
@@ -178,7 +178,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void ifStatementWithoutElseSpanEndsAtThenBlock() {
+  public void ifStatementWithoutElseSpanEndsAtThenBlock() {
     var ifStatement = ifStatementWithoutElse();
 
     assertEquals(
@@ -188,7 +188,7 @@ class StatementSyntaxSpanTest {
   }
 
   @Test
-  void ifStatementAcceptDispatchesToVisitIf() {
+  public void ifStatementAcceptDispatchesToVisitIf() {
     assertEquals(
         "if", ifStatement().accept(NAMING_VISITOR), "expected accept() to dispatch to visitIf");
   }

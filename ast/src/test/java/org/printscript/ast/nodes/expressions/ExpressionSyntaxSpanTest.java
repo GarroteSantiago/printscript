@@ -48,7 +48,7 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void binaryExpressionSpanStartsAtLeftOperand() {
+  public void binaryExpressionSpanStartsAtLeftOperand() {
     var binary = binaryFromAssignment();
 
     assertEquals(
@@ -58,7 +58,7 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void binaryExpressionSpanEndsAtRightOperand() {
+  public void binaryExpressionSpanEndsAtRightOperand() {
     var binary = binaryFromAssignment();
 
     assertEquals(
@@ -68,7 +68,7 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void binaryExpressionAcceptDispatchesToVisitBinary() {
+  public void binaryExpressionAcceptDispatchesToVisitBinary() {
     var binary = binaryFromAssignment();
 
     assertEquals(
@@ -76,7 +76,7 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void identifierExpressionSpanMatchesItsToken() {
+  public void identifierExpressionSpanMatchesItsToken() {
     var identifier = identifierFromBinary();
 
     assertEquals(
@@ -84,14 +84,14 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void literalExpressionSpanMatchesItsToken() {
+  public void literalExpressionSpanMatchesItsToken() {
     var literal = literalFromBinary();
 
     assertEquals(literal.literal().span(), literal.span(), "expected the literal's own span");
   }
 
   @Test
-  void callExpressionSpanStartsAtCallee() {
+  public void callExpressionSpanStartsAtCallee() {
     var call = callExpression();
 
     assertEquals(
@@ -99,7 +99,7 @@ class ExpressionSyntaxSpanTest {
   }
 
   @Test
-  void callExpressionSpanEndsAtRightParen() {
+  public void callExpressionSpanEndsAtRightParen() {
     var call = callExpression();
 
     assertEquals(

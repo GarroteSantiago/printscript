@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class TypeAnnotationTableTest {
   @Test
-  void v1ResolvesNumber() {
+  public void v1ResolvesNumber() {
     assertEquals(
         TypeName.NUMBER,
         TypeAnnotationTable.v1().resolve("number"),
@@ -15,7 +15,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1ResolvesString() {
+  public void v1ResolvesString() {
     assertEquals(
         TypeName.STRING,
         TypeAnnotationTable.v1().resolve("string"),
@@ -23,7 +23,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1RejectsBoolean() {
+  public void v1RejectsBoolean() {
     assertThrows(
         IllegalArgumentException.class,
         () -> TypeAnnotationTable.v1().resolve("boolean"),
@@ -31,7 +31,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1_1ResolvesNumber() {
+  public void v1_1ResolvesNumber() {
     assertEquals(
         TypeName.NUMBER,
         TypeAnnotationTable.v1_1().resolve("number"),
@@ -39,7 +39,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1_1ResolvesString() {
+  public void v1_1ResolvesString() {
     assertEquals(
         TypeName.STRING,
         TypeAnnotationTable.v1_1().resolve("string"),
@@ -47,7 +47,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1_1ResolvesBoolean() {
+  public void v1_1ResolvesBoolean() {
     assertEquals(
         TypeName.BOOLEAN,
         TypeAnnotationTable.v1_1().resolve("boolean"),
@@ -55,7 +55,7 @@ class TypeAnnotationTableTest {
   }
 
   @Test
-  void v1_1RejectsUnknownType() {
+  public void v1_1RejectsUnknownType() {
     assertThrows(
         IllegalArgumentException.class,
         () -> TypeAnnotationTable.v1_1().resolve("unknown"),

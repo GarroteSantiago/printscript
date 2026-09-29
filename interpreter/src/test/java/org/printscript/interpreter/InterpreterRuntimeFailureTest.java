@@ -47,7 +47,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void divisionByZeroThrowsARuntimeFailure() {
+  public void divisionByZeroThrowsARuntimeFailure() {
     RuntimeFailure failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
@@ -55,7 +55,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void divisionByZeroDiagnosticHasErrorSeverity() {
+  public void divisionByZeroDiagnosticHasErrorSeverity() {
     RuntimeFailure failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
@@ -63,7 +63,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void divisionByZeroDiagnosticIsFromTheRuntimePhase() {
+  public void divisionByZeroDiagnosticIsFromTheRuntimePhase() {
     RuntimeFailure failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
@@ -71,7 +71,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void readInputFailsOnUnparseableNumber() {
+  public void readInputFailsOnUnparseableNumber() {
     RuntimeFailure failure = runV11AndCaptureFailure("let count: number = readInput(\"prompt\");");
 
     assertEquals(
@@ -107,7 +107,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void referencingAVariableDeclaredWithoutAnInitializerBeforeItIsAssignedFails() {
+  public void referencingAVariableDeclaredWithoutAnInitializerBeforeItIsAssignedFails() {
     RuntimeFailure failure =
         runAndCaptureFailure(
             """
@@ -124,7 +124,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void readInputWithoutAnInjectedPortThrowsRuntimeFailure() {
+  public void readInputWithoutAnInjectedPortThrowsRuntimeFailure() {
     List<String> output = new ArrayList<>();
     var interpreter = new Interpreter(output::add, ArithmeticOperators.v1());
     var statements =
@@ -142,7 +142,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void readEnvWithoutAnInjectedPortThrowsRuntimeFailure() {
+  public void readEnvWithoutAnInjectedPortThrowsRuntimeFailure() {
     List<String> output = new ArrayList<>();
     var interpreter = new Interpreter(output::add);
     var statements =
@@ -160,7 +160,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsAdd() {
+  public void arithmeticOperatorsAdd() {
     assertEquals(
         new BigDecimal("5"),
         ArithmeticOperators.v1().apply(TokenType.PLUS, new BigDecimal("3"), new BigDecimal("2")),
@@ -168,7 +168,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsSubtract() {
+  public void arithmeticOperatorsSubtract() {
     assertEquals(
         new BigDecimal("1"),
         ArithmeticOperators.v1().apply(TokenType.MINUS, new BigDecimal("3"), new BigDecimal("2")),
@@ -176,7 +176,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsMultiply() {
+  public void arithmeticOperatorsMultiply() {
     assertEquals(
         new BigDecimal("6"),
         ArithmeticOperators.v1().apply(TokenType.STAR, new BigDecimal("3"), new BigDecimal("2")),
@@ -184,7 +184,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsDivide() {
+  public void arithmeticOperatorsDivide() {
     assertEquals(
         new BigDecimal("1.5"),
         ArithmeticOperators.v1().apply(TokenType.SLASH, new BigDecimal("3"), new BigDecimal("2")),
@@ -192,7 +192,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsRejectDivisionByZero() {
+  public void arithmeticOperatorsRejectDivisionByZero() {
     ArithmeticOperators operators = ArithmeticOperators.v1();
 
     assertThrows(
@@ -201,7 +201,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void arithmeticOperatorsRejectUnsupportedOperators() {
+  public void arithmeticOperatorsRejectUnsupportedOperators() {
     ArithmeticOperators operators = ArithmeticOperators.v1();
 
     assertThrows(
@@ -210,7 +210,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void numberValueReportsTheNumberTypeName() {
+  public void numberValueReportsTheNumberTypeName() {
     assertEquals(
         org.printscript.types.TypeName.NUMBER,
         new RuntimeValue.NumberValue(BigDecimal.ONE).type(),
@@ -218,7 +218,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void stringValueReportsTheStringTypeName() {
+  public void stringValueReportsTheStringTypeName() {
     assertEquals(
         org.printscript.types.TypeName.STRING,
         new RuntimeValue.StringValue("x").type(),
@@ -226,7 +226,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void booleanValueReportsTheBooleanTypeName() {
+  public void booleanValueReportsTheBooleanTypeName() {
     assertEquals(
         org.printscript.types.TypeName.BOOLEAN,
         new RuntimeValue.BooleanValue(true).type(),
@@ -234,7 +234,7 @@ class InterpreterRuntimeFailureTest {
   }
 
   @Test
-  void unitValueReportsNoTypeName() {
+  public void unitValueReportsNoTypeName() {
     assertEquals(null, RuntimeValue.UnitValue.INSTANCE.type(), "expected no type name for unit");
   }
 }

@@ -26,7 +26,7 @@ public final class SemanticModel {
   private final Map<IdentifierExpressionSyntax, VariableSymbol> variableReferences;
   private final Map<CallExpressionSyntax, BuiltinSignature> resolvedCalls;
 
-  SemanticModel(
+  private SemanticModel(
       List<Diagnostic> diagnostics,
       Map<ExpressionSyntax, TypeName> expressionTypes,
       Map<IdentifierExpressionSyntax, VariableSymbol> variableReferences,

@@ -9,14 +9,14 @@ import org.printscript.lexer.KeywordTable;
 
 class TestSourcesTest {
   @Test
-  void statementsOfParsesAStatementWithDefaultKeywords() {
+  public void statementsOfParsesAStatementWithDefaultKeywords() {
     var statements = TestSources.statementsOf("let x: number = 1;");
 
     assertTrue(statements.hasNext(), "expected a parsed statement");
   }
 
   @Test
-  void statementsOfWithKeywordsRecognizesV11OnlyKeywords() {
+  public void statementsOfWithKeywordsRecognizesV11OnlyKeywords() {
     var statement =
         (VariableDeclarationSyntax)
             TestSources.statementsOf("const x: number = 1;", KeywordTable.v1_1()).next();
@@ -25,14 +25,14 @@ class TestSourcesTest {
   }
 
   @Test
-  void programOfBuildsAProgramWithEveryStatement() {
+  public void programOfBuildsAProgramWithEveryStatement() {
     var program = TestSources.programOf("let x: number = 1;\nlet y: number = 2;");
 
     assertEquals(2, program.statements().size(), "expected both statements in the program");
   }
 
   @Test
-  void programOfWithKeywordsBuildsAProgramUsingThoseKeywords() {
+  public void programOfWithKeywordsBuildsAProgramUsingThoseKeywords() {
     var program = TestSources.programOf("const x: number = 1;", KeywordTable.v1_1());
 
     assertEquals(1, program.statements().size(), "expected the single statement in the program");

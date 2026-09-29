@@ -21,7 +21,7 @@ import org.printscript.typetable.VariableSymbol;
 
 class SemanticContextModelAccessorsTest {
   @Test
-  void resolvesAnIdentifierReferenceToItsDeclaringSymbol() {
+  public void resolvesAnIdentifierReferenceToItsDeclaringSymbol() {
     var declaration =
         (VariableDeclarationSyntax) TestSources.statementsOf("let x: number = 1;").next();
     var reference = (ExpressionStatementSyntax) TestSources.statementsOf("println(x);").next();
@@ -39,7 +39,7 @@ class SemanticContextModelAccessorsTest {
   }
 
   @Test
-  void resolvesACallExpressionToItsBuiltinSignature() {
+  public void resolvesACallExpressionToItsBuiltinSignature() {
     var statement = (ExpressionStatementSyntax) TestSources.statementsOf("println(\"hi\");").next();
     var call = (CallExpressionSyntax) statement.expression();
 
@@ -52,7 +52,7 @@ class SemanticContextModelAccessorsTest {
   }
 
   @Test
-  void tracksTheInferredTypeOfABinaryExpression() {
+  public void tracksTheInferredTypeOfABinaryExpression() {
     var declaration =
         (VariableDeclarationSyntax) TestSources.statementsOf("let x: number = 1 + 2;").next();
     var binary = (BinaryExpressionSyntax) declaration.initializer().orElseThrow();
@@ -66,14 +66,14 @@ class SemanticContextModelAccessorsTest {
   }
 
   @Test
-  void rejectsBinaryOperandsThatCannotBeCombined() {
+  public void rejectsBinaryOperandsThatCannotBeCombined() {
     var model = buildMismatchedBinaryOperandsModel();
 
     assertEquals(1, model.diagnostics().size(), "expected one diagnostic");
   }
 
   @Test
-  void reportsAnOperatorNotApplicableMessageForMismatchedOperands() {
+  public void reportsAnOperatorNotApplicableMessageForMismatchedOperands() {
     var model = buildMismatchedBinaryOperandsModel();
 
     assertTrue(

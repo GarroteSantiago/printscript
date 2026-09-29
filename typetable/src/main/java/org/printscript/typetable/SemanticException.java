@@ -6,9 +6,9 @@ import org.printscript.diagnostics.Diagnostic;
 /**
  * Thrown by a {@link ValidatedStatementSource} when a statement fails semantic validation. Carries
  * the {@link Diagnostic}s that describe the problem — this exception is only the transport
- * mechanism to a catch site (the {@code application} composition root), not the error
- * representation itself, mirroring {@code tokens.SyntaxException} one phase earlier. There is no
- * validation recovery: the first {@code SemanticException} stops the command.
+ * mechanism to a catch site (the {@code toolchain} composition root), not the error representation
+ * itself, mirroring {@code tokens.SyntaxException} one phase earlier. There is no validation
+ * recovery: the first {@code SemanticException} stops the command.
  */
 public final class SemanticException extends RuntimeException {
   private static final long serialVersionUID = 1L;

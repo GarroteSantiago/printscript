@@ -11,8 +11,8 @@ import org.printscript.typetable.SemanticModel;
  * statements through successive contexts and merges their diagnostics into one {@link
  * SemanticModel}, stopping at the first statement that fails. Like {@code
  * parser.SyntaxTreeBuilder}, this is not the production validation path — {@code
- * application.PrintScript} validates directly off a {@code StatementSource}, one statement at a
- * time, interleaved with execution/formatting/analysis. Used mainly by this module's own tests.
+ * toolchain.PrintScript} validates directly off a {@code StatementSource}, one statement at a time,
+ * interleaved with execution/formatting/analysis. Used mainly by this module's own tests.
  */
 public final class SemanticModelBuilder {
   private final BuiltinRegistry builtins;

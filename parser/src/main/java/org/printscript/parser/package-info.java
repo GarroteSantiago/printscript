@@ -8,7 +8,7 @@
  *
  * <p>Split out from {@code ast} on purpose: {@code formatter}, {@code interpreter}, and {@code
  * analyzer} all walk the AST {@code ast} defines, but none of them parse — they receive an
- * already-built tree from {@code application}. Depending on this module at all is a signal that a
+ * already-built tree from {@code toolchain}. Depending on this module at all is a signal that a
  * consumer builds trees, not just walks them.
  */
 package org.printscript.parser;

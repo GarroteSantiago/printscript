@@ -112,7 +112,7 @@ public final class Interpreter {
     private final RuntimeEnvironment environment;
     private final SemanticModel semanticModel;
 
-    StatementExecutor(RuntimeEnvironment environment, SemanticModel semanticModel) {
+    private StatementExecutor(RuntimeEnvironment environment, SemanticModel semanticModel) {
       this.environment = environment;
       this.semanticModel = semanticModel;
     }
@@ -183,7 +183,7 @@ public final class Interpreter {
     private final RuntimeEnvironment environment;
     private final SemanticModel semanticModel;
 
-    ExpressionEvaluator(RuntimeEnvironment environment, SemanticModel semanticModel) {
+    private ExpressionEvaluator(RuntimeEnvironment environment, SemanticModel semanticModel) {
       this.environment = environment;
       this.semanticModel = semanticModel;
     }
@@ -218,7 +218,7 @@ public final class Interpreter {
   private static final class LiteralValue implements TypeNameVisitor<RuntimeValue> {
     private final LiteralExpressionSyntax literal;
 
-    LiteralValue(LiteralExpressionSyntax literal) {
+    private LiteralValue(LiteralExpressionSyntax literal) {
       this.literal = literal;
     }
 
@@ -275,7 +275,7 @@ public final class Interpreter {
     private final CallExpressionSyntax call;
     private final SemanticModel semanticModel;
 
-    InvocationContext(CallExpressionSyntax call, SemanticModel semanticModel) {
+    private InvocationContext(CallExpressionSyntax call, SemanticModel semanticModel) {
       this.call = call;
       this.semanticModel = semanticModel;
     }
@@ -334,7 +334,7 @@ public final class Interpreter {
     private final String raw;
     private final CallExpressionSyntax call;
 
-    ParsedValue(String raw, CallExpressionSyntax call) {
+    private ParsedValue(String raw, CallExpressionSyntax call) {
       this.raw = raw;
       this.call = call;
     }

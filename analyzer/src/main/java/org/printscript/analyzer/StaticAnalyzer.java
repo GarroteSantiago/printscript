@@ -88,7 +88,7 @@ public final class StaticAnalyzer {
     private final AnalyzerConfig config;
     private final Consumer<Diagnostic> diagnostics;
 
-    StatementAnalyzer(
+    private StatementAnalyzer(
         SemanticModel semanticModel, AnalyzerConfig config, Consumer<Diagnostic> diagnostics) {
       this.semanticModel = semanticModel;
       this.config = config;
@@ -172,7 +172,7 @@ public final class StaticAnalyzer {
   private static final class CallCollector implements ExpressionVisitor<Void> {
     private final List<CallExpressionSyntax> out;
 
-    CallCollector(List<CallExpressionSyntax> out) {
+    private CallCollector(List<CallExpressionSyntax> out) {
       this.out = out;
     }
 

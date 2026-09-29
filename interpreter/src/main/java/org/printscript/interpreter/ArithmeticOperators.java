@@ -25,7 +25,7 @@ public interface ArithmeticOperators {
     private final BigDecimal left;
     private final BigDecimal right;
 
-    V1Visitor(BigDecimal left, BigDecimal right) {
+    private V1Visitor(BigDecimal left, BigDecimal right) {
       this.left = left;
       this.right = right;
     }
