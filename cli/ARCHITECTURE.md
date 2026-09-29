@@ -28,8 +28,11 @@ configuration files into immutable core config objects (`formatter.FormatterConf
 `analyzer.AnalyzerConfig`). See `JsonPrintScriptConfigReader`'s Javadoc for the exact key schema.
 
 Progress is reported through `application.ProgressReporter`, and `readInput`/`readEnv` reach real
-stdin/the process environment only through `interpreter.InputPort`/`EnvironmentPort` — both
+stdin/the process environment only through `application.InputSource`/`EnvironmentSource` — both
 constructed in `App` and nowhere else — so the core remains independent from the CLI and from any
-concrete I/O.
+concrete I/O. These are `application`'s own port types, not `interpreter`'s — `PrintScript` adapts
+them internally when it constructs the `Interpreter` that actually needs them, so `cli` depends on
+nothing below `application` except `diagnostics` (needed to read `CommandResult`'s `Diagnostic`
+values back out for terminal rendering).
 
 Representative test: `src/test/java/org/example/cli/AppTest.java`.

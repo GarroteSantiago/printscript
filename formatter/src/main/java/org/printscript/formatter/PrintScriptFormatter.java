@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.printscript.ast.StatementSource;
 import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
@@ -49,6 +50,23 @@ public final class PrintScriptFormatter {
 
   public Session newSession(FormatterConfigProvider config) {
     return new Session(config);
+  }
+
+  /**
+   * Drains a {@link StatementSource}, formatting each statement in turn into {@code out} and
+   * finishing with the source's trailing {@code eof} trivia. This is the production path's
+   * counterpart to {@link #format(ProgramSyntax, FormatterConfigProvider)}, which drives a session
+   * over an already-built tree instead. Formatting never validates — a syntactically valid but
+   * semantically invalid program still formats — so this takes a plain {@link StatementSource}, not
+   * a {@code typetable.ValidatedStatementSource}.
+   */
+  public void formatAll(StatementSource statements, FormatterConfigProvider config, Appendable out)
+      throws IOException {
+    Session session = newSession(config);
+    while (statements.hasNext()) {
+      session.format(statements.next(), out);
+    }
+    session.finish(statements.eof(), out);
   }
 
   public String format(ProgramSyntax program, FormatterConfigProvider config) {

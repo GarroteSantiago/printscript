@@ -7,20 +7,26 @@ explaining why it couldn't.
 Responsibilities:
 
 - `SemanticContext` — immutable symbol table plus the per-statement type checker. `validate` never
-  mutates `this`: it returns a `SemanticStatementResult` carrying the *next* context, so the
-  composition root can validate a program statement-by-statement, interleaved with
-  execution/formatting/analysis, without ever holding a context that reflects a statement that
-  failed to validate.
+  mutates `this`: it returns a `SemanticStatementResult` carrying the *next* context, so a caller
+  (`ValidatingStatementSource`) can validate a program statement-by-statement without ever holding a
+  context that reflects a statement that failed to validate.
 - `SemanticStatementResult` — one validation step's result: the next `SemanticContext`, the
   resulting `SemanticModel`, and any diagnostics.
 - `SemanticModelBuilder` — whole-program convenience over `SemanticContext#validate`: folds every
   statement through successive contexts into one merged `SemanticModel`. Not the production path —
-  `application.PrintScript` validates directly off a `StatementSource`, one statement at a time.
-  Used mainly by this module's own tests.
+  `ValidatingStatementSource` validates one statement at a time, off a `StatementSource`, threading
+  the context itself. Used mainly by this module's own tests.
 - `BinaryOperatorRules` — the single source of truth for what result type, if any, a binary operator
   produces given its operand types. `interpreter.Interpreter` deliberately does not reimplement this
   decision at runtime; it only acts on the `TypeName` this rule already assigned during validation
   (via `SemanticModel.typeOf`).
+- `ValidatingStatementSource` — the sole production implementation of
+  `typetable.ValidatedStatementSource`: wraps a raw `ast.StatementSource` and a `SemanticContext`,
+  threading the context across pulls internally so no caller manages that state across a loop, and
+  throwing `typetable.SemanticException` the moment a statement fails validation.
+- `SemanticContext.forVersion(boolean)` — selects the `BuiltinRegistry`/`TypeAnnotationTable`
+  strategy pair for a language version, so `application` never needs to import `typetable`/`types`
+  itself just to pick one.
 
 Split out from `typetable` (then still named `semantics`) on purpose. `interpreter` and `analyzer`
 both need to read a `SemanticModel` — neither one re-derives a type decision or a symbol

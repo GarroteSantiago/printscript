@@ -11,8 +11,6 @@ import java.util.function.Consumer;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.NamingStyleRules;
 import org.printscript.analyzer.StaticAnalyzer;
-import org.printscript.ast.StatementSource;
-import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
@@ -20,8 +18,6 @@ import org.printscript.formatter.FormatterConfigProvider;
 import org.printscript.formatter.PrintScriptFormatter;
 import org.printscript.formatter.SpacingRules;
 import org.printscript.interpreter.ArithmeticOperators;
-import org.printscript.interpreter.EnvironmentPort;
-import org.printscript.interpreter.InputPort;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
 import org.printscript.interpreter.RuntimeFailure;
@@ -31,40 +27,37 @@ import org.printscript.parser.StatementSyntaxReader;
 import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
 import org.printscript.tokens.SyntaxException;
-import org.printscript.typechecker.BinaryOperatorRules;
 import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticStatementResult;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typechecker.ValidatingStatementSource;
+import org.printscript.typetable.SemanticException;
 
 /**
  * The use-case facade and composition root for PrintScript: {@link #execute}, {@link #format},
  * {@link #analyze}, and {@link #validate} are the only operations any interaction layer (currently
  * the {@code cli} module) needs. Every method returns a {@link CommandResult} and never lets a
- * {@link SyntaxException} or {@link RuntimeFailure} escape — both are caught here and converted to
- * a failed {@code CommandResult} carrying the underlying {@link Diagnostic}.
+ * {@link SyntaxException}, {@link SemanticException}, or {@link RuntimeFailure} escape — all three
+ * are caught here and converted to a failed {@code CommandResult} carrying the underlying {@link
+ * Diagnostic}(s).
  *
  * <p>This is the one place (besides {@code testkit}, for tests) allowed to construct a concrete
- * {@code lexer.Lexer} and wire it into a {@code parser.StatementSyntaxReader} — every stage in
- * between depends only on the {@code TokenSource}/{@code StatementSource} ports. {@link
- * #pipelineFor} is also where every per-version strategy ({@link KeywordTable}, {@link
- * TypeAnnotationTable}, {@link BinaryOperatorRules}, {@link ArithmeticOperators}, {@link
- * NamingStyleRules}, {@code SpacingRules}) gets selected for a requested {@link LanguageVersion} —
- * none of the classes receiving them decide their own version-specific behavior. All four commands
- * validate and process one statement at a time off a single {@code StatementSource}, rather than
- * building a whole {@code ProgramSyntax} first: semantic validation for a statement must succeed
- * before that statement is executed/formatted/analyzed, and a later statement is never even parsed
- * once an earlier one has failed.
+ * {@code lexer.Lexer}, wire it into a {@code parser.StatementSyntaxReader}, and wrap that into a
+ * {@link ValidatingStatementSource} — every stage downstream of that depends only on the {@code
+ * TokenSource}/{@code StatementSource}/{@code typetable.ValidatedStatementSource} ports, and
+ * consumes/folds the resulting stream itself ({@code Interpreter#executeAll}, {@code
+ * StaticAnalyzer#analyzeAll}, {@code PrintScriptFormatter#formatAll}) rather than being driven
+ * statement-by-statement from here. {@link #pipelineFor} is where every per-version strategy this
+ * class itself constructs ({@link KeywordTable}, {@link ArithmeticOperators}, {@link
+ * NamingStyleRules}, {@code SpacingRules}) gets selected for a requested {@link LanguageVersion};
+ * {@code typetable.BuiltinRegistry}/{@code types.TypeAnnotationTable} selection lives behind {@link
+ * SemanticContext#forVersion} instead, since this class never otherwise touches that vocabulary.
  */
 public final class PrintScript {
   private static final String READING_STATEMENTS = "Reading statements";
 
   private record LanguagePipeline(
       KeywordTable keywords,
-      TypeAnnotationTable typeAnnotations,
-      BinaryOperatorRules binaryOperatorRules,
+      boolean v11,
       ArithmeticOperators operators,
-      BuiltinRegistry builtins,
       StaticAnalyzer staticAnalyzer,
       PrintScriptFormatter formatter) {}
 
@@ -72,10 +65,8 @@ public final class PrintScript {
     boolean v11 = version.supportsV1_1();
     return new LanguagePipeline(
         v11 ? KeywordTable.v1_1() : KeywordTable.v1(),
-        v11 ? TypeAnnotationTable.v1_1() : TypeAnnotationTable.v1(),
-        BinaryOperatorRules.v1(),
+        v11,
         ArithmeticOperators.v1(),
-        v11 ? BuiltinRegistry.v1_1() : BuiltinRegistry.v1(),
         new StaticAnalyzer(NamingStyleRules.v1()),
         new PrintScriptFormatter(v11 ? SpacingRules.v1_1() : SpacingRules.v1()));
   }
@@ -109,12 +100,13 @@ public final class PrintScript {
       Reader source,
       LanguageVersion version,
       Consumer<String> output,
-      InputPort input,
-      EnvironmentPort env,
+      InputSource input,
+      EnvironmentSource env,
       ProgressReporter progress) {
     if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
-    Interpreter interpreter = new Interpreter(output::accept, pipeline.operators(), input, env);
+    Interpreter interpreter =
+        new Interpreter(output::accept, pipeline.operators(), input::readLine, env::get);
     return execute(source, pipeline, interpreter, progress);
   }
 
@@ -123,29 +115,20 @@ public final class PrintScript {
       LanguagePipeline pipeline,
       Interpreter interpreter,
       ProgressReporter progress) {
-    SemanticContext semanticContext =
-        SemanticContext.empty(
-            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
-    RuntimeEnvironment runtimeEnvironment = RuntimeEnvironment.empty();
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements =
-          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
-      while (statements.hasNext()) {
-        StatementSyntax statement = statements.next();
-        SemanticStatementResult semantic = semanticContext.validate(statement);
-        if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
-        progress.report("Executing statement");
-        runtimeEnvironment =
-            interpreter.executeStatement(statement, runtimeEnvironment, semantic.semanticModel());
-        semanticContext = semantic.nextContext();
-      }
+      var statements = new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
+      var validated =
+          new ValidatingStatementSource(statements, SemanticContext.forVersion(pipeline.v11()));
+      progress.report("Executing statements");
+      return CommandResult.success(interpreter.executeAll(validated, RuntimeEnvironment.empty()));
     } catch (RuntimeFailure failure) {
       return CommandResult.failure(List.of(failure.diagnostic()));
     } catch (SyntaxException exception) {
       return CommandResult.failure(List.of(exception.diagnostic()));
+    } catch (SemanticException exception) {
+      return CommandResult.failure(exception.diagnostics());
     }
-    return CommandResult.success(runtimeEnvironment);
   }
 
   public CommandResult<String> format(
@@ -183,14 +166,9 @@ public final class PrintScript {
     LanguagePipeline pipeline = pipelineFor(version);
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements =
-          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
-      PrintScriptFormatter.Session session = pipeline.formatter().newSession(config);
-      while (statements.hasNext()) {
-        progress.report("Formatting statement");
-        session.format(statements.next(), output);
-      }
-      session.finish(statements.eof(), output);
+      var statements = new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
+      progress.report("Formatting statements");
+      pipeline.formatter().formatAll(statements, config, output);
       return CommandResult.success(null);
     } catch (SyntaxException exception) {
       return CommandResult.failure(List.of(exception.diagnostic()));
@@ -221,36 +199,29 @@ public final class PrintScript {
     LanguagePipeline pipeline = pipelineFor(version);
     AtomicInteger diagnosticCount = new AtomicInteger();
     AtomicInteger errorCount = new AtomicInteger();
-    SemanticContext semanticContext =
-        SemanticContext.empty(
-            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements =
-          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
-      while (statements.hasNext()) {
-        StatementSyntax statement = statements.next();
-        SemanticStatementResult semantic = semanticContext.validate(statement);
-        if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
-        progress.report("Analyzing statement");
-        pipeline
-            .staticAnalyzer()
-            .analyze(
-                statement,
-                semantic.semanticModel(),
-                config,
-                diagnostic -> {
-                  diagnosticSink.accept(diagnostic);
-                  diagnosticCount.incrementAndGet();
-                  if (diagnostic.severity() == Severity.ERROR) {
-                    errorCount.incrementAndGet();
-                  }
-                });
-        semanticContext = semantic.nextContext();
-      }
+      var statements = new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
+      var validated =
+          new ValidatingStatementSource(statements, SemanticContext.forVersion(pipeline.v11()));
+      progress.report("Analyzing statements");
+      pipeline
+          .staticAnalyzer()
+          .analyzeAll(
+              validated,
+              config,
+              diagnostic -> {
+                diagnosticSink.accept(diagnostic);
+                diagnosticCount.incrementAndGet();
+                if (diagnostic.severity() == Severity.ERROR) {
+                  errorCount.incrementAndGet();
+                }
+              });
       return CommandResult.success(new AnalysisResult(diagnosticCount.get(), errorCount.get()));
     } catch (SyntaxException exception) {
       return CommandResult.failure(List.of(exception.diagnostic()));
+    } catch (SemanticException exception) {
+      return CommandResult.failure(exception.diagnostics());
     }
   }
 
@@ -263,21 +234,17 @@ public final class PrintScript {
       Reader source, LanguageVersion version, ProgressReporter progress) {
     if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
-    SemanticContext semanticContext =
-        SemanticContext.empty(
-            pipeline.builtins(), pipeline.typeAnnotations(), pipeline.binaryOperatorRules());
     try {
       progress.report(READING_STATEMENTS);
-      StatementSource statements =
-          new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
-      while (statements.hasNext()) {
-        SemanticStatementResult semantic = semanticContext.validate(statements.next());
-        if (!semantic.isSuccess()) return CommandResult.failure(semantic.diagnostics());
-        semanticContext = semantic.nextContext();
-      }
+      var statements = new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
+      var validated =
+          new ValidatingStatementSource(statements, SemanticContext.forVersion(pipeline.v11()));
+      validated.drain();
       return CommandResult.success(null);
     } catch (SyntaxException exception) {
       return CommandResult.failure(List.of(exception.diagnostic()));
+    } catch (SemanticException exception) {
+      return CommandResult.failure(exception.diagnostics());
     }
   }
 

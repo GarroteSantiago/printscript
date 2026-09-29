@@ -1,7 +1,5 @@
 module org.printscript.application {
-  requires org.printscript.ast;
   requires org.printscript.parser;
-  requires org.printscript.typetable;
   requires org.printscript.typechecker;
   requires transitive org.printscript.interpreter;
   requires transitive org.printscript.formatter;

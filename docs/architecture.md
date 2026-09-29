@@ -31,18 +31,24 @@ some of these modules' `build.gradle`/`module-info.java` descriptors.
 
 Each arrow is a real Gradle module dependency (verified against every module's `build.gradle`), not
 an aspiration. `cli` is the only module allowed to depend on `application`; every other module below
-it is part of the language core and must stay adapter-agnostic.
+it is part of the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
+edge that reaches past `application`, and it's a deliberate exception, not a leak: `Diagnostic` is
+zero-dependency, stable, shared vocabulary (the same category as an error/result type in any
+API) — `CommandResult.diagnostics()` returns it, so anything that renders *why* an operation failed
+needs the type in scope. `cli` used to also depend on `interpreter` directly, just to supply
+`InputPort`/`EnvironmentPort` lambdas for interactive `readInput`/`readEnv`; those are now
+`application`'s own `InputSource`/`EnvironmentSource` ports (mirroring `ProgressReporter`), adapted
+internally, so that edge is gone.
 
 ```mermaid
 graph TD
     cli["cli (adapter)"] --> application
+    cli --> diagnostics
     application --> formatter
     application --> analyzer
     application --> interpreter
     application --> lexer
-    application --> ast
     application --> parser
-    application --> typetable
     application --> typechecker
     interpreter --> ast
     interpreter --> typetable

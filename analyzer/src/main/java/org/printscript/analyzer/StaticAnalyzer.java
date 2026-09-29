@@ -21,6 +21,8 @@ import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
 import org.printscript.typetable.BuiltinRegistry;
 import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.ValidatedStatement;
+import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Runs style/policy checks over already-validated statements — identifier naming (via the swappable
@@ -65,6 +67,20 @@ public final class StaticAnalyzer {
       AnalyzerConfig config,
       Consumer<Diagnostic> diagnostics) {
     statement.accept(new StatementAnalyzer(semanticModel, config, diagnostics));
+  }
+
+  /**
+   * Drains a {@link ValidatedStatementSource}, analyzing each statement in turn. Lets {@code
+   * typetable.SemanticException} propagate rather than catching it, matching the other {@code
+   * analyze} overloads' contract — there is no recovery, analysis stops at the first invalid
+   * statement.
+   */
+  public void analyzeAll(
+      ValidatedStatementSource statements, AnalyzerConfig config, Consumer<Diagnostic> sink) {
+    while (statements.hasNext()) {
+      ValidatedStatement validated = statements.next();
+      analyze(validated.statement(), validated.model(), config, sink);
+    }
   }
 
   private final class StatementAnalyzer implements StatementVisitor<Void> {

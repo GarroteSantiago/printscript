@@ -73,6 +73,18 @@ public final class SemanticContext {
     return new SemanticContext(builtins, typeAnnotations, binaryOperatorRules, Map.of());
   }
 
+  /**
+   * Selects the {@link BuiltinRegistry}/{@link TypeAnnotationTable} strategy pair for a language
+   * version, so callers (the {@code application} composition root) never need to import those types
+   * themselves just to pick a version.
+   */
+  public static SemanticContext forVersion(boolean v11) {
+    return empty(
+        v11 ? BuiltinRegistry.v1_1() : BuiltinRegistry.v1(),
+        v11 ? TypeAnnotationTable.v1_1() : TypeAnnotationTable.v1(),
+        BinaryOperatorRules.v1());
+  }
+
   public SemanticStatementResult validate(StatementSyntax statement) {
     SemanticModel.Builder model = SemanticModel.builder();
     Map<String, VariableSymbol> nextSymbols = new HashMap<>(symbols);

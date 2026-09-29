@@ -20,6 +20,8 @@ import org.printscript.diagnostics.Phase;
 import org.printscript.types.TypeName;
 import org.printscript.types.TypeNameVisitor;
 import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.ValidatedStatement;
+import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link
@@ -83,6 +85,22 @@ public final class Interpreter {
   public RuntimeEnvironment executeStatement(
       StatementSyntax statement, RuntimeEnvironment environment, SemanticModel semanticModel) {
     return execute(statement, environment, semanticModel);
+  }
+
+  /**
+   * Drains a {@link ValidatedStatementSource}, executing each statement in turn against the running
+   * {@link RuntimeEnvironment}. Lets {@link RuntimeFailure} and {@code typetable.SemanticException}
+   * propagate rather than catching them, matching {@link #executeStatement}'s contract — there is
+   * no recovery, execution stops at the first one.
+   */
+  public RuntimeEnvironment executeAll(
+      ValidatedStatementSource statements, RuntimeEnvironment initial) {
+    RuntimeEnvironment environment = initial;
+    while (statements.hasNext()) {
+      ValidatedStatement validated = statements.next();
+      environment = executeStatement(validated.statement(), environment, validated.model());
+    }
+    return environment;
   }
 
   private RuntimeEnvironment execute(

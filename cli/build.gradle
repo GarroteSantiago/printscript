@@ -8,7 +8,6 @@ plugins {
 
 dependencies {
     implementation project(':application')
-    implementation project(':interpreter')
     implementation 'info.picocli:picocli:4.7.7'
 }
 

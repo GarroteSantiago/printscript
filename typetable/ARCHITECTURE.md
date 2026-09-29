@@ -12,6 +12,12 @@ Responsibilities:
 - `BuiltinRegistry` / `BuiltinSignature` — which callables (`println`, `readInput`, `readEnv`) exist
   for a given language version, and their signatures.
 - `VariableSymbol` — a declared variable's resolved name, type, mutability, and declaration site.
+- `ValidatedStatementSource` / `ValidatedStatement` / `SemanticException` — the pull-based port a
+  validated statement stream is read through (mirroring `ast.StatementSource` one layer down):
+  `next()` throws `SemanticException` the moment a statement fails validation instead of returning a
+  result the caller must check. `typechecker.ValidatingStatementSource` is the sole production
+  implementation; `interpreter`/`analyzer` consume the port directly (`Interpreter#executeAll`,
+  `StaticAnalyzer#analyzeAll`) without depending on `typechecker` itself.
 
 The actual type checker — `SemanticContext`, the whole-program `SemanticModelBuilder` convenience,
 and the `BinaryOperatorRules` strategy that decides operator result types — lives in a separate
@@ -32,7 +38,8 @@ Variable declarations require explicit type annotations.
 
 `interpreter` and `analyzer` both need to read a `SemanticModel` (and know what builtins exist) —
 neither one re-derives a type decision or a symbol resolution. Neither one, however, ever runs the
-checker itself: they receive an already-validated model from `application`'s composition root. Before
+checker itself: they fold a `ValidatedStatementSource` — built by `application`'s composition root,
+wrapping `typechecker.SemanticContext` — into their own result. Before
 this split, both modules pulled in `SemanticContext`, `SemanticModelBuilder`, and
 `BinaryOperatorRules` transitively through this module even though they never referenced them.
 Depending on `typechecker` is now a signal that a consumer runs analysis, not just reads its result;

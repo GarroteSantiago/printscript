@@ -11,14 +11,14 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import org.printscript.application.AnalysisResult;
 import org.printscript.application.CommandResult;
+import org.printscript.application.EnvironmentSource;
+import org.printscript.application.InputSource;
 import org.printscript.application.JsonPrintScriptConfigReader;
 import org.printscript.application.LanguageVersion;
 import org.printscript.application.PrintScript;
 import org.printscript.application.PrintScriptConfigReader;
 import org.printscript.application.ProgressReporter;
 import org.printscript.diagnostics.Diagnostic;
-import org.printscript.interpreter.EnvironmentPort;
-import org.printscript.interpreter.InputPort;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -29,7 +29,8 @@ import picocli.CommandLine.Option;
  * AnalyzeCommand}, {@link ValidateCommand}) does the I/O plumbing and then delegates the actual
  * work to a single shared {@link PrintScript} instance — no language logic lives here. {@code
  * readInput}/{@code readEnv} reach real stdin/the process environment only through {@link
- * InputPort}/{@link EnvironmentPort}, constructed here and nowhere else in this class's call chain.
+ * InputSource}/{@link EnvironmentSource}, constructed here and nowhere else in this class's call
+ * chain.
  */
 @Command(
     name = "printscript",
@@ -116,7 +117,7 @@ public class App implements Callable<Integer> {
         "PMD.CloseResource") // stdin wraps System.in; closing it would close System.in itself
     public Integer call() throws IOException {
       BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-      InputPort input =
+      InputSource input =
           prompt -> {
             System.out.print(prompt);
             System.out.flush();
@@ -126,7 +127,7 @@ public class App implements Callable<Integer> {
               throw new UncheckedIOException(exception);
             }
           };
-      EnvironmentPort env = name -> Optional.ofNullable(System.getenv(name));
+      EnvironmentSource env = name -> Optional.ofNullable(System.getenv(name));
       CommandResult<?> result =
           app.printScript.execute(
               Files.newBufferedReader(sourceFile),
