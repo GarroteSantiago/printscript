@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PipedReader;
+import java.io.PipedWriter;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -33,11 +36,12 @@ class ReplTest {
   }
 
   @Test
-  public void printsOnePromptBeforeEachStatementPlusATrailingOne() {
+  public void printsOnePromptBeforeTheLineAndOneAfterItRuns() {
     assertEquals(
-        3,
+        2,
         runValidProgram().out().split("ps> ", -1).length - 1,
-        "expected one prompt before each statement, plus a trailing one");
+        "expected one prompt before the line (both statements share it, one line of input) plus"
+            + " one after it finishes running");
   }
 
   @Test
@@ -101,22 +105,73 @@ class ReplTest {
 
   /**
    * A syntax error embedded inside a multi-token compound statement (here, a `>` the grammar
-   * doesn't support, inside an `if` condition) is a much harder case: recovering from it can cost
-   * several subsequent tokens — occasionally an entire following statement — before the read loop
-   * resynchronizes, because {@code StatementSyntaxReader}'s already-fetched lookahead is lost on
-   * every failed resync attempt and there is no way to ask it to back up rather than discard. What
-   * is guaranteed regardless is that the loop always terminates rather than hanging, which is what
-   * this asserts via a timeout; see {@link Repl}'s class doc for why this is not a full recovery
-   * guarantee.
+   * doesn't support, inside an `if` condition) recovers just as cleanly as a standalone bad token:
+   * each line's buffer is parsed once, in full, over an already-complete in-memory source, so a
+   * failure discards that one buffer atomically rather than leaving any parser lookahead to lose
+   * tokens from on a retry. The {@code @Timeout} guards against ever regressing back to the hang a
+   * streaming, incrementally-resynced parser was prone to (see {@link Repl}'s class doc).
    */
   @Test
   @Timeout(value = 10, unit = TimeUnit.SECONDS)
-  public void aSyntaxErrorInsideAMultiTokenStatementNeverHangsTheSession() {
+  public void aSyntaxErrorInsideAMultiTokenStatementIsReported() {
     RunResult result =
         run("let a: number = 7;\nif (a > 3) { println(\"x\"); }\nprintln(\"done\");\n", true);
 
     assertTrue(
         result.err().contains("Unexpected character"),
         "expected the malformed condition to be reported: " + result.err());
+  }
+
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  public void theStatementAfterAMultiTokenSyntaxErrorStillRunsCleanly() {
+    RunResult result =
+        run("let a: number = 7;\nif (a > 3) { println(\"x\"); }\nprintln(\"done\");\n", true);
+
+    assertTrue(
+        result.out().contains("done"),
+        "expected the next line's statement to run normally, with no tokens lost: " + result.out());
+  }
+
+  /**
+   * A regression test built on a fully-materialized {@link StringReader} cannot catch a prompt
+   * appearing late: {@link Repl#run} only returns once the whole source is exhausted, by which
+   * point every prompt has eventually printed regardless of when it appeared relative to the input
+   * that produced it. This test instead feeds input incrementally through a real {@link
+   * PipedWriter}, on a background thread, so it can assert the second prompt is already on stdout
+   * strictly *before* the second line is written — catching exactly the bug a user found by hand:
+   * every prompt and every statement's output landing one command late, because completing
+   * statement N's parse always required blocking to read statement N+1's first token.
+   */
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  public void theSecondPromptAppearsBeforeTheSecondLineIsTyped()
+      throws IOException, InterruptedException {
+    try (PipedWriter typedInput = new PipedWriter();
+        PipedReader replInput = new PipedReader(typedInput)) {
+      ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
+      PrintStream out = new PrintStream(outBuffer, true, StandardCharsets.UTF_8);
+      PrintStream err = new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
+
+      Thread replThread = new Thread(() -> Repl.run(replInput, false, out, err));
+      replThread.setDaemon(true);
+      replThread.start();
+
+      typedInput.write("let x: number = 1;\n");
+      typedInput.flush();
+
+      String expected = "ps> ps> ";
+      long deadline = System.currentTimeMillis() + 5000;
+      while (!expected.equals(outBuffer.toString(StandardCharsets.UTF_8))
+          && System.currentTimeMillis() < deadline) {
+        Thread.sleep(20);
+      }
+
+      assertEquals(
+          expected,
+          outBuffer.toString(StandardCharsets.UTF_8),
+          "expected the prompt for the next line to already be printed, before that line is"
+              + " typed");
+    }
   }
 }

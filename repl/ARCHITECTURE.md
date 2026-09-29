@@ -19,11 +19,10 @@ internally. `toolchain` and the language core stay exactly as stateless as they 
 
 Responsibilities:
 
-- `Repl`: the composition root and entry point (`main`). Wires a `Reader`/`PrintStream` trio —
-  `System.in`/`System.out`/`System.err` in production, in-memory streams in tests — into a
-  persistent `Lexer` and a `ReplSession`, and drives the prompt loop. Also owns syntax-error
-  recovery (see below); parsing is not `ReplSession`'s job precisely because that recovery decision
-  belongs to whoever constructs the `Lexer`/`StatementSyntaxReader` pair.
+- `Repl`: the composition root and entry point (`main`). Reads one line at a time from a
+  `Reader`/`PrintStream` trio — `System.in`/`System.out`/`System.err` in production, in-memory
+  streams in tests — buffering lines until `isOpenBlock` says the buffer looks complete, then
+  parses and runs it via `ReplSession` (see below).
 - `ReplSession`: owns the `SemanticContext`/`RuntimeEnvironment` state across statements. `step`
   takes one already-parsed statement, validates and executes it, and never throws — a semantic
   error or a runtime failure is reported as diagnostics, with the session's state left exactly as
@@ -33,29 +32,27 @@ Responsibilities:
   execute one statement at a time through that exact same public entry point instead of needing a
   new interpreter API.
 
-Because `Repl.run` reads from an ordinary `Reader`, a multi-line block (`if (...) { ... }` spanning
-several typed lines) is handled for free: the parser's lookahead simply blocks for more input from
-that `Reader` exactly as it already does for `toolchain.PrintScript` reading a whole file — no
-REPL-specific buffering logic was needed for this.
-
-**Syntax-error recovery and its limits.** A naive REPL that just kept calling `next()` on the same
-`StatementSyntaxReader` after a syntax error would hang forever: that reader's one-token lookahead
-can get stuck sitting on a token that can't start any statement, so every subsequent call throws the
-identical exception without ever advancing — verified directly, this is not a hypothetical. `Repl`
-recovers by rebuilding the `StatementSyntaxReader` wrapper (not the `Lexer` underneath it — the
-`Lexer` is always left correctly positioned right after whatever character failed it, so discarding
-it too would lose more input than necessary) on every syntax error, which guarantees the read loop
-always makes forward progress and eventually reaches real EOF. This is not a lossless recovery,
-though: a simple, self-contained bad token (a stray character forming its own malformed
-"statement") recovers cleanly, with the next statement running normally. A syntax error embedded
-inside a multi-token compound statement (e.g. an unsupported operator inside an `if` condition) can
-cost several subsequent tokens — occasionally an entire following statement — before the loop
-resynchronizes, because each rebuild discards whatever lookahead the previous attempt had already
-fetched, and there's no way to ask the parser to back up rather than discard. Actually fixing that
-would mean giving `parser.StatementSyntaxReader` some form of external resynchronization, which
-conflicts with the language core's stated "no parser recovery" design and would need to be decided
-at that level, not patched around here.
+**Why line-buffered, not streamed.** The obvious design — feed the `Reader` straight into one
+persistent `Lexer`/`StatementSyntaxReader` pair for the whole session — seems to handle a multi-line
+`if (...) { ... }` block "for free": the parser's lookahead just blocks on the `Reader` for more
+input. It was tried first, and doesn't work well: `StatementSyntaxReader` always reads one token
+*past* whatever it just matched (its constructor fetches two tokens up front, and every `advance()`
+refills one more), so confirming statement N complete always requires blocking to read statement
+N+1's first token. Verified by hand, not a hypothetical: every statement's prompt and its own output
+landed one command late — typing `let a: string = "A";` produced no visible response at all until
+the *next* line was typed, at which point the prompt and output for the first statement finally
+appeared. `Repl` instead buffers whole lines (`BufferedReader#readLine`) and only invokes the
+`Lexer`/`StatementSyntaxReader` once `isOpenBlock` (a small pre-scan counting `{`/`}` tokens) says
+the buffer isn't sitting inside an unclosed block. Every real parse then runs over an in-memory,
+already-fully-read `StringReader` with a definite end — never blocking mid-parse — so prompts and
+output appear exactly when they should, and a syntax error is a normal, bounded parse failure rather
+than something that can leave shared parser state to recover from. A malformed line's buffer is
+simply discarded as one atomic unit and the next line starts completely fresh, which also means
+syntax-error recovery is now exact: no tokens from the following statement are ever at risk of being
+silently lost the way an incrementally-resynced streaming parser could lose them.
 
 Representative tests: `src/test/java/org/printscript/repl/ReplSessionTest.java` (state threading,
 error recovery), `src/test/java/org/printscript/repl/ReplTest.java` (the full loop over in-memory
-streams, including a block statement spanning several `Reader` lines).
+streams, including a block statement spanning several lines, and — via a real `PipedWriter`/background
+thread, since a fully-materialized `StringReader` can't distinguish "late" from "eventual" — a
+regression test asserting the next prompt is already printed before the next line is typed).
