@@ -12,12 +12,12 @@ Responsibilities:
 
 Design rules:
 
-- Depends on [lexer](../lexer/ARCHITECTURE.md) and [syntax](../syntax/ARCHITECTURE.md). This is
+- Depends on [lexer](../lexer/ARCHITECTURE.md) and [ast](../ast/ARCHITECTURE.md). This is
   the one place in the codebase that is allowed to know both exist and wire them together — every
   other module should reach them only through the `TokenSource`/`StatementSource` ports.
 - Only ever added as a `testImplementation` dependency, never `implementation`/`api`. If a main
   source set needs this module, that's a sign the pipeline wiring leaked out of the composition
-  root ([application](../application/ARCHITECTURE.md)) and into a stage that shouldn't know about
+  root ([toolchain](../toolchain/ARCHITECTURE.md)) and into a stage that shouldn't know about
   it.
 - Keep it a thin convenience layer. It should not grow test assertions, fixtures with business
   meaning, or anything beyond "turn a string into pipeline data."

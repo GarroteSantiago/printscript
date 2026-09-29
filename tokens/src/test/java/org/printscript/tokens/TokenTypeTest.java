@@ -37,19 +37,19 @@ class TokenTypeTest {
 
   @ParameterizedTest
   @MethodSource("tokenTypes")
-  void toStringNamesTheConstant(TokenType type, String name, List<String> lexemes) {
+  public void toStringNamesTheConstant(TokenType type, String name, List<String> lexemes) {
     assertEquals(name, type.toString(), "expected toString() to name the constant");
   }
 
   @ParameterizedTest
   @MethodSource("tokenTypes")
-  void lexemesMatchTheReservedWords(TokenType type, String name, List<String> lexemes) {
+  public void lexemesMatchTheReservedWords(TokenType type, String name, List<String> lexemes) {
     assertEquals(lexemes, type.lexemes(), "expected the reserved words for " + name);
   }
 
   @ParameterizedTest
   @MethodSource("tokenTypes")
-  void acceptDispatchesToTheMatchingVisitorMethod(
+  public void acceptDispatchesToTheMatchingVisitorMethod(
       TokenType type, String name, List<String> lexemes) {
     assertEquals(
         name,

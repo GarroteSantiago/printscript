@@ -3,29 +3,31 @@ package org.printscript.analyzer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionVisitor;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.ast.nodes.statements.AssignmentSyntax;
+import org.printscript.ast.nodes.statements.BlockStatementSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.ast.nodes.statements.StatementVisitor;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.syntax.nodes.statements.AssignmentSyntax;
-import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementVisitor;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.ValidatedStatement;
+import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Runs style/policy checks over already-validated statements — identifier naming (via the swappable
  * {@link NamingStyleRules}, default {@link NamingStyleRules#v1()}) and argument-shape restrictions
- * on {@code println}/{@code readInput} calls. Deliberately separate from {@code semantics}: type
+ * on {@code println}/{@code readInput} calls. Deliberately separate from {@code typetable}: type
  * errors and undeclared variables are correctness, decided once and recorded in {@link
  * SemanticModel}; this class only judges style and policy on top of an already-valid program, and
  * reads {@link SemanticModel#resolveCall} rather than re-resolving which builtin a call targets.
@@ -67,12 +69,26 @@ public final class StaticAnalyzer {
     statement.accept(new StatementAnalyzer(semanticModel, config, diagnostics));
   }
 
+  /**
+   * Drains a {@link ValidatedStatementSource}, analyzing each statement in turn. Lets {@code
+   * typetable.SemanticException} propagate rather than catching it, matching the other {@code
+   * analyze} overloads' contract — there is no recovery, analysis stops at the first invalid
+   * statement.
+   */
+  public void analyzeAll(
+      ValidatedStatementSource statements, AnalyzerConfig config, Consumer<Diagnostic> sink) {
+    while (statements.hasNext()) {
+      ValidatedStatement validated = statements.next();
+      analyze(validated.statement(), validated.model(), config, sink);
+    }
+  }
+
   private final class StatementAnalyzer implements StatementVisitor<Void> {
     private final SemanticModel semanticModel;
     private final AnalyzerConfig config;
     private final Consumer<Diagnostic> diagnostics;
 
-    StatementAnalyzer(
+    private StatementAnalyzer(
         SemanticModel semanticModel, AnalyzerConfig config, Consumer<Diagnostic> diagnostics) {
       this.semanticModel = semanticModel;
       this.config = config;
@@ -156,7 +172,7 @@ public final class StaticAnalyzer {
   private static final class CallCollector implements ExpressionVisitor<Void> {
     private final List<CallExpressionSyntax> out;
 
-    CallCollector(List<CallExpressionSyntax> out) {
+    private CallCollector(List<CallExpressionSyntax> out) {
       this.out = out;
     }
 

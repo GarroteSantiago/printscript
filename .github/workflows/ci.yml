@@ -16,73 +16,25 @@ permissions:
   contents: read
 
 jobs:
-  quality:
-    name: Quality checks
-    runs-on: ubuntu-latest
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  format:
+    name: Format
+    uses: ./.github/workflows/format.yml
 
-      - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
+  checkstyle:
+    name: Checkstyle
+    needs: build
+    uses: ./.github/workflows/checkstyle.yml
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
+  pmd:
+    name: PMD
+    needs: build
+    uses: ./.github/workflows/pmd.yml
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Set up just
-        uses: extractions/setup-just@v3
-
-      - name: Check formatting (Spotless)
-        run: just format-check
-
-      - name: Run Checkstyle
-        run: just checkstyle
-
-      - name: Run PMD
-        run: just pmd
-
-      - name: Run tests & verify coverage (>= 80%)
-        run: just coverage
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: '**/build/reports/tests/'
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Upload checkstyle reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: checkstyle-reports
-          path: '**/build/reports/checkstyle/'
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Upload PMD reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pmd-reports
-          path: '**/build/reports/pmd/'
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-reports
-          path: '**/build/reports/jacoco/'
-          retention-days: 7
-          if-no-files-found: ignore
+  test:
+    name: Test
+    needs: build
+    uses: ./.github/workflows/test.yml

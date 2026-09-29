@@ -5,18 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
-import org.printscript.semantics.SemanticModelBuilder;
-import org.printscript.syntax.TypeAnnotationTable;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
 import org.printscript.testkit.TestSources;
+import org.printscript.typechecker.SemanticContext;
+import org.printscript.typechecker.SemanticModelBuilder;
+import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerOverloadsTest {
   @Test
-  void programOverloadAnalyzesEveryStatementInTheProgram() {
+  public void programOverloadAnalyzesEveryStatementInTheProgram() {
     var program = TestSources.programOf("let badName: string = \"x\";\nprintln(badName);");
     var model = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
 
@@ -27,7 +27,7 @@ class StaticAnalyzerOverloadsTest {
   }
 
   @Test
-  void statementOverloadReturnsCollectedDiagnostics() {
+  public void statementOverloadReturnsCollectedDiagnostics() {
     var statement = TestSources.statementsOf("let badName: string = \"x\";").next();
     var semantic = SemanticContext.empty(BuiltinRegistry.v1()).validate(statement);
 
@@ -40,7 +40,7 @@ class StaticAnalyzerOverloadsTest {
   }
 
   @Test
-  void blockStatementOverloadAnalyzesNestedStatementsDirectly() {
+  public void blockStatementOverloadAnalyzesNestedStatementsDirectly() {
     var statements =
         TestSources.statementsOf(
             """

@@ -172,13 +172,13 @@ public interface SpacingRules {
       return fallback();
     }
 
-    protected abstract Optional<String> fallback();
+    public abstract Optional<String> fallback();
   }
 
   /** Rule keyed on the previous token, used once the leading token has no rule of its own. */
   class V1SecondaryVisitor extends DefaultingVisitor {
-    protected final SyntaxToken token;
-    protected final FormatterConfigProvider config;
+    public final SyntaxToken token;
+    public final FormatterConfigProvider config;
 
     V1SecondaryVisitor(SyntaxToken token, FormatterConfigProvider config) {
       this.token = token;
@@ -226,7 +226,7 @@ public interface SpacingRules {
     }
 
     @Override
-    protected Optional<String> fallback() {
+    public Optional<String> fallback() {
       return Optional.of(hasLineBreak(token.leadingTrivia()) ? token.leadingTrivia() : " ");
     }
   }
@@ -250,9 +250,9 @@ public interface SpacingRules {
 
   /** Rule keyed on the token about to be emitted; falls back to the previous token's rule. */
   class V1PrimaryVisitor extends DefaultingVisitor {
-    protected final SyntaxToken token;
-    protected final SyntaxToken previous;
-    protected final FormatterConfigProvider config;
+    public final SyntaxToken token;
+    public final SyntaxToken previous;
+    public final FormatterConfigProvider config;
 
     V1PrimaryVisitor(SyntaxToken token, SyntaxToken previous, FormatterConfigProvider config) {
       this.token = token;
@@ -306,11 +306,11 @@ public interface SpacingRules {
     }
 
     @Override
-    protected Optional<String> fallback() {
+    public Optional<String> fallback() {
       return previous.type().accept(secondaryVisitor());
     }
 
-    protected TokenTypeVisitor<Optional<String>> secondaryVisitor() {
+    public TokenTypeVisitor<Optional<String>> secondaryVisitor() {
       return new V1SecondaryVisitor(token, config);
     }
   }
@@ -337,7 +337,7 @@ public interface SpacingRules {
     }
 
     @Override
-    protected TokenTypeVisitor<Optional<String>> secondaryVisitor() {
+    public TokenTypeVisitor<Optional<String>> secondaryVisitor() {
       return new V1_1SecondaryVisitor(token, config);
     }
   }

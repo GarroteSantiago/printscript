@@ -1,0 +1,10 @@
+plugins {
+    id 'buildlogic.java-library-conventions'
+    id 'buildlogic.java-publish-conventions'
+}
+
+dependencies {
+    api project(':ast')
+    api project(':types')
+    testImplementation project(':testkit')
+}

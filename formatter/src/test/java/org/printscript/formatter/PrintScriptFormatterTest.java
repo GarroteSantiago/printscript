@@ -9,7 +9,7 @@ import org.printscript.testkit.TestSources;
 
 class PrintScriptFormatterTest {
   @Test
-  void normalizesControlledSpacingAndPreservesCommentsAndTokenText() {
+  public void normalizesControlledSpacingAndPreservesCommentsAndTokenText() {
     String source = "let   a:string='value'; # keep\nprintln(a);";
 
     String formatted =
@@ -21,7 +21,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void insertsBlankLinesBetweenConsecutivePrintlnCalls() {
+  public void insertsBlankLinesBetweenConsecutivePrintlnCalls() {
     String source = "println(\"a\");\nprintln(\"b\");";
 
     String formatted =
@@ -35,7 +35,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void doesNotInsertBlankLineBeforePrintlnFollowingANonPrintlnStatement() {
+  public void doesNotInsertBlankLineBeforePrintlnFollowingANonPrintlnStatement() {
     String source = "let text: string = \"hello\";\nprintln(text);";
 
     String formatted =
@@ -49,7 +49,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void writesFormattedStatementsToAppendable() throws Exception {
+  public void writesFormattedStatementsToAppendable() throws Exception {
     var statements = TestSources.statementsOf("println(\"a\");\nprintln(\"b\");");
     var session = new PrintScriptFormatter().newSession(new FormatterConfig(0, 0, 1, 1, 1, 2));
     var output = new StringWriter();
@@ -66,7 +66,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void leavesTriviaUntouchedWhenItsRuleIsNotConfigured() {
+  public void leavesTriviaUntouchedWhenItsRuleIsNotConfigured() {
     String source = "let a: string  =  \"value\";";
     FormatterConfig config =
         new FormatterConfig(
@@ -91,7 +91,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void enforcesSpacesBeforeColonWithoutTouchingAfterColon() {
+  public void enforcesSpacesBeforeColonWithoutTouchingAfterColon() {
     String source = "let something:string = \"value\";";
     FormatterConfig config =
         new FormatterConfig(
@@ -116,7 +116,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void mandatorySingleSpaceSeparationFillsInUnconfiguredRules() {
+  public void mandatorySingleSpaceSeparationFillsInUnconfiguredRules() {
     String source = "let something:      string=\"value\";\nprintln(something);";
     FormatterConfig config =
         new FormatterConfig(
@@ -141,7 +141,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  void mandatoryLineBreakAfterStatementForcesNewlinesBetweenStatements() {
+  public void mandatoryLineBreakAfterStatementForcesNewlinesBetweenStatements() {
     var statements = TestSources.statementsOf("let a: string = \"x\";let b: string = \"y\";");
     FormatterConfig config =
         new FormatterConfig(

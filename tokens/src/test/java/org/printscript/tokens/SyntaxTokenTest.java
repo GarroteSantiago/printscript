@@ -11,7 +11,7 @@ class SyntaxTokenTest {
   private static final String LET = "let";
 
   @Test
-  void fromCopiesTheTypeFromTheToken() {
+  public void fromCopiesTheTypeFromTheToken() {
     Token token = new Token(TokenType.LET, LET, LET, "", SPAN);
 
     SyntaxToken syntaxToken = SyntaxToken.from(token);
@@ -20,7 +20,7 @@ class SyntaxTokenTest {
   }
 
   @Test
-  void fromCopiesTheSemanticLexemeFromTheToken() {
+  public void fromCopiesTheSemanticLexemeFromTheToken() {
     Token token = new Token(TokenType.IDENTIFIER, "count", "count", "", SPAN);
 
     SyntaxToken syntaxToken = SyntaxToken.from(token);
@@ -29,7 +29,7 @@ class SyntaxTokenTest {
   }
 
   @Test
-  void fromCopiesTheTextFromTheToken() {
+  public void fromCopiesTheTextFromTheToken() {
     Token token = new Token(TokenType.STRING, "hi", "\"hi\"", "", SPAN);
 
     SyntaxToken syntaxToken = SyntaxToken.from(token);
@@ -38,7 +38,7 @@ class SyntaxTokenTest {
   }
 
   @Test
-  void fromCopiesTheLeadingTriviaFromTheToken() {
+  public void fromCopiesTheLeadingTriviaFromTheToken() {
     Token token = new Token(TokenType.LET, LET, LET, "  ", SPAN);
 
     SyntaxToken syntaxToken = SyntaxToken.from(token);
@@ -47,7 +47,7 @@ class SyntaxTokenTest {
   }
 
   @Test
-  void fromCopiesTheSpanFromTheToken() {
+  public void fromCopiesTheSpanFromTheToken() {
     Token token = new Token(TokenType.LET, LET, LET, "", SPAN);
 
     SyntaxToken syntaxToken = SyntaxToken.from(token);

@@ -1,7 +1,7 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
-import org.printscript.syntax.TypeName;
+import org.printscript.types.TypeName;
 
 /**
  * A runtime value produced by evaluating an expression: {@link NumberValue} (arbitrary-precision

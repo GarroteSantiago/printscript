@@ -4,6 +4,6 @@ plugins {
 }
 
 dependencies {
-    api project(':syntax')
+    api project(':ast')
     testImplementation project(':testkit')
 }

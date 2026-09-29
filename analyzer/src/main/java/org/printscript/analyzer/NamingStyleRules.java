@@ -17,7 +17,7 @@ public interface NamingStyleRules {
     private final Pattern snakeCase;
     private final Pattern camelCase;
 
-    V1Visitor(String name, Pattern snakeCase, Pattern camelCase) {
+    private V1Visitor(String name, Pattern snakeCase, Pattern camelCase) {
       this.name = name;
       this.snakeCase = snakeCase;
       this.camelCase = camelCase;

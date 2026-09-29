@@ -4,20 +4,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.syntax.nodes.statements.AssignmentSyntax;
-import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementVisitor;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.ast.StatementSource;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionVisitor;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.ast.nodes.statements.AssignmentSyntax;
+import org.printscript.ast.nodes.statements.BlockStatementSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.ast.nodes.statements.StatementVisitor;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.tokens.SyntaxToken;
 import org.printscript.tokens.TokenType;
 
@@ -33,7 +34,7 @@ import org.printscript.tokens.TokenType;
  * println}, both needed to decide the next statement's leading trivia) and must be finished with
  * {@link Session#finish} to flush the trailing trivia before the EOF token. {@link
  * #format(ProgramSyntax, FormatterConfigProvider)} is a convenience that drives a session over an
- * already-built tree; {@code application.PrintScript}'s production path instead opens a session and
+ * already-built tree; {@code toolchain.PrintScript}'s production path instead opens a session and
  * feeds it statements as they stream off a {@code StatementSource}.
  */
 public final class PrintScriptFormatter {
@@ -49,6 +50,23 @@ public final class PrintScriptFormatter {
 
   public Session newSession(FormatterConfigProvider config) {
     return new Session(config);
+  }
+
+  /**
+   * Drains a {@link StatementSource}, formatting each statement in turn into {@code out} and
+   * finishing with the source's trailing {@code eof} trivia. This is the production path's
+   * counterpart to {@link #format(ProgramSyntax, FormatterConfigProvider)}, which drives a session
+   * over an already-built tree instead. Formatting never validates — a syntactically valid but
+   * semantically invalid program still formats — so this takes a plain {@link StatementSource}, not
+   * a {@code typetable.ValidatedStatementSource}.
+   */
+  public void formatAll(StatementSource statements, FormatterConfigProvider config, Appendable out)
+      throws IOException {
+    Session session = newSession(config);
+    while (statements.hasNext()) {
+      session.format(statements.next(), out);
+    }
+    session.finish(statements.eof(), out);
   }
 
   public String format(ProgramSyntax program, FormatterConfigProvider config) {
@@ -125,7 +143,7 @@ public final class PrintScriptFormatter {
     private final List<PositionedToken> tokens;
     private final int depth;
 
-    StatementFlattener(List<PositionedToken> tokens, int depth) {
+    private StatementFlattener(List<PositionedToken> tokens, int depth) {
       this.tokens = tokens;
       this.depth = depth;
     }
@@ -197,7 +215,7 @@ public final class PrintScriptFormatter {
     private final List<PositionedToken> tokens;
     private final int depth;
 
-    ExpressionFlattener(List<PositionedToken> tokens, int depth) {
+    private ExpressionFlattener(List<PositionedToken> tokens, int depth) {
       this.tokens = tokens;
       this.depth = depth;
     }

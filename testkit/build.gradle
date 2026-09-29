@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     api project(':lexer')
-    api project(':syntax')
+    api project(':ast')
+    implementation project(':parser')
 }

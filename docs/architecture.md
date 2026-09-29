@@ -4,7 +4,7 @@ This document is the entrypoint for the architecture notes. Start at the [root R
 for build/run instructions and a quick module index; come here for the design rules and the module
 dependency graph that don't fit a one-line summary.
 
-PrintScript should be built as a small language core surrounded by replaceable interaction adapters. The current adapter is the CLI, but the core must not depend on CLI concepts. Future adapters could be a REST API, editor plugin, web UI, Gradle plugin, or language server.
+PrintScript should be built as a small language core surrounded by replaceable interaction adapters. The current adapters are the CLI and the REPL, but the core must not depend on either's concepts. Future adapters could be a REST API, editor plugin, web UI, Gradle plugin, or language server.
 
 ## Architecture Notes
 
@@ -12,13 +12,17 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Diagnostics Module](../diagnostics/ARCHITECTURE.md)
 - [Tokens Module](../tokens/ARCHITECTURE.md)
 - [Lexer Module](../lexer/ARCHITECTURE.md)
-- [Syntax Module](../syntax/ARCHITECTURE.md)
-- [Semantics Module](../semantics/ARCHITECTURE.md)
+- [Types Module](../types/ARCHITECTURE.md)
+- [AST Module](../ast/ARCHITECTURE.md)
+- [Parser Module](../parser/ARCHITECTURE.md)
+- [Typetable Module](../typetable/ARCHITECTURE.md)
+- [Typechecker Module](../typechecker/ARCHITECTURE.md)
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
 - [Analyzer Module](../analyzer/ARCHITECTURE.md)
-- [Application Module](../application/ARCHITECTURE.md)
+- [Toolchain Module](../toolchain/ARCHITECTURE.md)
 - [CLI Module](../cli/ARCHITECTURE.md)
+- [REPL Module](../repl/ARCHITECTURE.md)
 - [Testkit Module](../testkit/ARCHITECTURE.md)
 
 See also [findings-review.md](findings-review.md) for known, not-yet-fixed inconsistencies between
@@ -27,46 +31,71 @@ some of these modules' `build.gradle`/`module-info.java` descriptors.
 ## Module dependency graph
 
 Each arrow is a real Gradle module dependency (verified against every module's `build.gradle`), not
-an aspiration. `cli` is the only module allowed to depend on `application`; every other module below
-it is part of the language core and must stay adapter-agnostic.
+an aspiration. `cli` is the only module allowed to depend on `toolchain`; every other module below
+it is part of the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
+edge that reaches past `toolchain`, and it's a deliberate exception, not a leak: `Diagnostic` is
+zero-dependency, stable, shared vocabulary (the same category as an error/result type in any
+API) — `CommandResult.diagnostics()` returns it, so anything that renders *why* an operation failed
+needs the type in scope. `cli` used to also depend on `interpreter` directly, just to supply
+`InputPort`/`EnvironmentPort` lambdas for interactive `readInput`/`readEnv`; those are now
+`toolchain`'s own `InputSource`/`EnvironmentSource` ports (mirroring `ProgressReporter`), adapted
+internally, so that edge is gone.
+
+`repl` is a second adapter that deliberately does *not* depend on `toolchain`: `toolchain.PrintScript`
+only exposes whole-program operations, with no way to get a `SemanticContext`/`RuntimeEnvironment`
+back out between statements, which a REPL needs. Rather than growing `toolchain` a REPL-specific
+stateful API, `repl` is its own thin composition root straight over the language core, the same way
+`toolchain` itself is — see [REPL Module](../repl/ARCHITECTURE.md).
 
 ```mermaid
 graph TD
-    cli["cli (adapter)"] --> application
-    application --> formatter
-    application --> analyzer
-    application --> interpreter
-    application --> lexer
-    application --> syntax
-    application --> semantics
-    interpreter --> syntax
-    interpreter --> semantics
-    formatter --> syntax
-    analyzer --> syntax
-    analyzer --> semantics
-    semantics --> syntax
-    syntax --> tokens
+    cli["cli (adapter)"] --> toolchain
+    cli --> diagnostics
+    repl["repl (adapter)"] --> lexer
+    repl --> parser
+    repl --> typechecker
+    repl --> interpreter
+    toolchain --> formatter
+    toolchain --> analyzer
+    toolchain --> interpreter
+    toolchain --> lexer
+    toolchain --> parser
+    toolchain --> typechecker
+    interpreter --> ast
+    interpreter --> typetable
+    formatter --> ast
+    analyzer --> ast
+    analyzer --> typetable
+    typechecker --> typetable
+    typetable --> ast
+    typetable --> types
+    parser --> ast
+    parser --> tokens
+    ast --> tokens
+    ast --> types
     lexer --> tokens
     tokens --> diagnostics
     diagnostics --> source
-    testkit -.test only.-> lexer
-    testkit -.test only.-> syntax
 ```
 
-Notice `lexer` and `syntax` both depend on `tokens` but never on each other — that's deliberate, see
-[Tokens Module](../tokens/ARCHITECTURE.md).
+Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,
+see [Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `ast`,
+`typechecker` out of `typetable`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
+walk the AST `ast` defines and read a `SemanticModel`, but none of them build a tree or run the
+checker that produces one. `types` has zero dependencies — pure vocabulary, no tree or stream
+shape attached.
 
 ## Pipeline data flow
 
-What actually happens when `application.PrintScript` runs a command, for the statements that make it
+What actually happens when `toolchain.PrintScript` runs a command, for the statements that make it
 through validation. Formatting instead reads token trivia off the same lexer/parser stages; see
-[Syntax Module](../syntax/ARCHITECTURE.md) for that second consumption path.
+[AST Module](../ast/ARCHITECTURE.md) for that second consumption path.
 
 ```mermaid
-flowchart LR
+flowchart TD
     Source["Source text\n(Reader)"] --> Lexer["Lexer\n(TokenSource)"]
-    Lexer --> Parser["StatementSyntaxReader\n(StatementSource)"]
-    Parser --> Semantics["SemanticContext.validate\n(one statement)"]
+    Lexer --> Parser["parser.StatementSyntaxReader\n(StatementSource)"]
+    Parser --> Semantics["typechecker.SemanticContext.validate\n(one statement)"]
     Semantics -->|success| Interpreter
     Semantics -->|success| Analyzer["StaticAnalyzer"]
     Semantics -->|failure| Diagnostics["Diagnostic\n(CommandResult.failure)"]
@@ -77,13 +106,14 @@ flowchart LR
 
 Six otherwise-unrelated "closed set of kinds" types across the core follow the same shape, so it's
 documented once here instead of six times: `tokens.TokenType`, `lexer.Punctuation`,
-`syntax.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
-`syntax.nodes.expressions.ExpressionSyntax` / `syntax.nodes.statements.StatementSyntax`. Each is
+`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
+`ast.nodes.expressions.ExpressionSyntax` / `ast.nodes.statements.StatementSyntax`. Each is
 modeled as an interface with one singleton constant (or sealed subtype) per kind and an
 `accept(XVisitor<R>)` method, rather than a Java `enum` with a `switch`.
 
 ```mermaid
 classDiagram
+    direction TB
     class TokenType {
         <<interface>>
         +accept(TokenTypeVisitor) R
@@ -135,10 +165,10 @@ The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile
 - Runtime errors stop execution immediately.
 - Variables require explicit type annotations.
 - Numbers use decimal semantics.
-- Config files use JSON, read through the `application.PrintScriptConfigReader` port (`cli` wires
+- Config files use JSON, read through the `toolchain.PrintScriptConfigReader` port (`cli` wires
   in the production `JsonPrintScriptConfigReader`); the core config types (`FormatterConfig`,
   `AnalyzerConfig`) are not coupled to any particular file format.
 - No single "common" grab-bag module: shared vocabulary is split by cohesion (`source`,
   `diagnostics`, `tokens`) so a module only depends on the specific concept it actually uses.
   Orchestration-only types (`CommandResult`, `LanguageVersion`, `ProgressReporter`) live in
-  `application`, the only place that uses them, rather than in a shared foundation module.
+  `toolchain`, the only place that uses them, rather than in a shared foundation module.

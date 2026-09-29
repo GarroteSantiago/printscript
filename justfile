@@ -12,6 +12,16 @@ build:
 run args:
     ./gradlew :cli:run --args="{{args}}"
 
+# Run the interactive REPL (e.g., just repl, or just repl 1.1 for v1.1)
+repl version="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ -z "{{version}}" ]; then
+        ./gradlew :repl:run --console=plain -q
+    else
+        ./gradlew :repl:run --console=plain -q --args="{{version}}"
+    fi
+
 # Usage: Send a file path relative to the repo root to interpret with the cli app
 pisp-interpret file:
     just run "execute --source=/home/garro/dev/faculty/ingsis/printscript/{{ file }} --version=1.0"
@@ -23,6 +33,11 @@ pisp-analyze file config:
 # Usage: Send a file path relative to the repo root to format with the cli app
 pisp-format file:
     just run "format --version=1.0 --source=/home/garro/dev/faculty/ingsis/printscript/{{ file }}"
+
+# Compile main and test sources across every module (warms the Gradle build cache ahead of
+# checkstyle/pmd/test, which each need compiled classes for their own runs)
+compile:
+    ./gradlew compileJava compileTestJava
 
 # --- CODE QUALITY (LINT & FORMAT) ---
 

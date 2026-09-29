@@ -14,14 +14,14 @@ class SyntaxExceptionTest {
           Phase.SYNTAX, "unexpected token", SourceSpan.at(new SourcePosition(1, 1, 0)));
 
   @Test
-  void diagnosticReturnsTheGivenDiagnostic() {
+  public void diagnosticReturnsTheGivenDiagnostic() {
     SyntaxException exception = new SyntaxException(DIAGNOSTIC);
 
     assertEquals(DIAGNOSTIC, exception.diagnostic(), "expected the given diagnostic");
   }
 
   @Test
-  void messageMatchesTheDiagnosticMessage() {
+  public void messageMatchesTheDiagnosticMessage() {
     SyntaxException exception = new SyntaxException(DIAGNOSTIC);
 
     assertEquals("unexpected token", exception.getMessage(), "expected the diagnostic's message");

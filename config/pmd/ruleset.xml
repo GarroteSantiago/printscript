@@ -17,6 +17,12 @@
       (the record-style convention used throughout this codebase) are not accidental shadowing.
     - TestClassWithoutTestCases: misfires on testkit's TestSources, a test-fixture helper that
       lives in a main source set, not an actual test class.
+    - JUnit5TestShouldBePackagePrivate: this codebase signs every field/method/constructor as
+      either public or private, never package-private. Package-private test methods are also not
+      just a style choice here: this project's Gradle/JUnit Platform setup silently discovers zero
+      tests in a class where every lifecycle method (@Test, @BeforeEach, etc.) is private, with no
+      build failure to flag it — verified empirically. Public is therefore the only visibility
+      that is both policy-compliant and safe for test methods in this repo.
   </description>
 
   <rule ref="category/java/errorprone.xml">
@@ -27,5 +33,6 @@
   <rule ref="category/java/bestpractices.xml">
     <exclude name="SwitchStmtsShouldHaveDefault"/>
     <exclude name="SystemPrintln"/>
+    <exclude name="JUnit5TestShouldBePackagePrivate"/>
   </rule>
 </ruleset>

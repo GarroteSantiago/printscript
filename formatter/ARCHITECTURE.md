@@ -37,7 +37,7 @@ The formatter may consult abstract syntax when a rule needs language meaning, bu
 `SpacingRules` decides how much leading trivia precedes each token, given its `TokenType`, the
 previous token's `TokenType`, and `FormatterConfig`. It is constructor-injected into
 `PrintScriptFormatter` (default `v1()`), selected by the composition root in
-[application](../application/ARCHITECTURE.md), instead of being a hardcoded `switch` over token
+[toolchain](../toolchain/ARCHITECTURE.md), instead of being a hardcoded `switch` over token
 types. A version that adds a new token kind needing its own spacing rule extends `SpacingRules`, not
 `PrintScriptFormatter`'s dispatch logic.
 

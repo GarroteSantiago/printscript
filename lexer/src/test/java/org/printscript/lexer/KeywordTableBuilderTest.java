@@ -11,7 +11,7 @@ import org.printscript.tokens.TokenType;
 
 class KeywordTableBuilderTest {
   @Test
-  void findsEachLexemeOfEachGivenTokenType() {
+  public void findsEachLexemeOfEachGivenTokenType() {
     KeywordTable table =
         KeywordTableBuilder.build(List.of(TokenType.LET, TokenType.TYPE), Map.of());
 
@@ -19,7 +19,7 @@ class KeywordTableBuilderTest {
   }
 
   @Test
-  void findsEveryLexemeOfAMultiWordTokenType() {
+  public void findsEveryLexemeOfAMultiWordTokenType() {
     KeywordTable table =
         KeywordTableBuilder.build(List.of(TokenType.LET, TokenType.TYPE), Map.of());
 
@@ -28,14 +28,14 @@ class KeywordTableBuilderTest {
   }
 
   @Test
-  void doesNotFindWordsOfATypeThatWasNotGiven() {
+  public void doesNotFindWordsOfATypeThatWasNotGiven() {
     KeywordTable table = KeywordTableBuilder.build(List.of(TokenType.LET), Map.of());
 
     assertTrue(table.find("if").isEmpty(), "expected if to be absent when IF wasn't given");
   }
 
   @Test
-  void findsTheExtraEntryAlongsideEachTypesOwnLexemes() {
+  public void findsTheExtraEntryAlongsideEachTypesOwnLexemes() {
     KeywordTable table =
         KeywordTableBuilder.build(List.of(TokenType.LET), Map.of("boolean", TokenType.TYPE));
 
@@ -43,7 +43,7 @@ class KeywordTableBuilderTest {
   }
 
   @Test
-  void ignoresTokenTypesWithNoFixedLexeme() {
+  public void ignoresTokenTypesWithNoFixedLexeme() {
     KeywordTable table = KeywordTableBuilder.build(List.of(TokenType.IDENTIFIER), Map.of());
 
     assertTrue(
