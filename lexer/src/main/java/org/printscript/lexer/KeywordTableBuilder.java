@@ -14,7 +14,7 @@ import org.printscript.tokens.TokenType;
 final class KeywordTableBuilder {
   private KeywordTableBuilder() {}
 
-  static KeywordTable build(List<TokenType> keywordTypes, Map<String, TokenType> extra) {
+  public static KeywordTable build(List<TokenType> keywordTypes, Map<String, TokenType> extra) {
     Map<String, TokenType> index = new HashMap<>(extra);
     for (TokenType type : keywordTypes) {
       for (String lexeme : type.lexemes()) {

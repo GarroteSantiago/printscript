@@ -1,25 +1,27 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
+import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionSyntax;
+import org.printscript.ast.nodes.expressions.ExpressionVisitor;
+import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
+import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
+import org.printscript.ast.nodes.statements.AssignmentSyntax;
+import org.printscript.ast.nodes.statements.BlockStatementSyntax;
+import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.ast.nodes.statements.StatementVisitor;
+import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.Phase;
-import org.printscript.semantics.SemanticModel;
-import org.printscript.syntax.TypeName;
-import org.printscript.syntax.TypeNameVisitor;
-import org.printscript.syntax.nodes.ProgramSyntax;
-import org.printscript.syntax.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.CallExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.ExpressionVisitor;
-import org.printscript.syntax.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.syntax.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.syntax.nodes.statements.AssignmentSyntax;
-import org.printscript.syntax.nodes.statements.BlockStatementSyntax;
-import org.printscript.syntax.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.syntax.nodes.statements.IfStatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
-import org.printscript.syntax.nodes.statements.StatementVisitor;
-import org.printscript.syntax.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.types.TypeName;
+import org.printscript.types.TypeNameVisitor;
+import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.ValidatedStatement;
+import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link
@@ -85,6 +87,22 @@ public final class Interpreter {
     return execute(statement, environment, semanticModel);
   }
 
+  /**
+   * Drains a {@link ValidatedStatementSource}, executing each statement in turn against the running
+   * {@link RuntimeEnvironment}. Lets {@link RuntimeFailure} and {@code typetable.SemanticException}
+   * propagate rather than catching them, matching {@link #executeStatement}'s contract — there is
+   * no recovery, execution stops at the first one.
+   */
+  public RuntimeEnvironment executeAll(
+      ValidatedStatementSource statements, RuntimeEnvironment initial) {
+    RuntimeEnvironment environment = initial;
+    while (statements.hasNext()) {
+      ValidatedStatement validated = statements.next();
+      environment = executeStatement(validated.statement(), environment, validated.model());
+    }
+    return environment;
+  }
+
   private RuntimeEnvironment execute(
       StatementSyntax statement, RuntimeEnvironment environment, SemanticModel semanticModel) {
     return statement.accept(new StatementExecutor(environment, semanticModel));
@@ -94,7 +112,7 @@ public final class Interpreter {
     private final RuntimeEnvironment environment;
     private final SemanticModel semanticModel;
 
-    StatementExecutor(RuntimeEnvironment environment, SemanticModel semanticModel) {
+    private StatementExecutor(RuntimeEnvironment environment, SemanticModel semanticModel) {
       this.environment = environment;
       this.semanticModel = semanticModel;
     }
@@ -165,7 +183,7 @@ public final class Interpreter {
     private final RuntimeEnvironment environment;
     private final SemanticModel semanticModel;
 
-    ExpressionEvaluator(RuntimeEnvironment environment, SemanticModel semanticModel) {
+    private ExpressionEvaluator(RuntimeEnvironment environment, SemanticModel semanticModel) {
       this.environment = environment;
       this.semanticModel = semanticModel;
     }
@@ -200,7 +218,7 @@ public final class Interpreter {
   private static final class LiteralValue implements TypeNameVisitor<RuntimeValue> {
     private final LiteralExpressionSyntax literal;
 
-    LiteralValue(LiteralExpressionSyntax literal) {
+    private LiteralValue(LiteralExpressionSyntax literal) {
       this.literal = literal;
     }
 
@@ -257,7 +275,7 @@ public final class Interpreter {
     private final CallExpressionSyntax call;
     private final SemanticModel semanticModel;
 
-    InvocationContext(CallExpressionSyntax call, SemanticModel semanticModel) {
+    private InvocationContext(CallExpressionSyntax call, SemanticModel semanticModel) {
       this.call = call;
       this.semanticModel = semanticModel;
     }
@@ -316,7 +334,7 @@ public final class Interpreter {
     private final String raw;
     private final CallExpressionSyntax call;
 
-    ParsedValue(String raw, CallExpressionSyntax call) {
+    private ParsedValue(String raw, CallExpressionSyntax call) {
       this.raw = raw;
       this.call = call;
     }

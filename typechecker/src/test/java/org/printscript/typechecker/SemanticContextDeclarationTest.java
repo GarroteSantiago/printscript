@@ -1,0 +1,62 @@
+package org.printscript.typechecker;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
+import org.printscript.lexer.KeywordTable;
+import org.printscript.testkit.TestSources;
+import org.printscript.types.TypeAnnotationTable;
+import org.printscript.typetable.BuiltinRegistry;
+import org.printscript.typetable.SemanticModel;
+
+class SemanticContextDeclarationTest {
+  private SemanticModel build(String source) {
+    var program = TestSources.programOf(source);
+    return new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
+  }
+
+  private SemanticModel buildV11(String source) {
+    var program = TestSources.programOf(source, KeywordTable.v1_1());
+    return new SemanticModelBuilder(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1())
+        .build(program);
+  }
+
+  @Test
+  public void allowsDeclarationWithoutInitializerFollowedByAssignment() {
+    var model = build("""
+            let result: number;
+            result = 5;
+            """);
+
+    assertTrue(model.diagnostics().isEmpty(), "expected no diagnostics");
+  }
+
+  @Test
+  public void rejectsConstDeclarationWithoutInitializer() {
+    var model = buildV11("const x: number;");
+
+    assertEquals(1, model.diagnostics().size(), "expected one diagnostic");
+  }
+
+  @Test
+  public void reportsConstWithoutInitializerMessage() {
+    var model = buildV11("const x: number;");
+
+    assertEquals(
+        "const variable 'x' requires an initializer",
+        model.diagnostics().getFirst().message(),
+        "expected a missing-initializer diagnostic for const");
+  }
+
+  @Test
+  public void allowsPrintlnCalledDirectlyWithANumber() {
+    var model =
+        build("""
+            let result: number = 5;
+            println(result);
+            """);
+
+    assertTrue(model.diagnostics().isEmpty(), "expected no diagnostics");
+  }
+}

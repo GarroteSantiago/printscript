@@ -30,7 +30,7 @@ class PrintScriptFormatterV11Test {
   }
 
   @Test
-  void movesOpeningBraceOntoSameLineAsIfAndIndentsBlockContent() {
+  public void movesOpeningBraceOntoSameLineAsIfAndIndentsBlockContent() {
     String source =
         DECLARES_FLAG_TRUE
             + "if (flag)\n"
@@ -57,7 +57,7 @@ class PrintScriptFormatterV11Test {
   }
 
   @Test
-  void indentsNestedBlocksByDepthTimesConfiguredSpaces() {
+  public void indentsNestedBlocksByDepthTimesConfiguredSpaces() {
     String source =
         "let a: boolean = true;\n"
             + "let b: boolean = true;\n"
@@ -95,7 +95,7 @@ class PrintScriptFormatterV11Test {
   }
 
   @Test
-  void movesOpeningBraceOntoItsOwnLineWhenConfiguredBelow() {
+  public void movesOpeningBraceOntoItsOwnLineWhenConfiguredBelow() {
     String source = DECLARES_FLAG_TRUE + "if (flag) {\n" + "  println(\"yes\");\n" + "}";
     FormatterConfig config =
         new FormatterConfig(

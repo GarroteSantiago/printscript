@@ -7,15 +7,15 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.diagnostics.Diagnostic;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
 import org.printscript.testkit.TestSources;
+import org.printscript.typechecker.SemanticContext;
+import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerTest {
   private List<Diagnostic> diagnostics;
 
   @BeforeEach
-  void reportConfiguredStyleAndPrintlnPolicyViolations() {
+  public void reportConfiguredStyleAndPrintlnPolicyViolations() {
     var statements =
         TestSources.statementsOf(
             """
@@ -36,12 +36,12 @@ class StaticAnalyzerTest {
   }
 
   @Test
-  void reportsExpectedDiagnosticCount() {
+  public void reportsExpectedDiagnosticCount() {
     assertEquals(2, diagnostics.size(), "expected two diagnostics");
   }
 
   @Test
-  void reportsNamingStyleViolationFirst() {
+  public void reportsNamingStyleViolationFirst() {
     assertEquals(
         "Identifier 'badName' does not match SNAKE_CASE",
         diagnostics.get(0).message(),
@@ -49,7 +49,7 @@ class StaticAnalyzerTest {
   }
 
   @Test
-  void reportsPrintlnArgumentViolationSecond() {
+  public void reportsPrintlnArgumentViolationSecond() {
     assertEquals(
         "println argument must be an identifier or literal",
         diagnostics.get(1).message(),

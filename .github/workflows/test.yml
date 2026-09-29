@@ -1,0 +1,57 @@
+name: Test
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run tests & verify coverage (>= 80%)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          # Restore-only: the build workflow already ran and wrote the cache entry this job
+          # needs (compiled classes). Writing another entry here would just be redundant. See
+          # gradle/actions/docs/setup-gradle.md, "Select which jobs should write to the cache".
+          cache-read-only: true
+
+      - name: Set up just
+        uses: extractions/setup-just@v3
+
+      - name: Run tests & verify coverage (>= 80%)
+        run: just coverage
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: '**/build/reports/jacoco/'
+          retention-days: 7
+          if-no-files-found: ignore

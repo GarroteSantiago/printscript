@@ -13,156 +13,156 @@ import org.printscript.tokens.TokenType;
 
 class LexerTest {
   @Test
-  void tokenizesColon() {
+  public void tokenizesColon() {
     assertEquals(TokenType.COLON, new Lexer(":").next().type(), "expected a colon token");
   }
 
   @Test
-  void tokenizesSemicolon() {
+  public void tokenizesSemicolon() {
     assertEquals(TokenType.SEMICOLON, new Lexer(";").next().type(), "expected a semicolon token");
   }
 
   @Test
-  void tokenizesEqual() {
+  public void tokenizesEqual() {
     assertEquals(TokenType.EQUAL, new Lexer("=").next().type(), "expected an equal token");
   }
 
   @Test
-  void tokenizesPlus() {
+  public void tokenizesPlus() {
     assertEquals(TokenType.PLUS, new Lexer("+").next().type(), "expected a plus token");
   }
 
   @Test
-  void tokenizesMinus() {
+  public void tokenizesMinus() {
     assertEquals(TokenType.MINUS, new Lexer("-").next().type(), "expected a minus token");
   }
 
   @Test
-  void tokenizesStar() {
+  public void tokenizesStar() {
     assertEquals(TokenType.STAR, new Lexer("*").next().type(), "expected a star token");
   }
 
   @Test
-  void tokenizesSlash() {
+  public void tokenizesSlash() {
     assertEquals(TokenType.SLASH, new Lexer("/").next().type(), "expected a slash token");
   }
 
   @Test
-  void tokenizesLeftParen() {
+  public void tokenizesLeftParen() {
     assertEquals(TokenType.LEFT_PAREN, new Lexer("(").next().type(), "expected a left paren token");
   }
 
   @Test
-  void tokenizesRightParen() {
+  public void tokenizesRightParen() {
     assertEquals(
         TokenType.RIGHT_PAREN, new Lexer(")").next().type(), "expected a right paren token");
   }
 
   @Test
-  void tokenizesLeftBrace() {
+  public void tokenizesLeftBrace() {
     assertEquals(TokenType.LEFT_BRACE, new Lexer("{").next().type(), "expected a left brace token");
   }
 
   @Test
-  void tokenizesRightBrace() {
+  public void tokenizesRightBrace() {
     assertEquals(
         TokenType.RIGHT_BRACE, new Lexer("}").next().type(), "expected a right brace token");
   }
 
   @Test
-  void tokenizesADoubleQuotedString() {
+  public void tokenizesADoubleQuotedString() {
     Token token = new Lexer("\"hi\"").next();
 
     assertEquals(TokenType.STRING, token.type(), "expected a string token");
   }
 
   @Test
-  void tokenizesADoubleQuotedStringValue() {
+  public void tokenizesADoubleQuotedStringValue() {
     Token token = new Lexer("\"hi\"").next();
 
     assertEquals("hi", token.semanticLexeme(), "expected the unquoted string value");
   }
 
   @Test
-  void tokenizesASingleQuotedString() {
+  public void tokenizesASingleQuotedString() {
     Token token = new Lexer("'hi'").next();
 
     assertEquals(TokenType.STRING, token.type(), "expected a string token");
   }
 
   @Test
-  void throwsOnAnUnterminatedString() {
+  public void throwsOnAnUnterminatedString() {
     assertThrows(SyntaxException.class, () -> new Lexer("\"unterminated").next());
   }
 
   @Test
-  void tokenizesAnIntegerNumber() {
+  public void tokenizesAnIntegerNumber() {
     Token token = new Lexer("42").next();
 
     assertEquals(TokenType.NUMBER, token.type(), "expected a number token");
   }
 
   @Test
-  void tokenizesAnIntegerNumberValue() {
+  public void tokenizesAnIntegerNumberValue() {
     Token token = new Lexer("42").next();
 
     assertEquals("42", token.semanticLexeme(), "expected the integer text");
   }
 
   @Test
-  void tokenizesADecimalNumber() {
+  public void tokenizesADecimalNumber() {
     Token token = new Lexer("4.5").next();
 
     assertEquals("4.5", token.semanticLexeme(), "expected the decimal text");
   }
 
   @Test
-  void throwsWhenADecimalPointIsNotFollowedByADigit() {
+  public void throwsWhenADecimalPointIsNotFollowedByADigit() {
     assertThrows(SyntaxException.class, () -> new Lexer("4.").next());
   }
 
   @Test
-  void tokenizesAKeywordUsingTheGivenKeywordTable() {
+  public void tokenizesAKeywordUsingTheGivenKeywordTable() {
     Token token = new Lexer("let", KeywordTable.v1()).next();
 
     assertEquals(TokenType.LET, token.type(), "expected the let keyword");
   }
 
   @Test
-  void tokenizesAnIdentifierWithAnUnderscore() {
+  public void tokenizesAnIdentifierWithAnUnderscore() {
     Token token = new Lexer("_count").next();
 
     assertEquals(TokenType.IDENTIFIER, token.type(), "expected an identifier token");
   }
 
   @Test
-  void tokenizesAnIdentifierWithDigits() {
+  public void tokenizesAnIdentifierWithDigits() {
     Token token = new Lexer("count1").next();
 
     assertEquals("count1", token.semanticLexeme(), "expected the full identifier text");
   }
 
   @Test
-  void throwsOnAnUnexpectedCharacter() {
+  public void throwsOnAnUnexpectedCharacter() {
     assertThrows(SyntaxException.class, () -> new Lexer("@").next());
   }
 
   @Test
-  void skipsLeadingWhitespaceAsTrivia() {
+  public void skipsLeadingWhitespaceAsTrivia() {
     Token token = new Lexer("   ;").next();
 
     assertEquals("   ", token.leadingTrivia(), "expected the whitespace as leading trivia");
   }
 
   @Test
-  void skipsACommentAsTrivia() {
+  public void skipsACommentAsTrivia() {
     Token token = new Lexer("# comment\n;").next();
 
     assertEquals(TokenType.SEMICOLON, token.type(), "expected the token after the comment");
   }
 
   @Test
-  void tracksRowAcrossNewlines() {
+  public void tracksRowAcrossNewlines() {
     Lexer lexer = new Lexer("\n;");
     Token token = lexer.next();
 
@@ -170,12 +170,12 @@ class LexerTest {
   }
 
   @Test
-  void emitsAnEofTokenAtTheEndOfSource() {
+  public void emitsAnEofTokenAtTheEndOfSource() {
     assertEquals(TokenType.EOF, new Lexer("").next().type(), "expected an eof token");
   }
 
   @Test
-  void keepsEmittingEofTokensAfterTheFirstOne() {
+  public void keepsEmittingEofTokensAfterTheFirstOne() {
     Lexer lexer = new Lexer("");
     lexer.next();
 

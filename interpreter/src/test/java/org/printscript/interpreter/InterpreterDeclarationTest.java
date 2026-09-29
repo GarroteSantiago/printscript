@@ -5,11 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.semantics.BuiltinRegistry;
-import org.printscript.semantics.SemanticContext;
-import org.printscript.semantics.SemanticStatementResult;
-import org.printscript.syntax.nodes.statements.StatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.testkit.TestSources;
+import org.printscript.typechecker.SemanticContext;
+import org.printscript.typechecker.SemanticStatementResult;
+import org.printscript.typetable.BuiltinRegistry;
 
 class InterpreterDeclarationTest {
   private List<String> run(String source) {
@@ -28,7 +28,7 @@ class InterpreterDeclarationTest {
   }
 
   @Test
-  void declarationWithoutInitializerCanBeAssignedAndPrinted() {
+  public void declarationWithoutInitializerCanBeAssignedAndPrinted() {
     List<String> output =
         run(
             """
@@ -41,7 +41,7 @@ class InterpreterDeclarationTest {
   }
 
   @Test
-  void printlnAcceptsANumberDirectly() {
+  public void printlnAcceptsANumberDirectly() {
     List<String> output =
         run(
             """

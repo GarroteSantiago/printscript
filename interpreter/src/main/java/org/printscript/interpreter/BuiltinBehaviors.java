@@ -2,7 +2,7 @@ package org.printscript.interpreter;
 
 import java.util.Map;
 import java.util.Optional;
-import org.printscript.semantics.BuiltinRegistry;
+import org.printscript.typetable.BuiltinRegistry;
 
 /**
  * Runtime behavior for each builtin, keyed by the same name {@link BuiltinRegistry} resolves
@@ -18,7 +18,7 @@ final class BuiltinBehaviors {
 
   private BuiltinBehaviors() {}
 
-  static Optional<BuiltinBehavior> find(String name) {
+  public static Optional<BuiltinBehavior> find(String name) {
     return Optional.ofNullable(BEHAVIORS.get(name));
   }
 
