@@ -4,7 +4,7 @@ PrintScript is a small statically-typed scripting language, plus a toolchain for
 parser, semantic analyzer, interpreter, source formatter, and static analyzer, wired together
 behind a single facade and exposed today through a command-line adapter. Two language versions
 exist side by side, `1.0.0` and `1.1.0` (`1.1` adds `const`, `if`/`else`, a `boolean` type, and the
-`readInput`/`readEnv` builtins on top of `1.0`) — see [`LanguageVersion`](application/src/main/java/org/printscript/application/LanguageVersion.java).
+`readInput`/`readEnv` builtins on top of `1.0`) — see [`LanguageVersion`](toolchain/src/main/java/org/printscript/toolchain/LanguageVersion.java).
 
 This is a Gradle multi-module Java project. The build enforces Checkstyle, PMD, Spotless formatting,
 and 80% JaCoCo test coverage on every module (see [`justfile`](justfile) and
@@ -12,7 +12,7 @@ and 80% JaCoCo test coverage on every module (see [`justfile`](justfile) and
 
 ## Where to start reading
 
-- **The composition root**: [`application/PrintScript.java`](application/src/main/java/org/printscript/application/PrintScript.java)
+- **The composition root**: [`toolchain/PrintScript.java`](toolchain/src/main/java/org/printscript/toolchain/PrintScript.java)
   wires a requested `LanguageVersion` into a concrete lexer/parser/semantic/interpreter/formatter/
   analyzer pipeline and exposes `execute`/`format`/`analyze`/`validate`. Nearly every other class in
   the core exists to be selected or called from here.
@@ -41,8 +41,8 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | [`interpreter`](interpreter/ARCHITECTURE.md) | Executes validated statements (`Interpreter`), immutable runtime state. |
 | [`formatter`](formatter/ARCHITECTURE.md) | Lossless, trivia-based source rewriting (`PrintScriptFormatter`). |
 | [`analyzer`](analyzer/ARCHITECTURE.md) | Configurable style/policy checks on top of an already-valid program (`StaticAnalyzer`). |
-| [`application`](application/ARCHITECTURE.md) | The composition root and public facade (`PrintScript`), CLI-independent. |
-| [`cli`](cli/ARCHITECTURE.md) | The command-line adapter (`App`) — the only module allowed to depend on `application`. |
+| [`toolchain`](toolchain/ARCHITECTURE.md) | The composition root and public facade (`PrintScript`), CLI-independent. |
+| [`cli`](cli/ARCHITECTURE.md) | The command-line adapter (`App`) — the only module allowed to depend on `toolchain`. |
 | [`testkit`](testkit/ARCHITECTURE.md) | Test-only helper for turning a string into pipeline data (`TestSources`). |
 
 ## Building, testing, running
@@ -67,7 +67,7 @@ just run "validate --source=path/to/file.pisp --version=1.0"
 ```
 
 `format`/`analyze` take a JSON config file — see
-[`JsonPrintScriptConfigReader`](application/src/main/java/org/printscript/application/JsonPrintScriptConfigReader.java)'s
+[`JsonPrintScriptConfigReader`](toolchain/src/main/java/org/printscript/toolchain/JsonPrintScriptConfigReader.java)'s
 Javadoc for the recognized keys.
 
 ## Further reading

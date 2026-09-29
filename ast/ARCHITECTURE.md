@@ -8,7 +8,7 @@ Responsibilities:
 
 - AST model
 - `StatementSource` — the pull-based port a statement producer implements and a statement consumer
-  (the composition root in [application](../application/ARCHITECTURE.md)) depends on
+  (the composition root in [toolchain](../toolchain/ARCHITECTURE.md)) depends on
 - concrete/lossless syntax representation when needed by formatting
 - statement and expression dispatch protocols
 
@@ -21,7 +21,7 @@ The parser itself — `StatementSyntaxReader`/`SyntaxTreeBuilder` — lives in a
 [parser](../parser/ARCHITECTURE.md) module, not here. This module defines the tree shape and the
 port a parser implements; it never builds one. `formatter`, `interpreter`, and `analyzer` all
 depend on `ast` (they walk the AST) but none of them depend on `parser` (they never build one —
-they receive an already-parsed tree from `application`).
+they receive an already-parsed tree from `toolchain`).
 
 Execution, validation, and analysis consume AST statements through a pull-based parser stream.
 
@@ -54,6 +54,7 @@ The formatter needs access to syntax trivia. Comments and whitespace are trivia,
 
 ```mermaid
 classDiagram
+    direction TB
     class SyntaxNode {
         <<sealed interface>>
         +span() SourceSpan

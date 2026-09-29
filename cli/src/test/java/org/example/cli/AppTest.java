@@ -17,10 +17,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
-import org.printscript.application.PrintScript;
-import org.printscript.application.PrintScriptConfigReader;
-import org.printscript.application.ProgressReporter;
 import org.printscript.formatter.FormatterConfig;
+import org.printscript.toolchain.PrintScript;
+import org.printscript.toolchain.PrintScriptConfigReader;
+import org.printscript.toolchain.ProgressReporter;
 
 class AppTest {
   private static final String SOURCE_FILE_NAME = "source.pisp";

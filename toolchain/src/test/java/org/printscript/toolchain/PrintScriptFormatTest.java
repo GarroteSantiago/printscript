@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -13,7 +13,7 @@ class PrintScriptFormatTest {
   private static final String SOURCE = "let text: string = \"hello\";\nprintln(text);";
 
   @Test
-  void formatsAStringSourceSuccessfully() {
+  public void formatsAStringSourceSuccessfully() {
     CommandResult<String> result =
         new PrintScript()
             .format(SOURCE, LanguageVersion.V1_0_0, defaultConfig(), ProgressReporter.NONE);
@@ -22,7 +22,7 @@ class PrintScriptFormatTest {
   }
 
   @Test
-  void formatsAStringSourceWithExpectedOutput() {
+  public void formatsAStringSourceWithExpectedOutput() {
     CommandResult<String> result =
         new PrintScript()
             .format(SOURCE, LanguageVersion.V1_0_0, defaultConfig(), ProgressReporter.NONE);
@@ -34,14 +34,14 @@ class PrintScriptFormatTest {
   }
 
   @Test
-  void formatsIntoAnAppendableSinkSuccessfully() throws Exception {
+  public void formatsIntoAnAppendableSinkSuccessfully() throws Exception {
     FormatSinkRun run = runFormatIntoSink();
 
     assertTrue(run.result().isSuccess(), "expected formatting into the sink to succeed");
   }
 
   @Test
-  void formatsIntoAnAppendableSinkWithExpectedOutput() throws Exception {
+  public void formatsIntoAnAppendableSinkWithExpectedOutput() throws Exception {
     FormatSinkRun run = runFormatIntoSink();
 
     assertEquals(
@@ -68,14 +68,14 @@ class PrintScriptFormatTest {
   private record FormatSinkRun(CommandResult<Void> result, StringWriter output) {}
 
   @Test
-  void rejectsAnUnsupportedVersion() {
+  public void rejectsAnUnsupportedVersion() {
     CommandResult<String> result = formatWithUnsupportedVersion();
 
     assertFalse(result.isSuccess(), "expected an unsupported version to fail");
   }
 
   @Test
-  void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
+  public void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
     CommandResult<String> result = formatWithUnsupportedVersion();
 
     assertTrue(
@@ -89,7 +89,7 @@ class PrintScriptFormatTest {
   }
 
   @Test
-  void reportsASyntaxErrorAsADiagnosticFailure() {
+  public void reportsASyntaxErrorAsADiagnosticFailure() {
     CommandResult<String> result =
         new PrintScript()
             .format(

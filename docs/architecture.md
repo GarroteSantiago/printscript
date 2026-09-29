@@ -20,7 +20,7 @@ PrintScript should be built as a small language core surrounded by replaceable i
 - [Interpreter Module](../interpreter/ARCHITECTURE.md)
 - [Formatter Module](../formatter/ARCHITECTURE.md)
 - [Analyzer Module](../analyzer/ARCHITECTURE.md)
-- [Application Module](../application/ARCHITECTURE.md)
+- [Toolchain Module](../toolchain/ARCHITECTURE.md)
 - [CLI Module](../cli/ARCHITECTURE.md)
 - [Testkit Module](../testkit/ARCHITECTURE.md)
 
@@ -30,26 +30,26 @@ some of these modules' `build.gradle`/`module-info.java` descriptors.
 ## Module dependency graph
 
 Each arrow is a real Gradle module dependency (verified against every module's `build.gradle`), not
-an aspiration. `cli` is the only module allowed to depend on `application`; every other module below
+an aspiration. `cli` is the only module allowed to depend on `toolchain`; every other module below
 it is part of the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
-edge that reaches past `application`, and it's a deliberate exception, not a leak: `Diagnostic` is
+edge that reaches past `toolchain`, and it's a deliberate exception, not a leak: `Diagnostic` is
 zero-dependency, stable, shared vocabulary (the same category as an error/result type in any
 API) — `CommandResult.diagnostics()` returns it, so anything that renders *why* an operation failed
 needs the type in scope. `cli` used to also depend on `interpreter` directly, just to supply
 `InputPort`/`EnvironmentPort` lambdas for interactive `readInput`/`readEnv`; those are now
-`application`'s own `InputSource`/`EnvironmentSource` ports (mirroring `ProgressReporter`), adapted
+`toolchain`'s own `InputSource`/`EnvironmentSource` ports (mirroring `ProgressReporter`), adapted
 internally, so that edge is gone.
 
 ```mermaid
 graph TD
-    cli["cli (adapter)"] --> application
+    cli["cli (adapter)"] --> toolchain
     cli --> diagnostics
-    application --> formatter
-    application --> analyzer
-    application --> interpreter
-    application --> lexer
-    application --> parser
-    application --> typechecker
+    toolchain --> formatter
+    toolchain --> analyzer
+    toolchain --> interpreter
+    toolchain --> lexer
+    toolchain --> parser
+    toolchain --> typechecker
     interpreter --> ast
     interpreter --> typetable
     formatter --> ast
@@ -76,12 +76,12 @@ shape attached.
 
 ## Pipeline data flow
 
-What actually happens when `application.PrintScript` runs a command, for the statements that make it
+What actually happens when `toolchain.PrintScript` runs a command, for the statements that make it
 through validation. Formatting instead reads token trivia off the same lexer/parser stages; see
 [AST Module](../ast/ARCHITECTURE.md) for that second consumption path.
 
 ```mermaid
-flowchart LR
+flowchart TD
     Source["Source text\n(Reader)"] --> Lexer["Lexer\n(TokenSource)"]
     Lexer --> Parser["parser.StatementSyntaxReader\n(StatementSource)"]
     Parser --> Semantics["typechecker.SemanticContext.validate\n(one statement)"]
@@ -102,6 +102,7 @@ modeled as an interface with one singleton constant (or sealed subtype) per kind
 
 ```mermaid
 classDiagram
+    direction TB
     class TokenType {
         <<interface>>
         +accept(TokenTypeVisitor) R
@@ -153,10 +154,10 @@ The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile
 - Runtime errors stop execution immediately.
 - Variables require explicit type annotations.
 - Numbers use decimal semantics.
-- Config files use JSON, read through the `application.PrintScriptConfigReader` port (`cli` wires
+- Config files use JSON, read through the `toolchain.PrintScriptConfigReader` port (`cli` wires
   in the production `JsonPrintScriptConfigReader`); the core config types (`FormatterConfig`,
   `AnalyzerConfig`) are not coupled to any particular file format.
 - No single "common" grab-bag module: shared vocabulary is split by cohesion (`source`,
   `diagnostics`, `tokens`) so a module only depends on the specific concept it actually uses.
   Orchestration-only types (`CommandResult`, `LanguageVersion`, `ProgressReporter`) live in
-  `application`, the only place that uses them, rather than in a shared foundation module.
+  `toolchain`, the only place that uses them, rather than in a shared foundation module.

@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 class PrintScriptValidateTest {
   @Test
-  void validatesAWellFormedProgramSuccessfully() {
+  public void validatesAWellFormedProgramSuccessfully() {
     CommandResult<Void> result =
         new PrintScript()
             .validate(
@@ -19,14 +19,14 @@ class PrintScriptValidateTest {
   }
 
   @Test
-  void rejectsAnUnsupportedVersion() {
+  public void rejectsAnUnsupportedVersion() {
     CommandResult<Void> result = validateWithUnsupportedVersion();
 
     assertFalse(result.isSuccess(), "expected an unsupported version to fail validation");
   }
 
   @Test
-  void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
+  public void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
     CommandResult<Void> result = validateWithUnsupportedVersion();
 
     assertTrue(
@@ -40,7 +40,7 @@ class PrintScriptValidateTest {
   }
 
   @Test
-  void reportsASemanticErrorAsADiagnosticFailure() {
+  public void reportsASemanticErrorAsADiagnosticFailure() {
     CommandResult<Void> result =
         new PrintScript()
             .validate(
@@ -50,7 +50,7 @@ class PrintScriptValidateTest {
   }
 
   @Test
-  void reportsASyntaxErrorAsADiagnosticFailure() {
+  public void reportsASyntaxErrorAsADiagnosticFailure() {
     CommandResult<Void> result =
         new PrintScript()
             .validate("let x number = 1;", LanguageVersion.V1_0_0, ProgressReporter.NONE);

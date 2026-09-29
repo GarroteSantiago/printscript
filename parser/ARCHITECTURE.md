@@ -12,12 +12,12 @@ Responsibilities:
   callers that want the whole tree at once instead of streaming statement-by-statement
 
 Split out from `ast` on purpose. `formatter`, `interpreter`, and `analyzer` all walk the AST
-`ast` defines, but none of them parse — they receive an already-built tree from `application`'s
+`ast` defines, but none of them parse — they receive an already-built tree from `toolchain`'s
 composition root, one statement at a time. Before this split, those three modules pulled in the
 parser transitively through `ast` (then still named `syntax`) even though they never referenced
 it. Depending on `parser` at
 all is now a signal that a consumer builds trees, not just walks them; today that's only
-`application` (the composition root) and [testkit](../testkit/ARCHITECTURE.md) (test fixtures).
+`toolchain` (the composition root) and [testkit](../testkit/ARCHITECTURE.md) (test fixtures).
 
 ```text
 TokenSource (Lexer)
@@ -25,7 +25,7 @@ TokenSource (Lexer)
   -> Statement, pulled one at a time
 ```
 
-`SyntaxTreeBuilder` is not the production path — `application.PrintScript` validates and
+`SyntaxTreeBuilder` is not the production path — `toolchain.PrintScript` validates and
 processes each statement as it's parsed, interleaved with execution/formatting/analysis, so a
 later statement is never even parsed once an earlier one has failed. `SyntaxTreeBuilder` exists for
 callers that genuinely want the whole program up front, which today is only

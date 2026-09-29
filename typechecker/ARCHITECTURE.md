@@ -25,22 +25,22 @@ Responsibilities:
   threading the context across pulls internally so no caller manages that state across a loop, and
   throwing `typetable.SemanticException` the moment a statement fails validation.
 - `SemanticContext.forVersion(boolean)` — selects the `BuiltinRegistry`/`TypeAnnotationTable`
-  strategy pair for a language version, so `application` never needs to import `typetable`/`types`
+  strategy pair for a language version, so `toolchain` never needs to import `typetable`/`types`
   itself just to pick one.
 
 Split out from `typetable` (then still named `semantics`) on purpose. `interpreter` and `analyzer`
 both need to read a `SemanticModel` — neither one re-derives a type decision or a symbol
 resolution — but neither one runs the checker itself; they receive an already-validated model from
-`application`'s composition root. Before this split, both modules pulled in
+`toolchain`'s composition root. Before this split, both modules pulled in
 `SemanticContext`/`SemanticModelBuilder`/`BinaryOperatorRules` transitively through that module
 even though neither referenced them.
 Depending on `typechecker` at all is now a signal that a consumer runs analysis, not just reads its
-result; today that's only `application` (composition root) and, for test fixtures that build a model
+result; today that's only `toolchain` (composition root) and, for test fixtures that build a model
 directly, `interpreter`'s and `analyzer`'s own test source sets.
 
 Type checking, symbol resolution, and built-in call resolution all lean on constructor-injected,
 swappable strategies (`TypeAnnotationTable`, `BinaryOperatorRules`, `BuiltinRegistry`) rather than
-hardcoded rules, so a new language version is a new strategy selected by the `application`
+hardcoded rules, so a new language version is a new strategy selected by the `toolchain`
 composition root, not a change to `SemanticContext`'s dispatch logic.
 
 ## A visible encapsulation trade-off

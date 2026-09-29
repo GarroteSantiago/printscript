@@ -12,6 +12,6 @@ Design rules:
   diagnostic up to the caller, never a substitute for one.
 - Do not add anything here that isn't part of that vocabulary. Orchestration-only concepts
   (results, versions, progress reporting) do not belong in this module — see
-  [Application Module](../application/ARCHITECTURE.md).
+  [Toolchain Module](../toolchain/ARCHITECTURE.md).
 
 Representative test: `src/test/java/org/printscript/diagnostics/DiagnosticTest.java`.

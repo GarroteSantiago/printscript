@@ -40,7 +40,7 @@ this module's dispatch logic:
 
 - `ArithmeticOperators` — what a binary operator (`PLUS`/`MINUS`/`STAR`/`SLASH`) computes given two
   `BigDecimal` operands. `Interpreter` takes one via constructor injection (default `v1()`); the
-  composition root in `application` is where a real swap would happen.
+  composition root in `toolchain` is where a real swap would happen.
 
 `Interpreter.evaluateBinary` does **not** independently decide whether `+` means numeric addition
 or string concatenation by inspecting runtime values. That decision was already made once, during

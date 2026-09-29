@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import java.util.List;
 import org.printscript.diagnostics.Diagnostic;

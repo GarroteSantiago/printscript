@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 /**
  * Port through which {@code execute} reads an interactive {@code readInput} line, keeping this

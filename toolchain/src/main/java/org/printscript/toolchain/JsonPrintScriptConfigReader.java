@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;

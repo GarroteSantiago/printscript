@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 /**
  * Port through which {@link PrintScript} reports coarse progress ("Reading statements", "Executing

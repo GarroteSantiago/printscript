@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +37,7 @@ class PrintScriptV11Test {
       """;
 
   @Test
-  void executesV11ProgramSuccessfullyUnderV11() {
+  public void executesV11ProgramSuccessfullyUnderV11() {
     CommandResult<ExecutionResult> result =
         new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
 
@@ -45,7 +45,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void v11ProgramOutputUnderV11() {
+  public void v11ProgramOutputUnderV11() {
     CommandResult<ExecutionResult> result =
         new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
 
@@ -53,7 +53,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void rejectsV11SyntaxUnderV10() {
+  public void rejectsV11SyntaxUnderV10() {
     CommandResult<ExecutionResult> result =
         new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_0_0, ProgressReporter.NONE);
 
@@ -62,7 +62,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void v10OnlyProgramStillWorksUnderV11() {
+  public void v10OnlyProgramStillWorksUnderV11() {
     CommandResult<ExecutionResult> result =
         new PrintScript().execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
 
@@ -70,7 +70,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void v10OnlyProgramOutputUnderV11() {
+  public void v10OnlyProgramOutputUnderV11() {
     CommandResult<ExecutionResult> result =
         new PrintScript().execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
 
@@ -78,7 +78,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void readInputAndReadEnvResolveThroughInjectedPorts() {
+  public void readInputAndReadEnvResolveThroughInjectedPorts() {
     List<String> output = new ArrayList<>();
 
     CommandResult<?> result = executeWithInjectedPorts(output);
@@ -87,7 +87,7 @@ class PrintScriptV11Test {
   }
 
   @Test
-  void readInputAndReadEnvProduceExpectedOutput() {
+  public void readInputAndReadEnvProduceExpectedOutput() {
     List<String> output = new ArrayList<>();
 
     executeWithInjectedPorts(output);

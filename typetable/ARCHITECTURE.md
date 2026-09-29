@@ -38,12 +38,12 @@ Variable declarations require explicit type annotations.
 
 `interpreter` and `analyzer` both need to read a `SemanticModel` (and know what builtins exist) —
 neither one re-derives a type decision or a symbol resolution. Neither one, however, ever runs the
-checker itself: they fold a `ValidatedStatementSource` — built by `application`'s composition root,
+checker itself: they fold a `ValidatedStatementSource` — built by `toolchain`'s composition root,
 wrapping `typechecker.SemanticContext` — into their own result. Before
 this split, both modules pulled in `SemanticContext`, `SemanticModelBuilder`, and
 `BinaryOperatorRules` transitively through this module even though they never referenced them.
 Depending on `typechecker` is now a signal that a consumer runs analysis, not just reads its result;
-today that's only `application` (the composition root) and, for test fixtures, `interpreter`'s and
+today that's only `toolchain` (the composition root) and, for test fixtures, `interpreter`'s and
 `analyzer`'s own test source sets.
 
 This is the same reasoning behind the `tokens`/`lexer` split (contract vs. one implementation), the

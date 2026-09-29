@@ -29,15 +29,15 @@ Design rules:
 ## Why lexer and parser don't depend on each other
 
 ```mermaid
-graph LR
+graph TD
     Lexer["lexer.Lexer\n(implements TokenSource)"] -->|depends on| Tokens["tokens\n(TokenSource, Token, TokenType, SyntaxException)"]
     Parser["syntax.StatementSyntaxReader\n(consumes TokenSource)"] -->|depends on| Tokens
-    Application["application.PrintScript\n(composition root)"] -.constructs.-> Lexer
-    Application -.injects Lexer as TokenSource into.-> Parser
+    Toolchain["toolchain.PrintScript\n(composition root)"] -.constructs.-> Lexer
+    Toolchain -.injects Lexer as TokenSource into.-> Parser
 ```
 
 `lexer` and `parser` each depend only on this module, never on each other. The composition root in
-[application](../application/ARCHITECTURE.md) is the only place that knows both concrete types
+[toolchain](../toolchain/ARCHITECTURE.md) is the only place that knows both concrete types
 exist and wires one into the other; every module in between types against `TokenSource`.
 
 Representative tests: `src/test/java/org/printscript/tokens/SyntaxExceptionTest.java`,

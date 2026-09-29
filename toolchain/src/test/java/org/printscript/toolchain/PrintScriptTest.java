@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -25,14 +25,14 @@ class PrintScriptTest {
           """;
 
   @Test
-  void executesVersionOneProgramSuccessfully() {
+  public void executesVersionOneProgramSuccessfully() {
     CommandResult<ExecutionResult> result = executeVersionOneProgram();
 
     assertTrue(result.isSuccess(), "expected execution to succeed");
   }
 
   @Test
-  void executesVersionOneProgramWithExpectedOutput() {
+  public void executesVersionOneProgramWithExpectedOutput() {
     CommandResult<ExecutionResult> result = executeVersionOneProgram();
 
     assertEquals(
@@ -47,7 +47,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void executesIntoInjectedOutputPortSuccessfully() {
+  public void executesIntoInjectedOutputPortSuccessfully() {
     List<String> output = new ArrayList<>();
 
     CommandResult<RuntimeEnvironment> result = executeSampleProgramIntoOutputPort(output);
@@ -56,7 +56,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void executesIntoInjectedOutputPortWithExpectedOutput() {
+  public void executesIntoInjectedOutputPortWithExpectedOutput() {
     List<String> output = new ArrayList<>();
 
     executeSampleProgramIntoOutputPort(output);
@@ -79,7 +79,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void streamsAnalyzerDiagnosticsSuccessfully() {
+  public void streamsAnalyzerDiagnosticsSuccessfully() {
     List<Diagnostic> diagnostics = new ArrayList<>();
 
     CommandResult<AnalysisResult> result = analyzeSampleProgram(diagnostics);
@@ -88,7 +88,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void streamsAnalyzerDiagnosticsWithExpectedCount() {
+  public void streamsAnalyzerDiagnosticsWithExpectedCount() {
     List<Diagnostic> diagnostics = new ArrayList<>();
 
     CommandResult<AnalysisResult> result = analyzeSampleProgram(diagnostics);
@@ -97,7 +97,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void streamsAnalyzerDiagnosticsWithExpectedMessage() {
+  public void streamsAnalyzerDiagnosticsWithExpectedMessage() {
     List<Diagnostic> diagnostics = new ArrayList<>();
 
     analyzeSampleProgram(diagnostics);
@@ -119,14 +119,14 @@ class PrintScriptTest {
   }
 
   @Test
-  void executeRejectsAnUnsupportedVersion() {
+  public void executeRejectsAnUnsupportedVersion() {
     CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
 
     assertFalse(result.isSuccess(), "expected an unsupported version to fail execution");
   }
 
   @Test
-  void executeRejectsAnUnsupportedVersionWithExpectedDiagnostic() {
+  public void executeRejectsAnUnsupportedVersionWithExpectedDiagnostic() {
     CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
 
     assertTrue(
@@ -140,7 +140,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void executeReportsARuntimeFailureAsADiagnosticFailure() {
+  public void executeReportsARuntimeFailureAsADiagnosticFailure() {
     CommandResult<ExecutionResult> result =
         new PrintScript()
             .execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0, ProgressReporter.NONE);
@@ -150,7 +150,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void executeReportsARuntimeFailureMessage() {
+  public void executeReportsARuntimeFailureMessage() {
     CommandResult<ExecutionResult> result =
         new PrintScript()
             .execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0, ProgressReporter.NONE);
@@ -162,7 +162,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void analyzeStringOverloadCollectsDiagnostics() {
+  public void analyzeStringOverloadCollectsDiagnostics() {
     CommandResult<List<Diagnostic>> result =
         new PrintScript()
             .analyze(
@@ -175,7 +175,7 @@ class PrintScriptTest {
   }
 
   @Test
-  void analyzeStringOverloadRejectsAnUnsupportedVersion() {
+  public void analyzeStringOverloadRejectsAnUnsupportedVersion() {
     CommandResult<List<Diagnostic>> result =
         new PrintScript()
             .analyze(

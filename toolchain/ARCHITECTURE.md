@@ -1,6 +1,6 @@
-# Application Module
+# Toolchain Module
 
-The application module is the use-case boundary for PrintScript.
+The toolchain module is the use-case boundary for PrintScript.
 
 It exposes stable operations independent from CLI:
 
@@ -25,7 +25,7 @@ Responsibilities:
   implements this facade's own port types, not `interpreter`'s, so it never needs to depend on
   `interpreter` just to supply real stdin/environment access.
 
-The application layer should not contain language rules. It should compose the core modules.
+The toolchain layer should not contain language rules. It should compose the core modules.
 
 This is also the composition root for the pull-based pipeline: it is the one place (besides
 [testkit](../testkit/ARCHITECTURE.md), for tests) allowed to construct a concrete `lexer.Lexer`,
@@ -36,7 +36,7 @@ validates). It does not drive the statement-by-statement loop itself: each termi
 the stream it's handed into its own result (`Interpreter#executeAll`, `StaticAnalyzer#analyzeAll`,
 `PrintScriptFormatter#formatAll`, `ValidatedStatementSource#drain`), reading it through the
 `tokens.TokenSource`/`ast.StatementSource`/`typetable.ValidatedStatementSource` ports it already
-depends on — never through `application`. This is also why `application` itself has no dependency
+depends on — never through `toolchain`. This is also why `toolchain` itself has no dependency
 on `ast`/`typetable`/`types`: it never touches `StatementSyntax`/`SemanticModel` directly, only the
 higher-level stream types those `*All` methods accept.
 
@@ -44,7 +44,7 @@ higher-level stream types those `*All` methods accept.
 selected: `KeywordTable`, `ArithmeticOperators`, `NamingStyleRules`, `SpacingRules` (currently all
 `.v1()`) are injected into `Lexer`, `Interpreter`, `StaticAnalyzer`, and `PrintScriptFormatter`
 respectively. `TypeAnnotationTable`/`BuiltinRegistry` selection lives behind
-`typechecker.SemanticContext.forVersion(boolean)` instead, since `application` has no other reason
+`typechecker.SemanticContext.forVersion(boolean)` instead, since `toolchain` has no other reason
 to depend on `typetable`/`types`. None of the receiving classes decide their own version-specific
 behavior — they only receive it. Swapping in a new version's behavior means changing exactly one
 line, in `PrintScript` or in `SemanticContext.forVersion`, not the consuming class.
@@ -82,6 +82,6 @@ only ever receives a strategy, never decides one itself. `format` is the odd one
 it reads straight off `parser.StatementSyntaxReader`, skipping `ValidatingStatementSource`, because
 formatting a syntactically valid but semantically invalid program is still meaningful.
 
-Representative tests: `src/test/java/org/printscript/application/PrintScriptV11Test.java`
+Representative tests: `src/test/java/org/printscript/toolchain/PrintScriptV11Test.java`
 (end-to-end v1.1 behavior across the whole pipeline), `JsonPrintScriptConfigReaderTest.java` (the
 JSON config schema), `LanguageVersionTest.java`.

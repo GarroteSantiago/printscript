@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -251,7 +251,7 @@ public final class PrintScript {
   private <T> CommandResult<T> unsupported(LanguageVersion version) {
     Diagnostic diagnostic =
         Diagnostic.error(
-            Phase.APPLICATION,
+            Phase.TOOLCHAIN,
             "Unsupported PrintScript version: "
                 + version.major()
                 + "."

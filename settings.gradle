@@ -24,7 +24,7 @@ include(
     'interpreter',
     'formatter',
     'analyzer',
-    'application',
+    'toolchain',
     'cli',
     'testkit'
 )

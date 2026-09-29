@@ -29,7 +29,7 @@ Analyzer configuration should cover:
 
 `NamingStyleRules` decides what pattern each `NamingStyle` value (`SNAKE_CASE`, `CAMEL_CASE`)
 matches. It is constructor-injected into `StaticAnalyzer` (default `v1()`), selected by the
-composition root in [application](../application/ARCHITECTURE.md), instead of being a hardcoded
+composition root in [toolchain](../toolchain/ARCHITECTURE.md), instead of being a hardcoded
 `switch` over a fixed set of regexes.
 
 Representative tests: `src/test/java/org/printscript/analyzer/StaticAnalyzerTest.java` (naming and

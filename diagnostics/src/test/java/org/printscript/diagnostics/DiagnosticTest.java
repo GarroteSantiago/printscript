@@ -11,40 +11,40 @@ class DiagnosticTest {
   private static final String MESSAGE = "bad token";
 
   @Test
-  void errorFactoryCreatesADiagnosticWithErrorSeverity() {
+  public void errorFactoryCreatesADiagnosticWithErrorSeverity() {
     Diagnostic diagnostic = Diagnostic.error(Phase.SYNTAX, MESSAGE, SPAN);
 
     assertEquals(Severity.ERROR, diagnostic.severity(), "expected an error severity");
   }
 
   @Test
-  void errorFactoryPreservesThePhase() {
+  public void errorFactoryPreservesThePhase() {
     Diagnostic diagnostic = Diagnostic.error(Phase.SEMANTIC, MESSAGE, SPAN);
 
     assertEquals(Phase.SEMANTIC, diagnostic.phase(), "expected the given phase");
   }
 
   @Test
-  void errorFactoryPreservesTheMessage() {
+  public void errorFactoryPreservesTheMessage() {
     Diagnostic diagnostic = Diagnostic.error(Phase.RUNTIME, MESSAGE, SPAN);
 
     assertEquals(MESSAGE, diagnostic.message(), "expected the given message");
   }
 
   @Test
-  void errorFactoryPreservesTheSpan() {
+  public void errorFactoryPreservesTheSpan() {
     Diagnostic diagnostic = Diagnostic.error(Phase.FORMATTER, MESSAGE, SPAN);
 
     assertEquals(SPAN, diagnostic.span(), "expected the given span");
   }
 
   @Test
-  void warningSeverityIsDistinctFromError() {
+  public void warningSeverityIsDistinctFromError() {
     assertEquals(2, Severity.values().length, "expected exactly two severities");
   }
 
   @Test
-  void everyPhaseIsResolvableByName() {
-    assertEquals(Phase.APPLICATION, Phase.valueOf("APPLICATION"), "expected the application phase");
+  public void everyPhaseIsResolvableByName() {
+    assertEquals(Phase.TOOLCHAIN, Phase.valueOf("TOOLCHAIN"), "expected the toolchain phase");
   }
 }

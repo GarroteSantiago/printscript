@@ -1,4 +1,4 @@
-package org.printscript.application;
+package org.printscript.toolchain;
 
 import java.io.IOException;
 import java.nio.file.Path;
