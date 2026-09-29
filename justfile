@@ -34,6 +34,11 @@ pisp-analyze file config:
 pisp-format file:
     just run "format --version=1.0 --source=/home/garro/dev/faculty/ingsis/printscript/{{ file }}"
 
+# Compile main and test sources across every module (warms the Gradle build cache ahead of
+# checkstyle/pmd/test, which each need compiled classes for their own runs)
+compile:
+    ./gradlew compileJava compileTestJava
+
 # --- CODE QUALITY (LINT & FORMAT) ---
 
 # Automatically format all code using Google Java Format
