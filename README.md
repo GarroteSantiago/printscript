@@ -85,6 +85,33 @@ just run "validate --source=path/to/file.pisp --version=1.0"
 [`JsonPrintScriptConfigReader`](toolchain/src/main/java/org/printscript/toolchain/JsonPrintScriptConfigReader.java)'s
 Javadoc for the recognized keys.
 
+## Releasing
+
+Releases are automatic: **merging a PR into `main` releases it**, with the version decided by the
+PR title. Titles must be [Conventional Commits](https://www.conventionalcommits.org/) (the
+`PR title` check enforces it before merging):
+
+| PR title | Release | Example |
+|---|---|---|
+| `<type>!: …`, or a `BREAKING CHANGE:` line in the PR body | major | `1.3.0 → 2.0.0` |
+| `feat: …` | minor | `1.2.0 → 1.3.0` |
+| `fix: …`, `perf: …`, `refactor: …`, `revert: …` | patch | `1.3.0 → 1.3.1` |
+| `docs: …`, `test: …`, `ci: …`, `build: …`, `chore: …`, `style: …` | none | — |
+
+On each push to `main` the [release workflow](.github/workflows/release.yml) runs CI on the merge
+commit, then tags that commit `vX.Y.Z`, publishes every library module to GitHub Packages, and
+creates the GitHub release (notes generated from the merged PRs). The tag is pushed only after
+publishing succeeds.
+
+**The version lives only in git tags.** Nothing in the repo stores it: Gradle reads it from git
+(see [`build.gradle`](build.gradle)). A commit tagged `v1.3.0` builds as `1.3.0`; any other commit
+builds as the next patch snapshot (e.g. `1.3.1-SNAPSHOT`). `./gradlew printVersion` shows it. To
+release by hand (normally never needed), tag a commit on `main` and publish it:
+
+```sh
+git tag -a v1.3.0 -m "Release v1.3.0" && ./gradlew publish && git push origin v1.3.0
+```
+
 ## Further reading
 
 - [`docs/architecture.md`](docs/architecture.md) — module dependency graph, pipeline data flow, and

@@ -1,0 +1,36 @@
+name: PR title
+
+# Every PR into main needs a Conventional Commit title, because the release workflow derives the
+# next version from it when the PR is merged (see README.md, "Releasing").
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check PR title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check the title and show the release it will produce
+        env:
+          # Passed through the environment, never interpolated into the script: a PR title is
+          # untrusted input.
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          bump=$(.github/scripts/release-version.sh bump "$PR_TITLE" "$PR_BODY")
+          if [ "$bump" = none ]; then
+            message="Merging this PR will not create a release."
+          else
+            message="Merging this PR will create a **$bump** release."
+          fi
+          echo "$message"
+          echo "$message" >> "$GITHUB_STEP_SUMMARY"
