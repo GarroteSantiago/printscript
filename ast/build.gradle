@@ -4,7 +4,5 @@ plugins {
 }
 
 dependencies {
-    api project(':source')
-    api project(':types')
     testImplementation project(':testkit')
 }

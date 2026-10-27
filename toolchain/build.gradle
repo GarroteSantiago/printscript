@@ -3,13 +3,3 @@ plugins {
     id 'buildlogic.java-publish-conventions'
 }
 
-dependencies {
-    api project(':diagnostics')
-    api project(':formatter')
-    api project(':analyzer')
-    api project(':interpreter')
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
-    implementation project(':parser')
-    implementation project(':typechecker')
-    implementation project(':lexer')
-}

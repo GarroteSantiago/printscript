@@ -30,9 +30,14 @@ some of these modules' `build.gradle`/`module-info.java` descriptors.
 
 ## Module dependency graph
 
-Each arrow is a real Gradle module dependency (verified against every module's `build.gradle`), not
-an aspiration. `cli` is the only module allowed to depend on `toolchain`; every other module below
-it is part of the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
+Each arrow is a `requires` in that module's `module-info.java`, which is also the only place main
+dependencies are declared: the `org.gradlex.java-module-dependencies` plugin (applied in
+`settings.gradle`) derives every Gradle dependency from those directives, so this graph and the build
+cannot drift apart. Every arrow is a direct use: a module `requires` exactly the modules it imports
+from, never relying on one reached transitively.
+
+`cli` is the only module allowed to depend on `toolchain`; every other module below it is part of
+the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
 edge that reaches past `toolchain`, and it's a deliberate exception, not a leak: `Diagnostic` is
 zero-dependency, stable, shared vocabulary (the same category as an error/result type in any
 API) — `CommandResult.diagnostics()` returns it, so anything that renders *why* an operation failed
@@ -51,40 +56,47 @@ stateful API, `repl` is its own thin composition root straight over the language
 graph TD
     cli["cli (adapter)"] --> toolchain
     cli --> diagnostics
-    repl["repl (adapter)"] --> lexer
+    repl --> lexer
     repl --> parser
     repl --> typechecker
+    repl --> typetable
     repl --> interpreter
-    toolchain --> formatter
-    toolchain --> analyzer
-    toolchain --> interpreter
-    toolchain --> lexer
+    repl["repl (adapter)"] --> ast
+    repl --> diagnostics
+    toolchain --> diagnostics
     toolchain --> parser
     toolchain --> typechecker
-    interpreter --> ast
-    interpreter --> typetable
+    toolchain --> interpreter
+    toolchain --> formatter
+    toolchain --> analyzer
+    toolchain --> lexer
     formatter --> tokens
+    analyzer --> diagnostics
     analyzer --> ast
     analyzer --> typetable
+    interpreter --> diagnostics
+    interpreter --> ast
+    interpreter --> typetable
+    interpreter --> types
+    typechecker --> diagnostics
+    typechecker --> ast
     typechecker --> typetable
+    typechecker --> types
+    typetable --> diagnostics
     typetable --> ast
     typetable --> types
+    parser --> diagnostics
+    parser --> source
+    parser --> types
     parser --> ast
     parser --> tokens
-    ast --> source
-    parser --> source
-    ast --> types
+    lexer --> diagnostics
+    lexer --> source
     lexer --> tokens
+    ast --> source
+    ast --> types
     tokens --> source
     diagnostics --> source
-    lexer --> diagnostics
-    parser --> diagnostics
-    typetable --> diagnostics
-    typechecker --> diagnostics
-    interpreter --> diagnostics
-    analyzer --> diagnostics
-    toolchain --> diagnostics
-    repl --> diagnostics
 ```
 
 Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,

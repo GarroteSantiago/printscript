@@ -48,6 +48,16 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 
 ## Building, testing, running
 
+**Declaring dependencies.** A module's dependencies live only in its `module-info.java`: the
+[`org.gradlex.java-module-dependencies`](https://github.com/gradlex-org/java-module-dependencies)
+plugin (applied in [`settings.gradle`](settings.gradle)) turns each `requires` into the matching
+Gradle dependency (`requires transitive` → `api`, `requires` → `implementation`). To depend on
+another module, add a `requires` line — never a `dependencies { }` entry. Versions of external
+modules (Jackson, picocli) go in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), keyed by
+module name. Test-only dependencies (tests have no `module-info.java`) stay as `testImplementation`
+in the module's `build.gradle`. New modules are registered in the `javaModules { }` block of
+`settings.gradle`, not with `include(...)`.
+
 Common tasks are wrapped as [`just`](https://github.com/casey/just) recipes (see the
 [`justfile`](justfile) for the full list); each just calls `./gradlew` directly if you don't have
 `just` installed.

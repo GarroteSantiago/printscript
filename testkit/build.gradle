@@ -2,9 +2,3 @@ plugins {
     id 'buildlogic.java-library-conventions'
 }
 
-dependencies {
-    api project(':lexer')
-    api project(':ast')
-    api project(':tokens')
-    implementation project(':parser')
-}
