@@ -16,42 +16,6 @@ public record FormatterConfig(
     Optional<Boolean> ifBraceOnSameLine)
     implements FormatterConfigProvider {
 
-  public FormatterConfig(
-      int spacesBeforeSemicolon,
-      int spacesAfterSemicolon,
-      int spacesAroundAssignment,
-      int spacesAroundOperators,
-      int blankLinesAfterPrintln,
-      int blockIndentSpaces) {
-    this(
-        Optional.of(spacesBeforeSemicolon),
-        Optional.of(spacesAfterSemicolon),
-        Optional.of(spacesAroundAssignment),
-        Optional.of(spacesAroundOperators),
-        Optional.of(blankLinesAfterPrintln),
-        Optional.of(blockIndentSpaces),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty());
-  }
-
-  public static FormatterConfig defaults() {
-    return new FormatterConfig(
-        Optional.of(0),
-        Optional.of(0),
-        Optional.of(1),
-        Optional.of(1),
-        Optional.of(0),
-        Optional.of(2),
-        Optional.of(0),
-        Optional.of(1),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty());
-  }
-
   public FormatterConfig {
     spacesBeforeSemicolon = clamp(spacesBeforeSemicolon, 0, 1);
     spacesAfterSemicolon = clamp(spacesAfterSemicolon, 0, 1);

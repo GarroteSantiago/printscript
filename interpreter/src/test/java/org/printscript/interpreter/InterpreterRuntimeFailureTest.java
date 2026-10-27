@@ -9,16 +9,9 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.expressions.BinaryOperator;
-import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
-import org.printscript.lexer.KeywordTable;
-import org.printscript.testkit.TestSources;
-import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticStatementResult;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
 
 class InterpreterRuntimeFailureTest {
   private static final InputPort FAILING_INPUT =
@@ -33,17 +26,8 @@ class InterpreterRuntimeFailureTest {
         DiagnosticException.class,
         () -> {
           List<String> output = new ArrayList<>();
-          var statements = TestSources.statementsOf(source);
-          var semanticContext = SemanticContext.empty(BuiltinRegistry.v1());
           var interpreter = new Interpreter(output::add, ArithmeticOperators.v1(), input, env);
-          var environment = RuntimeEnvironment.empty();
-          while (statements.hasNext()) {
-            StatementSyntax statement = statements.next();
-            SemanticStatementResult semantic = semanticContext.validate(statement);
-            environment =
-                interpreter.executeStatement(statement, environment, semantic.semanticModel());
-            semanticContext = semantic.nextContext();
-          }
+          Execution.run(interpreter, Execution.validated(source));
         },
         "expected execution to fail");
   }
@@ -90,23 +74,13 @@ class InterpreterRuntimeFailureTest {
         DiagnosticException.class,
         () -> {
           List<String> output = new ArrayList<>();
-          var statements = TestSources.statementsOf(source, KeywordTable.v1_1());
-          var semanticContext =
-              SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
           var interpreter =
               new Interpreter(
                   output::add,
                   ArithmeticOperators.v1(),
                   prompt -> "not-a-number",
                   EMPTY_ENVIRONMENT);
-          var environment = RuntimeEnvironment.empty();
-          while (statements.hasNext()) {
-            StatementSyntax statement = statements.next();
-            SemanticStatementResult semantic = semanticContext.validate(statement);
-            environment =
-                interpreter.executeStatement(statement, environment, semantic.semanticModel());
-            semanticContext = semantic.nextContext();
-          }
+          Execution.run(interpreter, Execution.validatedV11(source));
         },
         "expected execution to fail");
   }
@@ -132,35 +106,23 @@ class InterpreterRuntimeFailureTest {
   public void readInputWithoutAnInjectedPortThrowsRuntimeFailure() {
     List<String> output = new ArrayList<>();
     var interpreter = new Interpreter(output::add, ArithmeticOperators.v1());
-    var statements =
-        TestSources.statementsOf("let name: string = readInput(\"prompt\");", KeywordTable.v1_1());
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
-    StatementSyntax statement = statements.next();
-    SemanticStatementResult semantic = semanticContext.validate(statement);
+    var statements = Execution.validatedV11("let name: string = readInput(\"prompt\");");
 
     assertThrows(
         DiagnosticException.class,
-        () ->
-            interpreter.executeStatement(
-                statement, RuntimeEnvironment.empty(), semantic.semanticModel()),
+        () -> Execution.run(interpreter, statements),
         "expected readInput to fail as a structured DiagnosticException without an injected input port");
   }
 
   @Test
   public void readEnvWithoutAnInjectedPortThrowsRuntimeFailure() {
     List<String> output = new ArrayList<>();
-    var interpreter = new Interpreter(output::add);
-    var statements =
-        TestSources.statementsOf("let count: number = readEnv(\"COUNT\");", KeywordTable.v1_1());
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
-    StatementSyntax statement = statements.next();
-    SemanticStatementResult semantic = semanticContext.validate(statement);
+    var interpreter = new Interpreter(output::add, ArithmeticOperators.v1());
+    var statements = Execution.validatedV11("let count: number = readEnv(\"COUNT\");");
 
     assertThrows(
         DiagnosticException.class,
-        () ->
-            interpreter.executeStatement(
-                statement, RuntimeEnvironment.empty(), semantic.semanticModel()),
+        () -> Execution.run(interpreter, statements),
         "expected readEnv to fail as a structured DiagnosticException without an injected environment port");
   }
 

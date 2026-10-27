@@ -8,11 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.ValidatingStatementSource;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerOverloadsTest {
   @Test
@@ -23,7 +22,8 @@ class StaticAnalyzerOverloadsTest {
             SemanticContext.forVersion(false));
     List<Diagnostic> diagnostics = new ArrayList<>();
 
-    new StaticAnalyzer().analyzeAll(statements, AnalyzerConfig.defaults(), diagnostics::add);
+    new StaticAnalyzer(NamingStyleRules.v1())
+        .analyzeAll(statements, TestConfigs.analyzerDefaults(), diagnostics::add);
 
     assertEquals(
         2,
@@ -42,17 +42,17 @@ class StaticAnalyzerOverloadsTest {
             }
             """,
             KeywordTable.v1_1());
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
+    var semanticContext = SemanticContext.forVersion(true);
     var flagDeclarationResult = semanticContext.validate(statements.next());
     var ifStatement = (IfStatementSyntax) statements.next();
     var ifResult = flagDeclarationResult.nextContext().validate(ifStatement);
 
     List<Diagnostic> diagnostics = new ArrayList<>();
-    new StaticAnalyzer()
+    new StaticAnalyzer(NamingStyleRules.v1())
         .analyze(
             ifStatement.thenBlock(),
             ifResult.semanticModel(),
-            AnalyzerConfig.defaults(),
+            TestConfigs.analyzerDefaults(),
             diagnostics::add);
 
     assertEquals(

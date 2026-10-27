@@ -7,14 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.DiagnosticException;
-import org.printscript.lexer.KeywordTable;
-import org.printscript.testkit.TestSources;
-import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticStatementResult;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
 
 class InterpreterV11Test {
   private static final InputPort FAILING_INPUT =
@@ -25,16 +18,8 @@ class InterpreterV11Test {
 
   private List<String> run(String source, InputPort input, EnvironmentPort env) {
     List<String> output = new ArrayList<>();
-    var statements = TestSources.statementsOf(source, KeywordTable.v1_1());
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
     var interpreter = new Interpreter(output::add, ArithmeticOperators.v1(), input, env);
-    var environment = RuntimeEnvironment.empty();
-    while (statements.hasNext()) {
-      StatementSyntax statement = statements.next();
-      SemanticStatementResult semantic = semanticContext.validate(statement);
-      environment = interpreter.executeStatement(statement, environment, semantic.semanticModel());
-      semanticContext = semantic.nextContext();
-    }
+    Execution.run(interpreter, Execution.validatedV11(source));
     return output;
   }
 

@@ -57,16 +57,7 @@ public final class SemanticContext {
     this.symbols = Map.copyOf(symbols);
   }
 
-  public static SemanticContext empty(BuiltinRegistry builtins) {
-    return empty(builtins, TypeAnnotationTable.v1());
-  }
-
-  public static SemanticContext empty(
-      BuiltinRegistry builtins, TypeAnnotationTable typeAnnotations) {
-    return empty(builtins, typeAnnotations, BinaryOperatorRules.v1());
-  }
-
-  public static SemanticContext empty(
+  private static SemanticContext empty(
       BuiltinRegistry builtins,
       TypeAnnotationTable typeAnnotations,
       BinaryOperatorRules binaryOperatorRules) {

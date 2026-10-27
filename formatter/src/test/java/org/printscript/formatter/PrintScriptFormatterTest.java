@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.StringWriter;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.testkit.TestSources;
 
 class PrintScriptFormatterTest {
@@ -13,7 +14,7 @@ class PrintScriptFormatterTest {
     String source = "let   a:string='value'; # keep\nprintln(a);";
 
     String formatted =
-        new PrintScriptFormatter().format(TestSources.tokensOf(source), FormatterConfig.defaults());
+        Formatting.format(TestSources.tokensOf(source), TestConfigs.formatterDefaults());
 
     assertEquals(
         "let a: string = 'value';# keep\nprintln(a);\n", formatted, "expected normalized spacing");
@@ -24,8 +25,8 @@ class PrintScriptFormatterTest {
     String source = "println(\"a\");\nprintln(\"b\");";
 
     String formatted =
-        new PrintScriptFormatter()
-            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+        Formatting.format(
+            TestSources.tokensOf(source), TestConfigs.formatterOneBlankLineAfterPrintln());
 
     assertEquals(
         "println(\"a\");\n\nprintln(\"b\");\n",
@@ -38,8 +39,8 @@ class PrintScriptFormatterTest {
     String source = "let text: string = \"hello\";\nprintln(text);";
 
     String formatted =
-        new PrintScriptFormatter()
-            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+        Formatting.format(
+            TestSources.tokensOf(source), TestConfigs.formatterOneBlankLineAfterPrintln());
 
     assertEquals(
         "let text: string = \"hello\";\nprintln(text);\n",
@@ -51,10 +52,10 @@ class PrintScriptFormatterTest {
   public void writesFormattedStatementsToAppendable() throws Exception {
     var output = new StringWriter();
 
-    new PrintScriptFormatter()
+    new PrintScriptFormatter(SpacingRules.v1())
         .formatAll(
             TestSources.tokensOf("println(\"a\");\nprintln(\"b\");"),
-            new FormatterConfig(0, 0, 1, 1, 1, 2),
+            TestConfigs.formatterOneBlankLineAfterPrintln(),
             output);
 
     assertEquals(
@@ -80,7 +81,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
+    String formatted = Formatting.format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let a: string  =  \"value\";\n",
@@ -105,7 +106,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
+    String formatted = Formatting.format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let something :string = \"value\";",
@@ -130,7 +131,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
+    String formatted = Formatting.format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let something : string = \"value\";\nprintln ( something );",
@@ -155,7 +156,7 @@ class PrintScriptFormatterTest {
             Optional.of(true),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(tokens, config);
+    String formatted = Formatting.format(tokens, config);
 
     assertEquals(
         "let a: string = \"x\";\nlet b: string = \"y\";",
@@ -168,8 +169,8 @@ class PrintScriptFormatterTest {
     String source = "println(\"a\") + 1;\nprintln(\"b\");";
 
     String formatted =
-        new PrintScriptFormatter()
-            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+        Formatting.format(
+            TestSources.tokensOf(source), TestConfigs.formatterOneBlankLineAfterPrintln());
 
     assertEquals(
         "println(\"a\") + 1;\nprintln(\"b\");\n",
@@ -182,7 +183,7 @@ class PrintScriptFormatterTest {
     String source = "let x number = 1;";
 
     String formatted =
-        new PrintScriptFormatter().format(TestSources.tokensOf(source), FormatterConfig.defaults());
+        Formatting.format(TestSources.tokensOf(source), TestConfigs.formatterDefaults());
 
     assertEquals("let x number = 1;\n", formatted, "expected formatting to never validate");
   }

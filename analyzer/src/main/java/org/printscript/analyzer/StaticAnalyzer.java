@@ -36,10 +36,6 @@ import org.printscript.typetable.ValidatedStatementSource;
 public final class StaticAnalyzer {
   private final NamingStyleRules namingStyleRules;
 
-  public StaticAnalyzer() {
-    this(NamingStyleRules.v1());
-  }
-
   public StaticAnalyzer(NamingStyleRules namingStyleRules) {
     this.namingStyleRules = namingStyleRules;
   }

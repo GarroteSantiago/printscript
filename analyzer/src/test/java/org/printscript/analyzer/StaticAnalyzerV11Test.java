@@ -10,18 +10,17 @@ import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerV11Test {
   private List<Diagnostic> analyze(String source, AnalyzerConfig config) {
     var statements = TestSources.statementsOf(source, KeywordTable.v1_1());
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1());
+    var semanticContext = SemanticContext.forVersion(true);
     List<Diagnostic> diagnostics = new ArrayList<>();
     while (statements.hasNext()) {
       var statement = statements.next();
       var semantic = semanticContext.validate(statement);
-      new StaticAnalyzer().analyze(statement, semantic.semanticModel(), config, diagnostics::add);
+      new StaticAnalyzer(NamingStyleRules.v1())
+          .analyze(statement, semantic.semanticModel(), config, diagnostics::add);
       semanticContext = semantic.nextContext();
     }
     return diagnostics;

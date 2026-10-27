@@ -9,11 +9,7 @@ class PrintScriptValidateTest {
   @Test
   public void validatesAWellFormedProgramSuccessfully() {
     CommandResult<Void> result =
-        new PrintScript()
-            .validate(
-                "let name: string = \"Ada\";\nprintln(name);",
-                LanguageVersion.V1_0_0,
-                ProgressReporter.NONE);
+        Commands.validate("let name: string = \"Ada\";\nprintln(name);", LanguageVersion.V1_0_0);
 
     assertTrue(result.isSuccess(), "expected validation to succeed");
   }
@@ -21,18 +17,14 @@ class PrintScriptValidateTest {
   @Test
   public void reportsASemanticErrorAsADiagnosticFailure() {
     CommandResult<Void> result =
-        new PrintScript()
-            .validate(
-                "let x: number = \"not a number\";", LanguageVersion.V1_0_0, ProgressReporter.NONE);
+        Commands.validate("let x: number = \"not a number\";", LanguageVersion.V1_0_0);
 
     assertFalse(result.isSuccess(), "expected a semantic error to fail validation");
   }
 
   @Test
   public void reportsASyntaxErrorAsADiagnosticFailure() {
-    CommandResult<Void> result =
-        new PrintScript()
-            .validate("let x number = 1;", LanguageVersion.V1_0_0, ProgressReporter.NONE);
+    CommandResult<Void> result = Commands.validate("let x number = 1;", LanguageVersion.V1_0_0);
 
     assertFalse(result.isSuccess(), "expected a syntax error to fail validation");
   }

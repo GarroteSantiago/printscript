@@ -22,10 +22,6 @@ import org.printscript.tokens.TokenType;
 public final class PrintScriptFormatter {
   private final SpacingRules spacingRules;
 
-  public PrintScriptFormatter() {
-    this(SpacingRules.v1());
-  }
-
   public PrintScriptFormatter(SpacingRules spacingRules) {
     this.spacingRules = spacingRules;
   }
@@ -43,17 +39,6 @@ public final class PrintScriptFormatter {
       token = tokens.next();
     }
     out.append(rewriteTrailingTrivia(session.previous, token, config));
-  }
-
-  /** {@link #formatAll} into a string. */
-  public String format(TokenSource tokens, FormatterConfigProvider config) {
-    StringBuilder out = new StringBuilder();
-    try {
-      formatAll(tokens, config, out);
-    } catch (IOException exception) {
-      throw new IllegalStateException("StringBuilder append failed", exception);
-    }
-    return out.toString();
   }
 
   /**

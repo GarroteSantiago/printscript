@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.formatter.FormatterConfig;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.toolchain.PrintScript;
 import org.printscript.toolchain.PrintScriptConfigReader;
 import org.printscript.toolchain.ProgressReporter;
@@ -522,13 +523,13 @@ class AppTest {
     @Override
     public FormatterConfig readFormatterConfig(Path path) {
       formatterPath = path;
-      return new FormatterConfig(0, 0, 1, 1, 1, 2);
+      return TestConfigs.formatterOneBlankLineAfterPrintln();
     }
 
     @Override
     public AnalyzerConfig readAnalyzerConfig(Path path) {
       analyzerPath = path;
-      return AnalyzerConfig.defaults();
+      return TestConfigs.analyzerDefaults();
     }
   }
 

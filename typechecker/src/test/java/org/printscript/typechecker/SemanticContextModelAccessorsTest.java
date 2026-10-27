@@ -14,7 +14,6 @@ import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.testkit.TestSources;
 import org.printscript.types.TypeName;
-import org.printscript.typetable.BuiltinRegistry;
 import org.printscript.typetable.BuiltinSignature;
 import org.printscript.typetable.VariableSymbol;
 
@@ -27,7 +26,7 @@ class SemanticContextModelAccessorsTest {
     var call = (CallExpressionSyntax) reference.expression();
     var identifier = (IdentifierExpressionSyntax) call.arguments().getFirst();
 
-    var context = SemanticContext.empty(BuiltinRegistry.v1());
+    var context = SemanticContext.forVersion(false);
     var declarationResult = context.validate(declaration);
     var referenceResult = declarationResult.nextContext().validate(reference);
 
@@ -42,7 +41,7 @@ class SemanticContextModelAccessorsTest {
     var statement = (ExpressionStatementSyntax) TestSources.statementsOf("println(\"hi\");").next();
     var call = (CallExpressionSyntax) statement.expression();
 
-    var result = SemanticContext.empty(BuiltinRegistry.v1()).validate(statement);
+    var result = SemanticContext.forVersion(false).validate(statement);
 
     assertEquals(
         Optional.of("println"),
@@ -56,7 +55,7 @@ class SemanticContextModelAccessorsTest {
         (VariableDeclarationSyntax) TestSources.statementsOf("let x: number = 1 + 2;").next();
     var binary = (BinaryExpressionSyntax) declaration.initializer().orElseThrow();
 
-    var result = SemanticContext.empty(BuiltinRegistry.v1()).validate(declaration);
+    var result = SemanticContext.forVersion(false).validate(declaration);
 
     assertEquals(
         Optional.of(TypeName.NUMBER),

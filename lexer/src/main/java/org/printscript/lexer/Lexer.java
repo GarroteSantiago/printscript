@@ -2,7 +2,6 @@ package org.printscript.lexer;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.DiagnosticException;
@@ -35,18 +34,6 @@ public final class Lexer implements TokenSource {
   private int column = 1;
   private int offset;
   private SourcePosition lastConsumed = new SourcePosition(1, 1, 0);
-
-  public Lexer(String source) {
-    this(new StringReader(source), KeywordTable.v1());
-  }
-
-  public Lexer(Reader reader) {
-    this(reader, KeywordTable.v1());
-  }
-
-  public Lexer(String source, KeywordTable keywords) {
-    this(new StringReader(source), keywords);
-  }
 
   public Lexer(Reader reader, KeywordTable keywords) {
     this.reader = reader;

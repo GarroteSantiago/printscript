@@ -2,10 +2,6 @@ package org.printscript.toolchain;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.printscript.analyzer.AnalyzerConfig;
@@ -83,26 +79,6 @@ public final class PrintScript {
         });
   }
 
-  public CommandResult<ExecutionResult> execute(
-      String source, LanguageVersion version, ProgressReporter progress) {
-    return execute(new StringReader(source), version, progress);
-  }
-
-  public CommandResult<ExecutionResult> execute(
-      Reader source, LanguageVersion version, ProgressReporter progress) {
-    List<String> output = new ArrayList<>();
-    CommandResult<RuntimeEnvironment> result = execute(source, version, output::add, progress);
-    if (!result.isSuccess()) return CommandResult.failure(result.diagnostics());
-    return CommandResult.success(new ExecutionResult(output));
-  }
-
-  public CommandResult<RuntimeEnvironment> execute(
-      Reader source, LanguageVersion version, Consumer<String> output, ProgressReporter progress) {
-    LanguagePipeline pipeline = pipelineFor(version);
-    Interpreter interpreter = new Interpreter(output::accept, pipeline.operators());
-    return execute(source, pipeline, interpreter, progress);
-  }
-
   public CommandResult<RuntimeEnvironment> execute(
       Reader source,
       LanguageVersion version,
@@ -133,30 +109,6 @@ public final class PrintScript {
     }
   }
 
-  public CommandResult<String> format(
-      String source,
-      LanguageVersion version,
-      FormatterConfigProvider config,
-      ProgressReporter progress) {
-    return format(new StringReader(source), version, config, progress);
-  }
-
-  public CommandResult<String> format(
-      Reader source,
-      LanguageVersion version,
-      FormatterConfigProvider config,
-      ProgressReporter progress) {
-    StringWriter output = new StringWriter();
-    CommandResult<Void> result;
-    try {
-      result = format(source, version, config, output, progress);
-    } catch (IOException exception) {
-      throw new IllegalStateException("StringWriter append failed", exception);
-    }
-    if (!result.isSuccess()) return CommandResult.failure(result.diagnostics());
-    return CommandResult.success(output.toString());
-  }
-
   public CommandResult<Void> format(
       Reader source,
       LanguageVersion version,
@@ -172,20 +124,6 @@ public final class PrintScript {
     } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
-  }
-
-  public CommandResult<List<Diagnostic>> analyze(
-      String source, LanguageVersion version, AnalyzerConfig config, ProgressReporter progress) {
-    return analyze(new StringReader(source), version, config, progress);
-  }
-
-  public CommandResult<List<Diagnostic>> analyze(
-      Reader source, LanguageVersion version, AnalyzerConfig config, ProgressReporter progress) {
-    List<Diagnostic> diagnostics = new ArrayList<>();
-    CommandResult<AnalysisResult> result =
-        analyze(source, version, config, diagnostics::add, progress);
-    return new CommandResult<>(
-        diagnostics, result.isSuccess() ? diagnostics : result.diagnostics());
   }
 
   public CommandResult<AnalysisResult> analyze(
@@ -219,11 +157,6 @@ public final class PrintScript {
     } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
-  }
-
-  public CommandResult<Void> validate(
-      String source, LanguageVersion version, ProgressReporter progress) {
-    return validate(new StringReader(source), version, progress);
   }
 
   public CommandResult<Void> validate(

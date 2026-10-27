@@ -25,9 +25,9 @@ import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link
- * RuntimeEnvironment}) is immutable: {@link #executeStatement} returns a new environment rather
- * than mutating one in place, so PrintScript variables can still be reassigned while the
- * interpreter's own state is always a value, not a mutable object.
+ * RuntimeEnvironment}) is immutable: executing a statement returns a new environment rather than
+ * mutating one in place, so PrintScript variables can still be reassigned while the interpreter's
+ * own state is always a value, not a mutable object.
  *
  * <p>This class never re-derives a type decision that {@link SemanticModel} already recorded — e.g.
  * {@code evaluateBinary} reads {@code semanticModel.typeOf(binary)} to decide string concatenation
@@ -44,10 +44,6 @@ public final class Interpreter {
   private final ArithmeticOperators operators;
   private final InputPort input;
   private final EnvironmentPort env;
-
-  public Interpreter(OutputPort output) {
-    this(output, ArithmeticOperators.v1());
-  }
 
   public Interpreter(OutputPort output, ArithmeticOperators operators) {
     this(output, operators, unsupportedInput(), unsupportedEnvironment());
@@ -73,23 +69,17 @@ public final class Interpreter {
     };
   }
 
-  public RuntimeEnvironment executeStatement(
-      StatementSyntax statement, RuntimeEnvironment environment, SemanticModel semanticModel) {
-    return execute(statement, environment, semanticModel);
-  }
-
   /**
    * Drains a {@link ValidatedStatementSource}, executing each statement in turn against the running
    * {@link RuntimeEnvironment}. Lets a {@link DiagnosticException} (a semantic or runtime failure)
-   * propagate rather than catching it, matching {@link #executeStatement}'s contract — there is no
-   * recovery, execution stops at the first one.
+   * propagate rather than catching it — there is no recovery, execution stops at the first one.
    */
   public RuntimeEnvironment executeAll(
       ValidatedStatementSource statements, RuntimeEnvironment initial) {
     RuntimeEnvironment environment = initial;
     while (statements.hasNext()) {
       ValidatedStatement validated = statements.next();
-      environment = executeStatement(validated.statement(), environment, validated.model());
+      environment = execute(validated.statement(), environment, validated.model());
     }
     return environment;
   }

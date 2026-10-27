@@ -7,9 +7,9 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
-import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerTest {
   private List<Diagnostic> diagnostics;
@@ -22,15 +22,18 @@ class StaticAnalyzerTest {
                 let badName: string = "hello";
                 println("hello " + badName);
                 """);
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1());
+    var semanticContext = SemanticContext.forVersion(false);
     diagnostics = new ArrayList<>();
 
     while (statements.hasNext()) {
       var statement = statements.next();
       var semantic = semanticContext.validate(statement);
-      new StaticAnalyzer()
+      new StaticAnalyzer(NamingStyleRules.v1())
           .analyze(
-              statement, semantic.semanticModel(), AnalyzerConfig.defaults(), diagnostics::add);
+              statement,
+              semantic.semanticModel(),
+              TestConfigs.analyzerDefaults(),
+              diagnostics::add);
       semanticContext = semantic.nextContext();
     }
   }

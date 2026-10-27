@@ -25,8 +25,7 @@ class PrintScriptFormatterV11Test {
           Optional.of(true));
 
   private String format(String source, FormatterConfig config) {
-    return new PrintScriptFormatter(SpacingRules.v1_1())
-        .format(TestSources.tokensOf(source, KeywordTable.v1_1()), config);
+    return Formatting.formatV11(TestSources.tokensOf(source, KeywordTable.v1_1()), config);
   }
 
   @Test

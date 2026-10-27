@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.formatter.FormatterConfig;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.toolchain.PrintScriptConfigReader;
 
 /** Commands that fail on the user's code, and the real stdin prompt for a missing config file. */
@@ -31,12 +32,12 @@ class AppFailureTest {
       new PrintScriptConfigReader() {
         @Override
         public FormatterConfig readFormatterConfig(Path path) {
-          return FormatterConfig.defaults();
+          return TestConfigs.formatterDefaults();
         }
 
         @Override
         public AnalyzerConfig readAnalyzerConfig(Path path) {
-          return AnalyzerConfig.defaults();
+          return TestConfigs.analyzerDefaults();
         }
       };
 
