@@ -39,12 +39,14 @@ import org.printscript.typechecker.ValidatingStatementSource;
  * {@link ValidatingStatementSource} — every stage downstream of that depends only on the {@code
  * TokenSource}/{@code StatementSource}/{@code typetable.ValidatedStatementSource} ports, and
  * consumes/folds the resulting stream itself ({@code Interpreter#executeAll}, {@code
- * StaticAnalyzer#analyzeAll}, {@code PrintScriptFormatter#formatAll}) rather than being driven
- * statement-by-statement from here. {@link #pipelineFor} is where every per-version strategy this
- * class itself constructs ({@link KeywordTable}, {@link ArithmeticOperators}, {@link
- * NamingStyleRules}, {@code SpacingRules}) gets selected for a requested {@link LanguageVersion};
- * {@code typetable.BuiltinRegistry}/{@code types.TypeAnnotationTable} selection lives behind {@link
- * SemanticContext#forVersion} instead, since this class never otherwise touches that vocabulary.
+ * StaticAnalyzer#analyzeAll}) rather than being driven statement-by-statement from here. {@code
+ * format} skips the parser entirely: {@code PrintScriptFormatter#formatAll} consumes the {@code
+ * Lexer}'s token stream directly, since formatting rewrites trivia and never validates. {@link
+ * #pipelineFor} is where every per-version strategy this class itself constructs ({@link
+ * KeywordTable}, {@link ArithmeticOperators}, {@link NamingStyleRules}, {@code SpacingRules}) gets
+ * selected for a requested {@link LanguageVersion}; {@code typetable.BuiltinRegistry}/{@code
+ * types.TypeAnnotationTable} selection lives behind {@link SemanticContext#forVersion} instead,
+ * since this class never otherwise touches that vocabulary.
  */
 public final class PrintScript {
   private static final String READING_STATEMENTS = "Reading statements";
@@ -164,10 +166,8 @@ public final class PrintScript {
       throws IOException {
     LanguagePipeline pipeline = pipelineFor(version);
     try {
-      progress.report(READING_STATEMENTS);
-      var statements = new StatementSyntaxReader(new Lexer(source, pipeline.keywords()));
-      progress.report("Formatting statements");
-      pipeline.formatter().formatAll(statements, config, output);
+      progress.report("Formatting source");
+      pipeline.formatter().formatAll(new Lexer(source, pipeline.keywords()), config, output);
       return CommandResult.success(null);
     } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());

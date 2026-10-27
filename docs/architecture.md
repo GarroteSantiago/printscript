@@ -63,7 +63,7 @@ graph TD
     toolchain --> typechecker
     interpreter --> ast
     interpreter --> typetable
-    formatter --> ast
+    formatter --> tokens
     analyzer --> ast
     analyzer --> typetable
     typechecker --> typetable
@@ -88,7 +88,7 @@ graph TD
 
 Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,
 see [Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `ast`,
-`typechecker` out of `typetable`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
+`typechecker` out of `typetable`, and `types` out of `ast`: `interpreter`/`analyzer`
 walk the AST `ast` defines and read a `SemanticModel`, but none of them build a tree or run the
 checker that produces one. `types` has zero dependencies — pure vocabulary, no tree or stream
 shape attached.
@@ -96,8 +96,9 @@ shape attached.
 ## Pipeline data flow
 
 What actually happens when `toolchain.PrintScript` runs a command, for the statements that make it
-through validation. Formatting instead reads token trivia off the same lexer/parser stages; see
-[AST Module](../ast/ARCHITECTURE.md) for that second consumption path.
+through validation. Formatting skips the parser entirely: `PrintScriptFormatter` reads the lexer's
+token stream, trivia included, and never validates; see
+[Formatter Module](../formatter/ARCHITECTURE.md).
 
 ```mermaid
 flowchart TD
@@ -169,7 +170,8 @@ The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile
 ## Design Rules
 
 - AST is for language meaning.
-- Lossless CST/token trivia is for formatting and comment preservation.
+- Token trivia (whitespace and comments) is for formatting and comment preservation; the formatter
+  works on tokens, never on a tree.
 - Parser recovery is not part of the current design; commands stop at the first syntax error.
 - Runtime errors stop execution immediately.
 - Variables require explicit type annotations.

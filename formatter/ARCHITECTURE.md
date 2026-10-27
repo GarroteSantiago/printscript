@@ -1,8 +1,8 @@
 # Formatter Module
 
-The formatter rewrites source using immutable formatter configuration.
-
-For version `1.0.0`, formatting should be a targeted lossless CST/trivia rewrite.
+The formatter rewrites source using immutable formatter configuration. It is a targeted trivia
+rewrite over the token stream, not a pretty-printer: every token's text is re-emitted byte for
+byte, and only the whitespace a configured rule controls is rewritten.
 
 The formatter should preserve comments and untouched whitespace. It should only rewrite trivia controlled by configured formatter rules.
 
@@ -14,10 +14,19 @@ Formatter input:
 SourceInput
   -> Lexer
   -> TokenStream with Trivia
-  -> Lossless CST
   -> Rewrite Selected Trivia
   -> Formatted Source
 ```
+
+Design rules:
+
+- Depends only on [tokens](../tokens/ARCHITECTURE.md). Its input is a `TokenSource`, its output is
+  text; it never sees a parser or a tree. The little structure its rules need (block nesting depth
+  for indentation, and whether the previous top-level statement was a `println` call) is tracked
+  from the tokens themselves.
+- Formatting never validates. Whether a token sequence is a valid program is the `validate`
+  command's job, so syntactically invalid code still formats (best effort; stray braces never drive
+  the indentation depth below zero). Only a lexical error, raised by the `TokenSource`, stops it.
 
 Configuration should cover:
 
@@ -25,12 +34,10 @@ Configuration should cover:
 - spaces after semicolons
 - spaces around assignment
 - spaces around operators
-- blank lines before `println`
+- blank lines after `println` (the `line-breaks-after-println` key)
 - line breaks after statements
 
 Comments and whitespace are syntax trivia, not syntactic sugar.
-
-The formatter may consult abstract syntax when a rule needs language meaning, but its default job is to rewrite selected trivia and preserve everything else.
 
 ## Swappable per-version behavior
 

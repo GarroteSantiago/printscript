@@ -11,9 +11,10 @@ Responsibilities:
 - `SyntaxTreeBuilder` — drains a `StatementSource` into a fully materialized `ProgramSyntax`, for
   callers that want the whole tree at once instead of streaming statement-by-statement
 
-Split out from `ast` on purpose. `formatter`, `interpreter`, and `analyzer` all walk the AST
+Split out from `ast` on purpose. `interpreter` and `analyzer` both walk the AST
 `ast` defines, but none of them parse — they receive an already-built tree from `toolchain`'s
-composition root, one statement at a time. Before this split, those three modules pulled in the
+composition root, one statement at a time (`formatter` needs no tree at all). Before this split,
+those modules pulled in the
 parser transitively through `ast` (then still named `syntax`) even though they never referenced
 it. Depending on `parser` at
 all is now a signal that a consumer builds trees, not just walks them; today that's only

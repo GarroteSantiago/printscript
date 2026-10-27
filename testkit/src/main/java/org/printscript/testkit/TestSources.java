@@ -6,6 +6,7 @@ import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
 import org.printscript.parser.SyntaxTreeBuilder;
+import org.printscript.tokens.TokenSource;
 
 /**
  * Test-only helper that centralizes "turn this string into pipeline data" — the {@code new
@@ -16,6 +17,14 @@ import org.printscript.parser.SyntaxTreeBuilder;
  */
 public final class TestSources {
   private TestSources() {}
+
+  public static TokenSource tokensOf(String source) {
+    return new Lexer(source);
+  }
+
+  public static TokenSource tokensOf(String source, KeywordTable keywords) {
+    return new Lexer(source, keywords);
+  }
 
   public static StatementSource statementsOf(String source) {
     return new StatementSyntaxReader(new Lexer(source));

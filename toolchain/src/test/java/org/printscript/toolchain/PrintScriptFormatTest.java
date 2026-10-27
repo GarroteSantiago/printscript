@@ -68,7 +68,7 @@ class PrintScriptFormatTest {
   private record FormatSinkRun(CommandResult<Void> result, StringWriter output) {}
 
   @Test
-  public void reportsASyntaxErrorAsADiagnosticFailure() {
+  public void formatsSyntacticallyInvalidCodeWithoutValidatingIt() {
     CommandResult<String> result =
         new PrintScript()
             .format(
@@ -77,7 +77,23 @@ class PrintScriptFormatTest {
                 defaultConfig(),
                 ProgressReporter.NONE);
 
-    assertFalse(result.isSuccess(), "expected a syntax error to fail formatting");
+    assertEquals(
+        "let x number = 1;\n",
+        result.value(),
+        "expected formatting to work on the tokens alone, leaving validation to validate");
+  }
+
+  @Test
+  public void reportsALexicalErrorAsADiagnosticFailure() {
+    CommandResult<String> result =
+        new PrintScript()
+            .format(
+                "let s: string = \"unterminated;",
+                LanguageVersion.V1_0_0,
+                defaultConfig(),
+                ProgressReporter.NONE);
+
+    assertFalse(result.isSuccess(), "expected source that can't be tokenized to fail formatting");
   }
 
   private FormatterConfig defaultConfig() {

@@ -13,8 +13,7 @@ class PrintScriptFormatterTest {
     String source = "let   a:string='value'; # keep\nprintln(a);";
 
     String formatted =
-        new PrintScriptFormatter()
-            .format(TestSources.programOf(source), FormatterConfig.defaults());
+        new PrintScriptFormatter().format(TestSources.tokensOf(source), FormatterConfig.defaults());
 
     assertEquals(
         "let a: string = 'value';# keep\nprintln(a);\n", formatted, "expected normalized spacing");
@@ -26,7 +25,7 @@ class PrintScriptFormatterTest {
 
     String formatted =
         new PrintScriptFormatter()
-            .format(TestSources.programOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
 
     assertEquals(
         "println(\"a\");\n\nprintln(\"b\");\n",
@@ -40,7 +39,7 @@ class PrintScriptFormatterTest {
 
     String formatted =
         new PrintScriptFormatter()
-            .format(TestSources.programOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
 
     assertEquals(
         "let text: string = \"hello\";\nprintln(text);\n",
@@ -50,14 +49,13 @@ class PrintScriptFormatterTest {
 
   @Test
   public void writesFormattedStatementsToAppendable() throws Exception {
-    var statements = TestSources.statementsOf("println(\"a\");\nprintln(\"b\");");
-    var session = new PrintScriptFormatter().newSession(new FormatterConfig(0, 0, 1, 1, 1, 2));
     var output = new StringWriter();
 
-    while (statements.hasNext()) {
-      session.format(statements.next(), output);
-    }
-    session.finish(statements.eof(), output);
+    new PrintScriptFormatter()
+        .formatAll(
+            TestSources.tokensOf("println(\"a\");\nprintln(\"b\");"),
+            new FormatterConfig(0, 0, 1, 1, 1, 2),
+            output);
 
     assertEquals(
         "println(\"a\");\n\nprintln(\"b\");\n",
@@ -82,7 +80,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.programOf(source), config);
+    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let a: string  =  \"value\";\n",
@@ -107,7 +105,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.programOf(source), config);
+    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let something :string = \"value\";",
@@ -132,7 +130,7 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.empty());
 
-    String formatted = new PrintScriptFormatter().format(TestSources.programOf(source), config);
+    String formatted = new PrintScriptFormatter().format(TestSources.tokensOf(source), config);
 
     assertEquals(
         "let something : string = \"value\";\nprintln ( something );",
@@ -142,7 +140,7 @@ class PrintScriptFormatterTest {
 
   @Test
   public void mandatoryLineBreakAfterStatementForcesNewlinesBetweenStatements() {
-    var statements = TestSources.statementsOf("let a: string = \"x\";let b: string = \"y\";");
+    var tokens = TestSources.tokensOf("let a: string = \"x\";let b: string = \"y\";");
     FormatterConfig config =
         new FormatterConfig(
             Optional.empty(),
@@ -156,17 +154,36 @@ class PrintScriptFormatterTest {
             Optional.empty(),
             Optional.of(true),
             Optional.empty());
-    var session = new PrintScriptFormatter().newSession(config);
-    StringBuilder out = new StringBuilder();
 
-    while (statements.hasNext()) {
-      out.append(session.format(statements.next()));
-    }
-    out.append(session.finish(statements.eof()));
+    String formatted = new PrintScriptFormatter().format(tokens, config);
 
     assertEquals(
         "let a: string = \"x\";\nlet b: string = \"y\";",
-        out.toString(),
+        formatted,
         "expected a forced line break between statements with no extra spacing");
+  }
+
+  @Test
+  public void aCallInsideALargerExpressionIsNotTreatedAsAPrintlnStatement() {
+    String source = "println(\"a\") + 1;\nprintln(\"b\");";
+
+    String formatted =
+        new PrintScriptFormatter()
+            .format(TestSources.tokensOf(source), new FormatterConfig(0, 0, 1, 1, 1, 2));
+
+    assertEquals(
+        "println(\"a\") + 1;\nprintln(\"b\");\n",
+        formatted,
+        "expected no blank line, since the first statement is not exactly a println call");
+  }
+
+  @Test
+  public void formatsSyntacticallyInvalidTokensWithoutValidating() {
+    String source = "let x number = 1;";
+
+    String formatted =
+        new PrintScriptFormatter().format(TestSources.tokensOf(source), FormatterConfig.defaults());
+
+    assertEquals("let x number = 1;\n", formatted, "expected formatting to never validate");
   }
 }

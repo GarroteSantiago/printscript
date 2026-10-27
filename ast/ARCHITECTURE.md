@@ -9,7 +9,6 @@ Responsibilities:
 - AST model
 - `StatementSource` — the pull-based port a statement producer implements and a statement consumer
   (the composition root in [toolchain](../toolchain/ARCHITECTURE.md)) depends on
-- concrete/lossless syntax representation when needed by formatting
 - statement and expression dispatch protocols
 
 The type-system vocabulary — `TypeName`, `TypeNameVisitor`, `TypeAnnotationTable` — lives in a
@@ -19,7 +18,7 @@ consumes `TypeName` (one field, on `LiteralExpressionSyntax`) but never `TypeAnn
 
 The parser itself — `StatementSyntaxReader`/`SyntaxTreeBuilder` — lives in a separate
 [parser](../parser/ARCHITECTURE.md) module, not here. This module defines the tree shape and the
-port a parser implements; it never builds one. `formatter`, `interpreter`, and `analyzer` all
+port a parser implements; it never builds one. `interpreter` and `analyzer`
 depend on `ast` (they walk the AST) but none of them depend on `parser` (they never build one —
 they receive an already-parsed tree from `toolchain`).
 
@@ -33,13 +32,14 @@ SourceInput
   -> Statement
 ```
 
-Formatting consumes concrete syntax or token trivia.
+Formatting doesn't use this module: it reads the lexer's token stream, trivia included, directly
+(see [formatter](../formatter/ARCHITECTURE.md)).
 
 ```text
 SourceInput
   -> TokenSource (Lexer)
   -> TokenStream with Trivia
-  -> Lossless CST
+  -> PrintScriptFormatter (rewrites selected trivia)
 ```
 
 Parser recovery is not part of the current design. All commands should stop at the first syntax error.
@@ -48,7 +48,6 @@ If recovery is needed later, semicolon should be the main synchronization point.
 
 AST nodes should be immutable language objects. They own structural invariants and dispatch, but not tool-specific behavior.
 
-The formatter needs access to syntax trivia. Comments and whitespace are trivia, not syntactic sugar.
 
 ## AST shape and dispatch
 
@@ -84,7 +83,7 @@ classDiagram
 
 `SyntaxNode` is `sealed` to exactly these three branches; `StatementSyntax`/`ExpressionSyntax` are
 each `non-sealed` so new concrete node kinds (a future statement or expression form) can be added
-without reopening `SyntaxNode` itself. Every consumer (typetable, interpreter, formatter, analyzer)
+without reopening `SyntaxNode` itself. Every consumer (typetable, interpreter, analyzer)
 dispatches on the concrete node kind through `accept`/`StatementVisitor`/`ExpressionVisitor`, never
 `instanceof` — see the "Recurring pattern" section in
 [docs/architecture.md](../docs/architecture.md) for why this shape is used repeatedly across the
