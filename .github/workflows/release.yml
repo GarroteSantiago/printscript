@@ -1,77 +1,129 @@
 name: Release
 
+# Runs on every push to main (each merged PR): the quality gate on the merge commit, then, if the
+# merged PR's title calls for it, a release of exactly that commit. The version lives only in git
+# tags: this workflow tags the merge commit vX.Y.Z, Gradle reads the version from that tag (see
+# build.gradle), and nothing is ever committed to main. See README.md, "Releasing".
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g. 1.2.0 or v1.2.0)'
-        required: true
-        type: string
+  push:
+    branches: [main]
+
+# One run at a time, in merge order, so two releases never compute the same version.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 jobs:
-  tag:
-    name: Create tag & GitHub release
+  quality:
+    name: Quality gate
+    uses: ./.github/workflows/ci.yml
+
+  plan:
+    name: Decide version
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
-      tag: ${{ steps.normalize.outputs.tag }}
+      release: ${{ steps.decide.outputs.release }}
+      version: ${{ steps.decide.outputs.version }}
+
     steps:
-      - name: Checkout main
+      - name: Checkout (with tags)
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
-      - name: Normalize and validate version
-        id: normalize
+      - name: Find the merged PR and decide the version
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
         run: |
-          v="${{ inputs.version }}"
-          v="${v#v}"
-          if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::'${{ inputs.version }}' is not a valid version (expected X.Y.Z or vX.Y.Z)"
+          pr=$(gh api "repos/$REPOSITORY/commits/$COMMIT/pulls" \
+            --jq '[.[] | select(.merged_at != null and .base.ref == "main")][0] // empty')
+          if [ -z "$pr" ]; then
+            echo "No merged PR for $COMMIT (a direct push to main): no release." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          number=$(jq -r .number <<<"$pr")
+          title=$(jq -r .title <<<"$pr")
+          body=$(jq -r '.body // ""' <<<"$pr")
+
+          if ! bump=$(.github/scripts/release-version.sh bump "$title" "$body" 2>reason.txt); then
+            echo "::error title=No release: PR #$number has an invalid title::$(tr '\n' ' ' <reason.txt)"
             exit 1
           fi
-          echo "version=$v" >> "$GITHUB_OUTPUT"
-          echo "tag=v$v" >> "$GITHUB_OUTPUT"
-
-      - name: Ensure tag doesn't already exist
-        run: |
-          if git rev-parse "${{ steps.normalize.outputs.tag }}" >/dev/null 2>&1; then
-            echo "::error::Tag ${{ steps.normalize.outputs.tag }} already exists"
-            exit 1
+          if [ "$bump" = none ]; then
+            echo "PR #$number (\"$title\") does not create a release." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
-      - name: Bump build.gradle version
+          latest=$(.github/scripts/release-version.sh latest)
+          version=$(.github/scripts/release-version.sh next "$latest" "$bump")
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::Tag v$version already exists."
+            exit 1
+          fi
+          echo "PR #$number (\"$title\"): $bump release, $latest -> **$version**." | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "release=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish v${{ needs.plan.outputs.version }}
+    needs: [quality, plan]
+    if: needs.plan.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Tag the merge commit (locally, until publishing succeeds)
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          sed -i "s/version = '.*'/version = '${{ steps.normalize.outputs.version }}'/" build.gradle
-          if git diff --quiet -- build.gradle; then
-            echo "build.gradle already at ${{ steps.normalize.outputs.version }}, nothing to commit."
-          else
-            git add build.gradle
-            git commit -m "chore(release): bump version to ${{ steps.normalize.outputs.version }}"
-            git push origin HEAD:main
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release v$VERSION"
+
+      - name: Check Gradle reads the version from the tag
+        run: |
+          gradle_version=$(./gradlew -q printVersion)
+          if [ "$gradle_version" != "$VERSION" ]; then
+            echo "::error::Gradle derived version '$gradle_version', expected '$VERSION'."
+            exit 1
           fi
 
-      - name: Create and push tag
-        run: |
-          git tag -a "${{ steps.normalize.outputs.tag }}" -m "Release ${{ steps.normalize.outputs.tag }}"
-          git push origin "${{ steps.normalize.outputs.tag }}"
+      - name: Publish to GitHub Packages
+        run: ./gradlew publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
 
-      - name: Create GitHub release
+      - name: Push the tag and create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ steps.normalize.outputs.tag }}" \
-            --title "${{ steps.normalize.outputs.tag }}" \
-            --generate-notes
-
-  publish:
-    name: Publish
-    needs: tag
-    uses: ./.github/workflows/publish.yml
-    secrets: inherit
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" --title "v$VERSION" --generate-notes --verify-tag

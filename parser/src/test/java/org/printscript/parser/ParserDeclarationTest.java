@@ -10,11 +10,9 @@ import org.printscript.testkit.TestSources;
 
 class ParserDeclarationTest {
   private VariableDeclarationSyntax declarationOf(String source) {
-    var program = TestSources.programOf(source);
+    var parsed = TestSources.statementListOf(source);
     return assertInstanceOf(
-        VariableDeclarationSyntax.class,
-        program.statements().getFirst(),
-        "expected a variable declaration");
+        VariableDeclarationSyntax.class, parsed.getFirst(), "expected a variable declaration");
   }
 
   @Test

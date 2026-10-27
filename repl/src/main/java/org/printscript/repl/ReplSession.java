@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.interpreter.ArithmeticOperators;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
-import org.printscript.interpreter.RuntimeFailure;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
 import org.printscript.typetable.ValidatedStatement;
@@ -65,8 +65,8 @@ public final class ReplSession {
       environment =
           interpreter.executeAll(
               new SingleValidatedStatementSource(validatedStatement), environment);
-    } catch (RuntimeFailure failure) {
-      return List.of(failure.diagnostic());
+    } catch (DiagnosticException failure) {
+      return failure.diagnostics();
     }
 
     context = validated.nextContext();

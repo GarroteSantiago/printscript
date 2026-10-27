@@ -21,8 +21,8 @@ Responsibilities:
 
 - `Repl`: the composition root and entry point (`main`). Reads one line at a time from a
   `Reader`/`PrintStream` trio — `System.in`/`System.out`/`System.err` in production, in-memory
-  streams in tests — buffering lines until `isOpenBlock` says the buffer looks complete, then
-  parses and runs it via `ReplSession` (see below).
+  streams in tests — re-parsing the buffered lines after each one until the parser stops reporting
+  `UNEXPECTED_END_OF_INPUT`, then runs the parsed statements via `ReplSession` (see below).
 - `ReplSession`: owns the `SemanticContext`/`RuntimeEnvironment` state across statements. `step`
   takes one already-parsed statement, validates and executes it, and never throws — a semantic
   error or a runtime failure is reported as diagnostics, with the session's state left exactly as
@@ -41,9 +41,13 @@ refills one more), so confirming statement N complete always requires blocking t
 N+1's first token. Verified by hand, not a hypothetical: every statement's prompt and its own output
 landed one command late — typing `let a: string = "A";` produced no visible response at all until
 the *next* line was typed, at which point the prompt and output for the first statement finally
-appeared. `Repl` instead buffers whole lines (`BufferedReader#readLine`) and only invokes the
-`Lexer`/`StatementSyntaxReader` once `isOpenBlock` (a small pre-scan counting `{`/`}` tokens) says
-the buffer isn't sitting inside an unclosed block. Every real parse then runs over an in-memory,
+appeared. `Repl` instead buffers whole lines (`BufferedReader#readLine`) and invokes the
+`Lexer`/`StatementSyntaxReader` over the whole buffer after each line. Whether the buffer is finished
+is the parser's own verdict, not a token-level guess: a syntax error carrying
+`DiagnosticCode.UNEXPECTED_END_OF_INPUT` (an unclosed block, a missing `;`, a trailing operator)
+means "show `... ` and read another line"; nothing in the buffer runs until all of it parses, and a
+blank line while continuing forces evaluation so the user can never get stuck. Any other syntax
+error, lexical ones included, is reported at once. Every parse runs over an in-memory,
 already-fully-read `StringReader` with a definite end — never blocking mid-parse — so prompts and
 output appear exactly when they should, and a syntax error is a normal, bounded parse failure rather
 than something that can leave shared parser state to recover from. A malformed line's buffer is
@@ -53,6 +57,6 @@ silently lost the way an incrementally-resynced streaming parser could lose them
 
 Representative tests: `src/test/java/org/printscript/repl/ReplSessionTest.java` (state threading,
 error recovery), `src/test/java/org/printscript/repl/ReplTest.java` (the full loop over in-memory
-streams, including a block statement spanning several lines, and — via a real `PipedWriter`/background
+streams, including statements and blocks spanning several lines, the blank-line escape, and — via a real `PipedWriter`/background
 thread, since a fully-materialized `StringReader` can't distinguish "late" from "eventual" — a
 regression test asserting the next prompt is already printed before the next line is typed).

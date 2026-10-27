@@ -18,7 +18,11 @@ public interface FormatterConfigProvider {
 
   Optional<Integer> spacesAroundOperators();
 
-  Optional<Integer> blankLinesBeforePrintln();
+  /**
+   * Blank lines to put after a statement that is exactly a {@code println(...)} call, before the
+   * statement that follows it (the {@code line-breaks-after-println} config key).
+   */
+  Optional<Integer> blankLinesAfterPrintln();
 
   Optional<Integer> blockIndentSpaces();
 

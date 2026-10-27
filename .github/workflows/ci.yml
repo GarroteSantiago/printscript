@@ -1,8 +1,7 @@
 name: CI
 
+# Runs on PRs into main. On main itself, the release workflow runs it as its quality gate.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch: {}

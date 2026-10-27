@@ -7,7 +7,7 @@ public record FormatterConfig(
     Optional<Integer> spacesAfterSemicolon,
     Optional<Integer> spacesAroundAssignment,
     Optional<Integer> spacesAroundOperators,
-    Optional<Integer> blankLinesBeforePrintln,
+    Optional<Integer> blankLinesAfterPrintln,
     Optional<Integer> blockIndentSpaces,
     Optional<Integer> spacesBeforeColon,
     Optional<Integer> spacesAfterColon,
@@ -16,48 +16,12 @@ public record FormatterConfig(
     Optional<Boolean> ifBraceOnSameLine)
     implements FormatterConfigProvider {
 
-  public FormatterConfig(
-      int spacesBeforeSemicolon,
-      int spacesAfterSemicolon,
-      int spacesAroundAssignment,
-      int spacesAroundOperators,
-      int blankLinesBeforePrintln,
-      int blockIndentSpaces) {
-    this(
-        Optional.of(spacesBeforeSemicolon),
-        Optional.of(spacesAfterSemicolon),
-        Optional.of(spacesAroundAssignment),
-        Optional.of(spacesAroundOperators),
-        Optional.of(blankLinesBeforePrintln),
-        Optional.of(blockIndentSpaces),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty());
-  }
-
-  public static FormatterConfig defaults() {
-    return new FormatterConfig(
-        Optional.of(0),
-        Optional.of(0),
-        Optional.of(1),
-        Optional.of(1),
-        Optional.of(0),
-        Optional.of(2),
-        Optional.of(0),
-        Optional.of(1),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty());
-  }
-
   public FormatterConfig {
     spacesBeforeSemicolon = clamp(spacesBeforeSemicolon, 0, 1);
     spacesAfterSemicolon = clamp(spacesAfterSemicolon, 0, 1);
     spacesAroundAssignment = clamp(spacesAroundAssignment, 0, 1);
     spacesAroundOperators = clamp(spacesAroundOperators, 0, 1);
-    blankLinesBeforePrintln = clamp(blankLinesBeforePrintln, 0, 2);
+    blankLinesAfterPrintln = clamp(blankLinesAfterPrintln, 0, 2);
     blockIndentSpaces = clamp(blockIndentSpaces, 0, 16);
     spacesBeforeColon = clamp(spacesBeforeColon, 0, 1);
     spacesAfterColon = clamp(spacesAfterColon, 0, 1);

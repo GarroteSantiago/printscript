@@ -1,14 +1,8 @@
 package org.printscript.ast.nodes.expressions;
 
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxToken;
 
-public record IdentifierExpressionSyntax(SyntaxToken identifier) implements ExpressionSyntax {
-  @Override
-  public SourceSpan span() {
-    return identifier.span();
-  }
-
+public record IdentifierExpressionSyntax(String name, SourceSpan span) implements ExpressionSyntax {
   @Override
   public <R> R accept(ExpressionVisitor<R> visitor) {
     return visitor.visitIdentifier(this);

@@ -30,12 +30,12 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | Module | Responsibility |
 |---|---|
 | [`source`](source/ARCHITECTURE.md) | Source-position/span value types. Zero dependencies. |
-| [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`). |
-| [`tokens`](tokens/ARCHITECTURE.md) | The token-streaming contract (`Token`, `TokenType`, `TokenSource`, `SyntaxException`) shared by `lexer` and `parser` without either depending on the other. |
+| [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`, and `DiagnosticException`, the one exception every stage throws). |
+| [`tokens`](tokens/ARCHITECTURE.md) | The token-streaming contract (`Token`, `TokenType`, `TokenSource`) shared by `lexer` and `parser` without either depending on the other. |
 | [`lexer`](lexer/ARCHITECTURE.md) | Scans source text into tokens (`Lexer`). |
 | [`types`](types/ARCHITECTURE.md) | The type-system vocabulary (`TypeName`, `TypeAnnotationTable`). Zero dependencies. |
 | [`ast`](ast/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |
-| [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`, `SyntaxTreeBuilder`) — the only production implementation of `StatementSource`. |
+| [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`) — the only production implementation of `StatementSource`. |
 | [`typetable`](typetable/ARCHITECTURE.md) | The result of semantic analysis (`SemanticModel`) and its vocabulary (`BuiltinRegistry`, `VariableSymbol`) — not the checker itself. |
 | [`typechecker`](typechecker/ARCHITECTURE.md) | Type checking, symbol resolution, builtin resolution (`SemanticContext`) — the sole production producer of a `SemanticModel`. |
 | [`interpreter`](interpreter/ARCHITECTURE.md) | Executes validated statements (`Interpreter`), immutable runtime state. |
@@ -47,6 +47,16 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | [`testkit`](testkit/ARCHITECTURE.md) | Test-only helper for turning a string into pipeline data (`TestSources`). |
 
 ## Building, testing, running
+
+**Declaring dependencies.** A module's dependencies live only in its `module-info.java`: the
+[`org.gradlex.java-module-dependencies`](https://github.com/gradlex-org/java-module-dependencies)
+plugin (applied in [`settings.gradle`](settings.gradle)) turns each `requires` into the matching
+Gradle dependency (`requires transitive` → `api`, `requires` → `implementation`). To depend on
+another module, add a `requires` line — never a `dependencies { }` entry. Versions of external
+modules (Jackson, picocli) go in [`gradle/libs.versions.toml`](gradle/libs.versions.toml), keyed by
+module name. Test-only dependencies (tests have no `module-info.java`) stay as `testImplementation`
+in the module's `build.gradle`. New modules are registered in the `javaModules { }` block of
+`settings.gradle`, not with `include(...)`.
 
 Common tasks are wrapped as [`just`](https://github.com/casey/just) recipes (see the
 [`justfile`](justfile) for the full list); each just calls `./gradlew` directly if you don't have
@@ -74,6 +84,33 @@ just run "validate --source=path/to/file.pisp --version=1.0"
 `format`/`analyze` take a JSON config file — see
 [`JsonPrintScriptConfigReader`](toolchain/src/main/java/org/printscript/toolchain/JsonPrintScriptConfigReader.java)'s
 Javadoc for the recognized keys.
+
+## Releasing
+
+Releases are automatic: **merging a PR into `main` releases it**, with the version decided by the
+PR title. Titles must be [Conventional Commits](https://www.conventionalcommits.org/) (the
+`PR title` check enforces it before merging):
+
+| PR title | Release | Example |
+|---|---|---|
+| `<type>!: …`, or a `BREAKING CHANGE:` line in the PR body | major | `1.3.0 → 2.0.0` |
+| `feat: …` | minor | `1.2.0 → 1.3.0` |
+| `fix: …`, `perf: …`, `refactor: …`, `revert: …` | patch | `1.3.0 → 1.3.1` |
+| `docs: …`, `test: …`, `ci: …`, `build: …`, `chore: …`, `style: …` | none | — |
+
+On each push to `main` the [release workflow](.github/workflows/release.yml) runs CI on the merge
+commit, then tags that commit `vX.Y.Z`, publishes every library module to GitHub Packages, and
+creates the GitHub release (notes generated from the merged PRs). The tag is pushed only after
+publishing succeeds.
+
+**The version lives only in git tags.** Nothing in the repo stores it: Gradle reads it from git
+(see [`build.gradle`](build.gradle)). A commit tagged `v1.3.0` builds as `1.3.0`; any other commit
+builds as the next patch snapshot (e.g. `1.3.1-SNAPSHOT`). `./gradlew printVersion` shows it. To
+release by hand (normally never needed), tag a commit on `main` and publish it:
+
+```sh
+git tag -a v1.3.0 -m "Release v1.3.0" && ./gradlew publish && git push origin v1.3.0
+```
 
 ## Further reading
 

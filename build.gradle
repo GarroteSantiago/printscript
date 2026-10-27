@@ -1,4 +1,43 @@
+// The version lives only in git tags (vMAJOR.MINOR.PATCH); nothing in the repo stores it. Gradle
+// reads it from git on every build:
+//   - building a commit that has a release tag v1.3.0 (and no uncommitted changes) -> 1.3.0
+//   - any other commit -> the next patch as a snapshot, e.g. 1.3.1-SNAPSHOT
+//   - no release tag reachable, or no git at all (e.g. a source zip) -> 0.0.0-SNAPSHOT
+// Releasing is therefore: tag the commit, then publish it. The release workflow does exactly that
+// on every merge to main; see README.md, "Releasing".
+def gitDescribe = providers.exec {
+    // Only plain release tags: the glob alone would also match e.g. v2.0.0-rc1.
+    commandLine 'git', 'describe', '--tags', '--long', '--dirty',
+            '--match', 'v[0-9]*.[0-9]*.[0-9]*', '--exclude', 'v*[!0-9.]*'
+    ignoreExitValue = true
+}
+
+def versionFromGit = { ->
+    if (gitDescribe.result.get().exitValue != 0) {
+        return '0.0.0-SNAPSHOT'
+    }
+    // e.g. v1.2.0-0-g7227e92 (on the tag) or v1.2.0-5-gabc1234-dirty (5 commits later, edited)
+    def match = gitDescribe.standardOutput.asText.get().trim() =~
+            /^v(\d+)\.(\d+)\.(\d+)-(\d+)-g[0-9a-f]+(-dirty)?$/
+    if (!match.matches()) {
+        return '0.0.0-SNAPSHOT'
+    }
+    def (major, minor, patch) = (1..3).collect { match.group(it) as int }
+    def onTag = match.group(4) == '0' && match.group(5) == null
+    return onTag ? "${major}.${minor}.${patch}" : "${major}.${minor}.${patch + 1}-SNAPSHOT"
+}
+
+def projectVersion = versionFromGit()
+
 allprojects {
     group = 'org.printscript'
-    version = '1.1.0'
+    version = projectVersion
+}
+
+// Prints the version Gradle derived from git; the release workflow checks it before publishing.
+tasks.register('printVersion') {
+    def printed = projectVersion
+    doLast {
+        println printed
+    }
 }

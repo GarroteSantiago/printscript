@@ -1,7 +1,7 @@
 package org.printscript.typechecker;
 
 import java.util.Optional;
-import org.printscript.tokens.TokenType;
+import org.printscript.ast.nodes.expressions.BinaryOperator;
 import org.printscript.types.TypeName;
 
 /**
@@ -14,11 +14,11 @@ import org.printscript.types.TypeName;
  */
 @FunctionalInterface
 public interface BinaryOperatorRules {
-  Optional<TypeName> resultType(TokenType operator, TypeName left, TypeName right);
+  Optional<TypeName> resultType(BinaryOperator operator, TypeName left, TypeName right);
 
   static BinaryOperatorRules v1() {
     return (operator, left, right) -> {
-      if (TokenType.PLUS.equals(operator)
+      if (BinaryOperator.ADD.equals(operator)
           && (TypeName.STRING.equals(left) || TypeName.STRING.equals(right))) {
         return Optional.of(TypeName.STRING);
       }

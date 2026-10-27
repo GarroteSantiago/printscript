@@ -3,9 +3,10 @@ package org.printscript.ast.nodes.statements;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.lexer.KeywordTable;
+import org.printscript.source.SourcePosition;
 import org.printscript.testkit.TestSources;
 
 class StatementSyntaxSpanTest {
@@ -29,68 +30,57 @@ class StatementSyntaxSpanTest {
       }
       """;
 
-  private final ProgramSyntax program = TestSources.programOf(SOURCE, KeywordTable.v1_1());
+  private final List<StatementSyntax> parsed =
+      TestSources.statementListOf(SOURCE, KeywordTable.v1_1());
+
+  private static String at(SourcePosition position) {
+    return position.row() + ":" + position.column();
+  }
 
   private IfStatementSyntax ifStatement() {
-    return assertInstanceOf(
-        IfStatementSyntax.class, program.statements().get(2), "expected an if statement");
+    return assertInstanceOf(IfStatementSyntax.class, parsed.get(2), "expected an if statement");
   }
 
   private VariableDeclarationSyntax variableDeclaration() {
     return assertInstanceOf(
-        VariableDeclarationSyntax.class, program.statements().getFirst(), "expected a declaration");
+        VariableDeclarationSyntax.class, parsed.getFirst(), "expected a declaration");
   }
 
   private AssignmentSyntax assignment() {
-    return assertInstanceOf(
-        AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+    return assertInstanceOf(AssignmentSyntax.class, parsed.get(1), "expected an assignment");
   }
 
   private ExpressionStatementSyntax expressionStatement() {
     return assertInstanceOf(
-        ExpressionStatementSyntax.class,
-        program.statements().get(3),
-        "expected an expression statement");
+        ExpressionStatementSyntax.class, parsed.get(3), "expected an expression statement");
   }
 
   @Test
   public void variableDeclarationSpanStartsAtKeyword() {
     var declaration = variableDeclaration();
 
-    assertEquals(
-        declaration.keyword().span().start(),
-        declaration.span().start(),
-        "expected span to start at the keyword");
+    assertEquals("1:1", at(declaration.span().start()), "expected span to start at the keyword");
   }
 
   @Test
   public void variableDeclarationSpanEndsAtSemicolon() {
     var declaration = variableDeclaration();
 
-    assertEquals(
-        declaration.semicolon().span().end(),
-        declaration.span().end(),
-        "expected span to end at the semicolon");
+    assertEquals("1:18", at(declaration.span().end()), "expected span to end at the semicolon");
   }
 
   @Test
   public void assignmentSpanStartsAtIdentifier() {
     var assignment = assignment();
 
-    assertEquals(
-        assignment.identifier().span().start(),
-        assignment.span().start(),
-        "expected span to start at the identifier");
+    assertEquals("2:1", at(assignment.span().start()), "expected span to start at the identifier");
   }
 
   @Test
   public void assignmentSpanEndsAtSemicolon() {
     var assignment = assignment();
 
-    assertEquals(
-        assignment.semicolon().span().end(),
-        assignment.span().end(),
-        "expected span to end at the semicolon");
+    assertEquals("2:10", at(assignment.span().end()), "expected span to end at the semicolon");
   }
 
   @Test
@@ -118,29 +108,21 @@ class StatementSyntaxSpanTest {
     var expressionStatement = expressionStatement();
 
     assertEquals(
-        expressionStatement.semicolon().span().end(),
-        expressionStatement.span().end(),
-        "expected span to end at the semicolon");
+        "8:11", at(expressionStatement.span().end()), "expected span to end at the semicolon");
   }
 
   @Test
   public void blockStatementSpanStartsAtLeftBrace() {
     var block = ifStatement().thenBlock();
 
-    assertEquals(
-        block.leftBrace().span().start(),
-        block.span().start(),
-        "expected span to start at the left brace");
+    assertEquals("3:8", at(block.span().start()), "expected span to start at the left brace");
   }
 
   @Test
   public void blockStatementSpanEndsAtRightBrace() {
     var block = ifStatement().thenBlock();
 
-    assertEquals(
-        block.rightBrace().span().end(),
-        block.span().end(),
-        "expected span to end at the right brace");
+    assertEquals("5:1", at(block.span().end()), "expected span to end at the right brace");
   }
 
   @Test
@@ -153,10 +135,7 @@ class StatementSyntaxSpanTest {
 
   @Test
   public void ifStatementSpanStartsAtIfKeyword() {
-    assertEquals(
-        ifStatement().ifKeyword().span().start(),
-        ifStatement().span().start(),
-        "expected span to start at 'if'");
+    assertEquals("3:1", at(ifStatement().span().start()), "expected span to start at 'if'");
   }
 
   @Test
@@ -170,11 +149,10 @@ class StatementSyntaxSpanTest {
   }
 
   private IfStatementSyntax ifStatementWithoutElse() {
-    var programWithoutElse = TestSources.programOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
+    var parsedWithoutElse =
+        TestSources.statementListOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
     return assertInstanceOf(
-        IfStatementSyntax.class,
-        programWithoutElse.statements().get(1),
-        "expected an if statement");
+        IfStatementSyntax.class, parsedWithoutElse.get(1), "expected an if statement");
   }
 
   @Test

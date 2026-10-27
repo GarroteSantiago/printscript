@@ -38,24 +38,21 @@ class PrintScriptV11Test {
 
   @Test
   public void executesV11ProgramSuccessfullyUnderV11() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result = Commands.execute(V11_SOURCE, LanguageVersion.V1_1_0);
 
     assertTrue(result.isSuccess(), "expected v1.1 syntax to succeed under version 1.1");
   }
 
   @Test
   public void v11ProgramOutputUnderV11() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result = Commands.execute(V11_SOURCE, LanguageVersion.V1_1_0);
 
-    assertEquals(List.of("hi"), result.value().outputLines(), "expected the if-branch output");
+    assertEquals(List.of("hi"), result.value(), "expected the if-branch output");
   }
 
   @Test
   public void rejectsV11SyntaxUnderV10() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript().execute(V11_SOURCE, LanguageVersion.V1_0_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result = Commands.execute(V11_SOURCE, LanguageVersion.V1_0_0);
 
     assertFalse(
         result.isSuccess(), "expected v1.1-only syntax to fail when version 1.0 is selected");
@@ -63,18 +60,16 @@ class PrintScriptV11Test {
 
   @Test
   public void v10OnlyProgramStillWorksUnderV11() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript().execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result = Commands.execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0);
 
     assertTrue(result.isSuccess(), "expected a v1.0 program to still work under version 1.1");
   }
 
   @Test
   public void v10OnlyProgramOutputUnderV11() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript().execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result = Commands.execute(V10_ONLY_SOURCE, LanguageVersion.V1_1_0);
 
-    assertEquals(List.of("Joe"), result.value().outputLines(), "expected the println output");
+    assertEquals(List.of("Joe"), result.value(), "expected the println output");
   }
 
   @Test

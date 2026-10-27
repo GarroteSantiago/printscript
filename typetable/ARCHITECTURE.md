@@ -12,15 +12,14 @@ Responsibilities:
 - `BuiltinRegistry` / `BuiltinSignature` — which callables (`println`, `readInput`, `readEnv`) exist
   for a given language version, and their signatures.
 - `VariableSymbol` — a declared variable's resolved name, type, mutability, and declaration site.
-- `ValidatedStatementSource` / `ValidatedStatement` / `SemanticException` — the pull-based port a
+- `ValidatedStatementSource` / `ValidatedStatement` — the pull-based port a
   validated statement stream is read through (mirroring `ast.StatementSource` one layer down):
-  `next()` throws `SemanticException` the moment a statement fails validation instead of returning a
+  `next()` throws `diagnostics.DiagnosticException` the moment a statement fails validation instead of returning a
   result the caller must check. `typechecker.ValidatingStatementSource` is the sole production
   implementation; `interpreter`/`analyzer` consume the port directly (`Interpreter#executeAll`,
   `StaticAnalyzer#analyzeAll`) without depending on `typechecker` itself.
 
-The actual type checker — `SemanticContext`, the whole-program `SemanticModelBuilder` convenience,
-and the `BinaryOperatorRules` strategy that decides operator result types — lives in a separate
+The actual type checker — `SemanticContext`, `ValidatingStatementSource`, and the `BinaryOperatorRules` strategy that decides operator result types — lives in a separate
 [typechecker](../typechecker/ARCHITECTURE.md) module, not here. This module defines what a
 completed analysis looks like; it never performs one.
 
@@ -40,7 +39,7 @@ Variable declarations require explicit type annotations.
 neither one re-derives a type decision or a symbol resolution. Neither one, however, ever runs the
 checker itself: they fold a `ValidatedStatementSource` — built by `toolchain`'s composition root,
 wrapping `typechecker.SemanticContext` — into their own result. Before
-this split, both modules pulled in `SemanticContext`, `SemanticModelBuilder`, and
+this split, both modules pulled in `SemanticContext` and
 `BinaryOperatorRules` transitively through this module even though they never referenced them.
 Depending on `typechecker` is now a signal that a consumer runs analysis, not just reads its result;
 today that's only `toolchain` (the composition root) and, for test fixtures, `interpreter`'s and
@@ -59,6 +58,6 @@ signatures — not "the semantics of the language." `typetable` says what's actu
 
 Representative tests: `src/test/java/org/printscript/typetable/BuiltinSignatureTest.java`.
 Checker-specific tests (`SemanticContextV11Test.java`, `SemanticContextDeclarationTest.java`,
-`SemanticContextModelAccessorsTest.java`, `SemanticModelBuilderTest.java`,
+`SemanticContextModelAccessorsTest.java`, `SemanticContextErrorsTest.java`,
 `BinaryOperatorRulesTest.java`) live in [typechecker](../typechecker/ARCHITECTURE.md) alongside the
 code they test.

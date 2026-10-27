@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.formatter.FormatterConfig;
+import org.printscript.testkit.TestConfigs;
 import org.printscript.toolchain.PrintScript;
 import org.printscript.toolchain.PrintScriptConfigReader;
 import org.printscript.toolchain.ProgressReporter;
@@ -39,11 +40,30 @@ class AppTest {
   private static final String VERSION_ONE_ZERO = "1.0";
   private static final String UNSUPPORTED_VERSION = "9.9";
   private static final String UNSUPPORTED_VERSION_FRAGMENT = "Unsupported PrintScript version";
-  private static final String EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC =
-      "expected the unsupported-version diagnostic to be printed to stderr";
+  private static final String EXPECTED_UNSUPPORTED_VERSION_ERROR =
+      "expected the unsupported-version error to be printed to stderr";
   private static final String PRINTLN_HI_SOURCE = "println(\"hi\");";
 
   @TempDir Path tempDir;
+
+  /** Runs the CLI exactly as {@code App.main} does, returning the exit code instead of exiting. */
+  private static int execute(App app, String... args) {
+    return App.commandLine(app).execute(args);
+  }
+
+  /** For tests that always pass {@code --config}: asking for a config path would be a bug. */
+  private static final App.ConfigPathPrompt NO_PROMPT =
+      prompt -> {
+        throw new AssertionError("unexpected config-path prompt: " + prompt);
+      };
+
+  private static App appWith(PrintScriptConfigReader reader) {
+    return appWith(reader, NO_PROMPT);
+  }
+
+  private static App appWith(PrintScriptConfigReader reader, App.ConfigPathPrompt prompt) {
+    return new App(reader, new PrintScript(), ProgressReporter.NONE, prompt);
+  }
 
   @Test
   void executeCommandReadingStdinExitsSuccessfully() throws Exception {
@@ -76,7 +96,7 @@ class AppTest {
       System.setOut(redirectedOut);
       System.setIn(new ByteArrayInputStream("Ada\n".getBytes(StandardCharsets.UTF_8)));
       exitCode =
-          new App().run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
+          execute(new App(), EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -128,15 +148,15 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       exitCode =
-          new App(reader)
-              .run(
-                  FORMAT_COMMAND,
-                  SOURCE_FLAG,
-                  source.toString(),
-                  VERSION_FLAG,
-                  VERSION_ONE_ZERO,
-                  CONFIG_FLAG,
-                  config.toString());
+          execute(
+              appWith(reader),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO,
+              CONFIG_FLAG,
+              config.toString());
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -191,8 +211,13 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       exitCode =
-          new App(reader, prompt)
-              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+          execute(
+              appWith(reader, prompt),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO);
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -231,8 +256,13 @@ class AppTest {
     PromptStub prompt = new PromptStub(config);
 
     int exitCode =
-        new App(reader, prompt)
-            .run(ANALYZE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            appWith(reader, prompt),
+            ANALYZE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     return new AnalyzeRun(exitCode, config, reader, prompt.prompts);
   }
@@ -243,26 +273,34 @@ class AppTest {
     Files.writeString(source, "let name: string = \"Ada\";");
 
     int exitCode =
-        new App()
-            .run(VALIDATE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            new App(),
+            VALIDATE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     assertEquals(0, exitCode, EXPECTED_SUCCESSFUL_EXIT_CODE);
   }
 
   @Test
-  void validateCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void validateCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runValidateWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected validate to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected validate to reject an unsupported version as a usage error");
   }
 
   @Test
-  void validateCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void validateCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runValidateWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runValidateWithUnsupportedVersion() throws Exception {
@@ -271,29 +309,32 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App()
-                .run(
-                    VALIDATE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION));
+            execute(
+                new App(),
+                VALIDATE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION));
   }
 
   @Test
-  void executeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void executeCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runExecuteWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected execute to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected execute to reject an unsupported version as a usage error");
   }
 
   @Test
-  void executeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void executeCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runExecuteWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runExecuteWithUnsupportedVersion() throws Exception {
@@ -302,29 +343,32 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App()
-                .run(
-                    EXECUTE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION));
+            execute(
+                new App(),
+                EXECUTE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION));
   }
 
   @Test
-  void formatCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void formatCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runFormatWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected format to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected format to reject an unsupported version as a usage error");
   }
 
   @Test
-  void formatCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void formatCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runFormatWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runFormatWithUnsupportedVersion() throws Exception {
@@ -335,31 +379,34 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App(new FakeConfigReader())
-                .run(
-                    FORMAT_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION,
-                    CONFIG_FLAG,
-                    config.toString()));
+            execute(
+                appWith(new FakeConfigReader()),
+                FORMAT_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION,
+                CONFIG_FLAG,
+                config.toString()));
   }
 
   @Test
-  void analyzeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void analyzeCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runAnalyzeWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected analyze to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected analyze to reject an unsupported version as a usage error");
   }
 
   @Test
-  void analyzeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void analyzeCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runAnalyzeWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runAnalyzeWithUnsupportedVersion() throws Exception {
@@ -370,15 +417,15 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App(new FakeConfigReader())
-                .run(
-                    ANALYZE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION,
-                    CONFIG_FLAG,
-                    config.toString()));
+            execute(
+                appWith(new FakeConfigReader()),
+                ANALYZE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION,
+                CONFIG_FLAG,
+                config.toString()));
   }
 
   @Test
@@ -389,22 +436,22 @@ class AppTest {
     Files.writeString(config, ANALYZER_SECTION);
 
     int exitCode =
-        new App(new FakeConfigReader())
-            .run(
-                ANALYZE_COMMAND,
-                SOURCE_FLAG,
-                source.toString(),
-                VERSION_FLAG,
-                VERSION_ONE_ZERO,
-                CONFIG_FLAG,
-                config.toString());
+        execute(
+            appWith(new FakeConfigReader()),
+            ANALYZE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO,
+            CONFIG_FLAG,
+            config.toString());
 
     assertEquals(1, exitCode, "expected a naming-style violation to yield exit code 1");
   }
 
   @Test
   void runningWithoutASubcommandPrintsUsageAndReturnsExitCodeTwo() {
-    int exitCode = new App().run();
+    int exitCode = execute(new App());
 
     assertEquals(2, exitCode, "expected the bare command to print usage and exit with code 2");
   }
@@ -439,8 +486,13 @@ class AppTest {
     ProgressReporter progress = progressMessages::add;
 
     int exitCode =
-        new App(new FakeConfigReader(), new PrintScript(), progress)
-            .run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            new App(new FakeConfigReader(), new PrintScript(), progress, NO_PROMPT),
+            EXECUTE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     return new InjectedProgressRun(exitCode, progressMessages);
   }
@@ -463,8 +515,13 @@ class AppTest {
       System.setIn(
           new ByteArrayInputStream((config.toString() + "\n").getBytes(StandardCharsets.UTF_8)));
       exitCode =
-          new App()
-              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+          execute(
+              new App(),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO);
     } finally {
       System.setIn(originalIn);
     }
@@ -510,13 +567,13 @@ class AppTest {
     @Override
     public FormatterConfig readFormatterConfig(Path path) {
       formatterPath = path;
-      return new FormatterConfig(0, 0, 1, 1, 1, 2);
+      return TestConfigs.formatterOneBlankLineAfterPrintln();
     }
 
     @Override
     public AnalyzerConfig readAnalyzerConfig(Path path) {
       analyzerPath = path;
-      return AnalyzerConfig.defaults();
+      return TestConfigs.analyzerDefaults();
     }
   }
 

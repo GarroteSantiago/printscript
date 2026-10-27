@@ -6,10 +6,6 @@ plugins {
     id 'buildlogic.java-application-conventions'
 }
 
-dependencies {
-    implementation project(':toolchain')
-    implementation 'info.picocli:picocli:4.7.7'
-}
 
 application {
     // Define the main class for the application.
@@ -18,4 +14,8 @@ application {
 
 tasks.named('run', JavaExec) {
     standardInput = System.in
+}
+
+dependencies {
+    testImplementation project(':testkit')
 }

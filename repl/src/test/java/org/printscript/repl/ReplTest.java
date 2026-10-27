@@ -174,4 +174,57 @@ class ReplTest {
               + " typed");
     }
   }
+
+  @Test
+  public void aStatementSpanningLinesRunsOnceItIsComplete() {
+    RunResult result = run("let x: number = 1 +\n2;\nprintln(x);\n", false);
+
+    assertEquals("3", lastOutputLine(result), "expected the statement split over two lines to run");
+  }
+
+  @Test
+  public void anUnfinishedStatementShowsTheContinuationPrompt() {
+    RunResult result = run("let x: number = 1 +\n2;\n", false);
+
+    assertTrue(
+        result.out().startsWith("ps> ... "),
+        "expected the continuation prompt after an unfinished first line");
+  }
+
+  @Test
+  public void aMissingSemicolonWaitsForTheNextLine() {
+    RunResult result = run("println(\"split\")\n;\n", false);
+
+    assertEquals("", result.err(), "expected no error when ';' arrives on the next line");
+  }
+
+  @Test
+  public void aBlankLineWhileContinuingReportsTheIncompleteStatement() {
+    RunResult result = run("let x: number = 1 +\n\n", false);
+
+    assertTrue(
+        result.err().contains("Expected expression"),
+        "expected a blank line to force evaluation and report the incomplete statement");
+  }
+
+  @Test
+  public void theReplKeepsWorkingAfterABlankLineForcedEvaluation() {
+    RunResult result = run("let x: number = 1 +\n\nprintln(\"after\");\n", false);
+
+    assertEquals("after", lastOutputLine(result), "expected the next statement to run normally");
+  }
+
+  @Test
+  public void anUnterminatedStringIsReportedImmediately() {
+    RunResult result = run("let s: string = \"oops\nprintln(\"after\");\n", false);
+
+    assertTrue(
+        result.err().contains("Unterminated string literal"),
+        "expected a lexical error to be reported, not to wait for more input");
+  }
+
+  private static String lastOutputLine(RunResult result) {
+    String[] lines = result.out().replace("ps> ", "").replace("... ", "").strip().split("\n");
+    return lines[lines.length - 1];
+  }
 }

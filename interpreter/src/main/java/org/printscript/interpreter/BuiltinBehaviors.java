@@ -2,6 +2,7 @@ package org.printscript.interpreter;
 
 import java.util.Map;
 import java.util.Optional;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.typetable.BuiltinRegistry;
 
 /**
@@ -32,7 +33,7 @@ final class BuiltinBehaviors {
     try {
       raw = context.input().readLine(context.stringify(argument));
     } catch (UnsupportedOperationException unsupported) {
-      RuntimeFailure failure = context.runtimeFailure(unsupported.getMessage());
+      DiagnosticException failure = context.runtimeFailure(unsupported.getMessage());
       failure.initCause(unsupported);
       throw failure;
     }
@@ -52,7 +53,7 @@ final class BuiltinBehaviors {
                       context.runtimeFailure(
                           "Environment variable '" + variableName + "' is not set"));
     } catch (UnsupportedOperationException unsupported) {
-      RuntimeFailure failure = context.runtimeFailure(unsupported.getMessage());
+      DiagnosticException failure = context.runtimeFailure(unsupported.getMessage());
       failure.initCause(unsupported);
       throw failure;
     }

@@ -16,7 +16,7 @@ Design rules:
   [testkit](../testkit/ARCHITECTURE.md) for tests) construct a concrete `Lexer` and hand it to
   anything that wants a `TokenSource`. Nothing should reach for the `Lexer` class by name except at
   that wiring boundary — everywhere else should type against `TokenSource`.
-- No parser recovery: fail fast with a `SyntaxException` on the first invalid character or
+- No parser recovery: fail fast with a `diagnostics.DiagnosticException` on the first invalid character or
   unterminated literal rather than trying to resynchronize.
 - Comments and whitespace are trivia, not syntactic sugar; keep them attached to tokens so the
   formatter and any future comment-preserving tooling can recover them losslessly.

@@ -25,8 +25,7 @@ class PrintScriptFormatterV11Test {
           Optional.of(true));
 
   private String format(String source, FormatterConfig config) {
-    return new PrintScriptFormatter(SpacingRules.v1_1())
-        .format(TestSources.programOf(source, KeywordTable.v1_1()), config);
+    return Formatting.formatV11(TestSources.tokensOf(source, KeywordTable.v1_1()), config);
   }
 
   @Test
@@ -117,5 +116,42 @@ class PrintScriptFormatterV11Test {
         DECLARES_FLAG_TRUE + "if (flag)\n" + "{\n" + "  println(\"yes\");\n" + "}",
         formatted,
         "expected the brace pushed onto its own line below the if, indentation left untouched");
+  }
+
+  @Test
+  public void aStrayClosingBraceNeverDrivesIndentationBelowZero() {
+    String source = "}\nif (true) {\nprintln(1);\n}";
+
+    String formatted = format(source, CONFIG_INDENT_TWO);
+
+    assertEquals(
+        "}\nif (true) {\n  println(1);\n}",
+        formatted,
+        "expected the block after a stray '}' to be indented as if the stray brace weren't there");
+  }
+
+  @Test
+  public void anIfElseIsOneStatementForTheBlankLineRule() {
+    String source = "println(\"a\");\nif (true) {\n}\nelse {\n}\nprintln(\"b\");";
+    FormatterConfig oneBlankLineAfterPrintln =
+        new FormatterConfig(
+            Optional.of(0),
+            Optional.of(0),
+            Optional.of(1),
+            Optional.of(1),
+            Optional.of(1),
+            Optional.of(2),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(true));
+
+    String formatted = format(source, oneBlankLineAfterPrintln);
+
+    assertEquals(
+        "println(\"a\");\n\nif (true) {\n}\nelse {\n}\nprintln(\"b\");\n",
+        formatted,
+        "expected a blank line only after the println, not after the if/else that follows it");
   }
 }

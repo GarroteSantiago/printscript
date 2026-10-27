@@ -3,10 +3,13 @@ package org.printscript.ast.nodes.expressions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.statements.AssignmentSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.source.SourcePosition;
+import org.printscript.source.SourceSpan;
 import org.printscript.testkit.TestSources;
 
 class ExpressionSyntaxSpanTest {
@@ -17,12 +20,19 @@ class ExpressionSyntaxSpanTest {
       println(a);
       """;
 
-  private final ProgramSyntax program = TestSources.programOf(SOURCE);
+  private final List<StatementSyntax> parsed = TestSources.statementListOf(SOURCE);
+
+  private static String at(SourcePosition position) {
+    return position.row() + ":" + position.column();
+  }
+
+  private static String spanned(SourceSpan span) {
+    return at(span.start()) + "-" + at(span.end());
+  }
 
   private BinaryExpressionSyntax binaryFromAssignment() {
     var assignment =
-        assertInstanceOf(
-            AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+        assertInstanceOf(AssignmentSyntax.class, parsed.get(1), "expected an assignment");
     return assertInstanceOf(
         BinaryExpressionSyntax.class, assignment.value(), "expected a binary expression");
   }
@@ -40,9 +50,7 @@ class ExpressionSyntaxSpanTest {
   private CallExpressionSyntax callExpression() {
     var expressionStatement =
         assertInstanceOf(
-            ExpressionStatementSyntax.class,
-            program.statements().get(2),
-            "expected an expression statement");
+            ExpressionStatementSyntax.class, parsed.get(2), "expected an expression statement");
     return assertInstanceOf(
         CallExpressionSyntax.class, expressionStatement.expression(), "expected a call expression");
   }
@@ -79,33 +87,28 @@ class ExpressionSyntaxSpanTest {
   public void identifierExpressionSpanMatchesItsToken() {
     var identifier = identifierFromBinary();
 
-    assertEquals(
-        identifier.identifier().span(), identifier.span(), "expected the identifier's own span");
+    assertEquals("2:5-2:5", spanned(identifier.span()), "expected the identifier's own position");
   }
 
   @Test
   public void literalExpressionSpanMatchesItsToken() {
     var literal = literalFromBinary();
 
-    assertEquals(literal.literal().span(), literal.span(), "expected the literal's own span");
+    assertEquals("2:9-2:9", spanned(literal.span()), "expected the literal's own position");
   }
 
   @Test
   public void callExpressionSpanStartsAtCallee() {
     var call = callExpression();
 
-    assertEquals(
-        call.callee().span().start(), call.span().start(), "expected span to start at the callee");
+    assertEquals("3:1", at(call.span().start()), "expected span to start at the callee");
   }
 
   @Test
   public void callExpressionSpanEndsAtRightParen() {
     var call = callExpression();
 
-    assertEquals(
-        call.rightParen().span().end(),
-        call.span().end(),
-        "expected span to end at the right parenthesis");
+    assertEquals("3:10", at(call.span().end()), "expected span to end at the right parenthesis");
   }
 
   private static final ExpressionVisitor<String> NAMING_VISITOR =

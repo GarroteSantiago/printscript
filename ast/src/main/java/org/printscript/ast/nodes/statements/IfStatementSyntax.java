@@ -3,23 +3,14 @@ package org.printscript.ast.nodes.statements;
 import java.util.Optional;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxToken;
 
+/** {@code if (condition) { ... } else { ... }}; {@link #span} ends with the last block. */
 public record IfStatementSyntax(
-    SyntaxToken ifKeyword,
-    SyntaxToken leftParen,
     ExpressionSyntax condition,
-    SyntaxToken rightParen,
     BlockStatementSyntax thenBlock,
-    Optional<SyntaxToken> elseKeyword,
-    Optional<BlockStatementSyntax> elseBlock)
+    Optional<BlockStatementSyntax> elseBlock,
+    SourceSpan span)
     implements StatementSyntax {
-  @Override
-  public SourceSpan span() {
-    SourceSpan end = elseBlock.map(BlockStatementSyntax::span).orElse(thenBlock.span());
-    return new SourceSpan(ifKeyword.span().start(), end.end());
-  }
-
   @Override
   public <R> R accept(StatementVisitor<R> visitor) {
     return visitor.visitIf(this);

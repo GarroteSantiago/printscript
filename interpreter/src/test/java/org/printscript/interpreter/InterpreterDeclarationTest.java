@@ -5,25 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.statements.StatementSyntax;
-import org.printscript.testkit.TestSources;
-import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticStatementResult;
-import org.printscript.typetable.BuiltinRegistry;
 
 class InterpreterDeclarationTest {
   private List<String> run(String source) {
     List<String> output = new ArrayList<>();
-    var statements = TestSources.statementsOf(source);
-    var semanticContext = SemanticContext.empty(BuiltinRegistry.v1());
-    var interpreter = new Interpreter(output::add);
-    var environment = RuntimeEnvironment.empty();
-    while (statements.hasNext()) {
-      StatementSyntax statement = statements.next();
-      SemanticStatementResult semantic = semanticContext.validate(statement);
-      environment = interpreter.executeStatement(statement, environment, semantic.semanticModel());
-      semanticContext = semantic.nextContext();
-    }
+    var interpreter = new Interpreter(output::add, ArithmeticOperators.v1());
+    Execution.run(interpreter, Execution.validated(source));
     return output;
   }
 

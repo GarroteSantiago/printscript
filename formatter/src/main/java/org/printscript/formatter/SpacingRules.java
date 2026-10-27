@@ -1,14 +1,13 @@
 package org.printscript.formatter;
 
 import java.util.Optional;
-import org.printscript.tokens.SyntaxToken;
+import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenType;
 import org.printscript.tokens.TokenTypeVisitor;
 
 @FunctionalInterface
 public interface SpacingRules {
-  Optional<String> leadingTriviaFor(
-      SyntaxToken token, SyntaxToken previous, FormatterConfigProvider config);
+  Optional<String> leadingTriviaFor(Token token, Token previous, FormatterConfigProvider config);
 
   static SpacingRules v1() {
     return (token, previous, config) ->
@@ -177,10 +176,10 @@ public interface SpacingRules {
 
   /** Rule keyed on the previous token, used once the leading token has no rule of its own. */
   class V1SecondaryVisitor extends DefaultingVisitor {
-    public final SyntaxToken token;
+    public final Token token;
     public final FormatterConfigProvider config;
 
-    V1SecondaryVisitor(SyntaxToken token, FormatterConfigProvider config) {
+    V1SecondaryVisitor(Token token, FormatterConfigProvider config) {
       this.token = token;
       this.config = config;
     }
@@ -233,7 +232,7 @@ public interface SpacingRules {
 
   /** v1.1 additionally gives the content of a block its own leading-trivia rule. */
   class V1_1SecondaryVisitor extends V1SecondaryVisitor {
-    V1_1SecondaryVisitor(SyntaxToken token, FormatterConfigProvider config) {
+    V1_1SecondaryVisitor(Token token, FormatterConfigProvider config) {
       super(token, config);
     }
 
@@ -250,11 +249,11 @@ public interface SpacingRules {
 
   /** Rule keyed on the token about to be emitted; falls back to the previous token's rule. */
   class V1PrimaryVisitor extends DefaultingVisitor {
-    public final SyntaxToken token;
-    public final SyntaxToken previous;
+    public final Token token;
+    public final Token previous;
     public final FormatterConfigProvider config;
 
-    V1PrimaryVisitor(SyntaxToken token, SyntaxToken previous, FormatterConfigProvider config) {
+    V1PrimaryVisitor(Token token, Token previous, FormatterConfigProvider config) {
       this.token = token;
       this.previous = previous;
       this.config = config;
@@ -317,7 +316,7 @@ public interface SpacingRules {
 
   /** v1.1 adds `if (...)` spacing and brace-trivia rules on top of v1's. */
   class V1_1PrimaryVisitor extends V1PrimaryVisitor {
-    V1_1PrimaryVisitor(SyntaxToken token, SyntaxToken previous, FormatterConfigProvider config) {
+    V1_1PrimaryVisitor(Token token, Token previous, FormatterConfigProvider config) {
       super(token, previous, config);
     }
 

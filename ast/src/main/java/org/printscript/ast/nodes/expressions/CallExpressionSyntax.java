@@ -2,21 +2,12 @@ package org.printscript.ast.nodes.expressions;
 
 import java.util.List;
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxToken;
 
-public record CallExpressionSyntax(
-    SyntaxToken callee,
-    SyntaxToken leftParen,
-    List<ExpressionSyntax> arguments,
-    SyntaxToken rightParen)
+/** A call such as {@code println(x)}; {@link #span} runs from the callee to the closing paren. */
+public record CallExpressionSyntax(String callee, List<ExpressionSyntax> arguments, SourceSpan span)
     implements ExpressionSyntax {
   public CallExpressionSyntax {
     arguments = List.copyOf(arguments);
-  }
-
-  @Override
-  public SourceSpan span() {
-    return new SourceSpan(callee.span().start(), rightParen.span().end());
   }
 
   @Override

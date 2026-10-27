@@ -8,24 +8,37 @@
 plugins {
     // Apply the foojay-resolver plugin to allow automatic download of JDKs
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.10.0'
+    // Derives every module's Gradle dependencies from its module-info.java `requires` directives,
+    // so module-info.java is the single source of truth for (main) dependencies.
+    id 'org.gradlex.java-module-dependencies' version '1.13.2'
 }
 
 rootProject.name = 'printscript'
-include(
-    'source',
-    'diagnostics',
-    'tokens',
-    'lexer',
-    'types',
-    'ast',
-    'parser',
-    'typetable',
-    'typechecker',
-    'interpreter',
-    'formatter',
-    'analyzer',
-    'toolchain',
-    'cli',
-    'repl',
-    'testkit'
-)
+
+// Replaces `include(...)`: registers each subproject as a Java Module, so the plugin can map module
+// names (from module-info.java) to these projects. External module versions come from
+// gradle/libs.versions.toml, keyed by module name.
+javaModules {
+    [
+        'source',
+        'diagnostics',
+        'tokens',
+        'lexer',
+        'types',
+        'ast',
+        'parser',
+        'typetable',
+        'typechecker',
+        'interpreter',
+        'formatter',
+        'analyzer',
+        'toolchain',
+        'cli',
+        'repl',
+        'testkit'
+    ].each { name ->
+        module(name) {
+            group = 'org.printscript'
+        }
+    }
+}

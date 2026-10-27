@@ -111,4 +111,14 @@ class SemanticModelTest {
 
     assertTrue(builder.hasErrors(), "expected hasErrors() to reflect an added diagnostic");
   }
+
+  @Test
+  public void setTypeIgnoresANullType() {
+    ExpressionSyntax literal = declaration().initializer().orElseThrow();
+    SemanticModel.Builder builder = SemanticModel.builder();
+    builder.setType(literal, null);
+
+    assertTrue(
+        builder.build().typeOf(literal).isEmpty(), "expected a null type not to be recorded");
+  }
 }

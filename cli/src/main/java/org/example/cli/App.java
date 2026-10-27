@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -51,25 +52,14 @@ public class App implements Callable<Integer> {
   private final ConfigPathPrompt configPathPrompt;
 
   public App() {
-    this(new JsonPrintScriptConfigReader());
-  }
-
-  App(PrintScriptConfigReader configReader) {
-    this(configReader, App::promptConfigPath);
-  }
-
-  App(PrintScriptConfigReader configReader, ConfigPathPrompt configPathPrompt) {
     this(
-        configReader,
+        new JsonPrintScriptConfigReader(),
         new PrintScript(),
         message -> System.err.println("[printscript] " + message),
-        configPathPrompt);
+        App::promptConfigPath);
   }
 
-  App(PrintScriptConfigReader configReader, PrintScript printScript, ProgressReporter progress) {
-    this(configReader, printScript, progress, App::promptConfigPath);
-  }
-
+  /** Injects every collaborator that touches the outside world: config files, stderr, stdin. */
   App(
       PrintScriptConfigReader configReader,
       PrintScript printScript,
@@ -81,15 +71,49 @@ public class App implements Callable<Integer> {
     this.configPathPrompt = configPathPrompt;
   }
 
+  /**
+   * The CLI for {@code app}, as {@link #main} runs it. A command that fails on I/O — a missing
+   * source file, an unreadable or unanswered config path — is reported as one {@code ERROR:} line
+   * on stderr with exit code 1, not a stack trace. Any other exception is a bug and keeps picocli's
+   * default handling, stack trace included.
+   */
+  static CommandLine commandLine(App app) {
+    return new CommandLine(app)
+        .setExecutionExceptionHandler(
+            (exception, commandLine, parseResult) -> reportIoFailure(exception));
+  }
+
   public static void main(String[] args) {
-    int exitCode = new CommandLine(new App()).execute(args);
+    int exitCode = commandLine(new App()).execute(args);
     if (exitCode != 0) {
       System.exit(exitCode);
     }
   }
 
-  int run(String... args) {
-    return new CommandLine(this).execute(args);
+  private static int reportIoFailure(Exception exception) throws Exception {
+    IOException failure = asIoException(exception);
+    if (failure == null) {
+      throw exception;
+    }
+    System.err.println("ERROR: " + describe(failure));
+    return 1;
+  }
+
+  private static IOException asIoException(Exception exception) {
+    if (exception instanceof IOException io) {
+      return io;
+    }
+    if (exception instanceof UncheckedIOException unchecked) {
+      return unchecked.getCause();
+    }
+    return null;
+  }
+
+  private static String describe(IOException failure) {
+    if (failure instanceof NoSuchFileException missing) {
+      return "File not found: " + missing.getFile();
+    }
+    return failure.getMessage();
   }
 
   @Override
@@ -109,8 +133,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Override
     @SuppressWarnings(
@@ -131,7 +156,7 @@ public class App implements Callable<Integer> {
       CommandResult<?> result =
           app.printScript.execute(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               System.out::println,
               input,
               env,
@@ -152,8 +177,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Option(names = {"-c", "--config"})
     private Path configFile;
@@ -164,7 +190,7 @@ public class App implements Callable<Integer> {
       CommandResult<Void> result =
           app.printScript.format(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               app.configReader.readFormatterConfig(resolvedConfigFile),
               System.out,
               app.progress);
@@ -184,8 +210,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Option(names = {"-c", "--config"})
     private Path configFile;
@@ -196,7 +223,7 @@ public class App implements Callable<Integer> {
       CommandResult<AnalysisResult> result =
           app.printScript.analyze(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               app.configReader.readAnalyzerConfig(resolvedConfigFile),
               app::printDiagnostic,
               app.progress);
@@ -216,14 +243,14 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Override
     public Integer call() throws IOException {
       CommandResult<Void> result =
-          app.printScript.validate(
-              Files.newBufferedReader(sourceFile), LanguageVersion.parse(version), app.progress);
+          app.printScript.validate(Files.newBufferedReader(sourceFile), version, app.progress);
       if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
       return 0;
     }
@@ -262,6 +289,24 @@ public class App implements Callable<Integer> {
         end.row(),
         end.column(),
         diagnostic.message());
+  }
+
+  /**
+   * Rejects an unsupported {@code --version} while picocli parses arguments, so it's reported as a
+   * usage error (exit code 2) like any other invalid flag, before any command runs.
+   */
+  static final class LanguageVersionConverter
+      implements CommandLine.ITypeConverter<LanguageVersion> {
+    @Override
+    public LanguageVersion convert(String value) {
+      try {
+        return LanguageVersion.parse(value);
+      } catch (IllegalArgumentException exception) {
+        var conversionError = new CommandLine.TypeConversionException(exception.getMessage());
+        conversionError.initCause(exception);
+        throw conversionError;
+      }
+    }
   }
 
   @FunctionalInterface

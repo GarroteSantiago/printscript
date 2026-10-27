@@ -1,7 +1,7 @@
 package org.printscript.typechecker;
 
 import org.printscript.ast.StatementSource;
-import org.printscript.typetable.SemanticException;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.typetable.ValidatedStatement;
 import org.printscript.typetable.ValidatedStatementSource;
 
@@ -9,7 +9,7 @@ import org.printscript.typetable.ValidatedStatementSource;
  * The sole production implementation of {@link ValidatedStatementSource}: wraps a raw {@link
  * StatementSource} and a {@link SemanticContext}, validating each statement as it's pulled and
  * threading the resulting context to the next pull internally, so no caller has to manage {@code
- * SemanticContext} state across a loop. Throws {@link SemanticException} the moment a statement
+ * SemanticContext} state across a loop. Throws {@link DiagnosticException} the moment a statement
  * fails validation; there is no recovery, matching {@code StatementSyntaxReader}'s "first error
  * stops the stream" behavior one phase earlier.
  */
@@ -32,7 +32,7 @@ public final class ValidatingStatementSource implements ValidatedStatementSource
     var statement = statements.next();
     SemanticStatementResult result = context.validate(statement);
     if (!result.isSuccess()) {
-      throw new SemanticException(result.diagnostics());
+      throw new DiagnosticException(result.diagnostics());
     }
     context = result.nextContext();
     return new ValidatedStatement(statement, result.semanticModel());

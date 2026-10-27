@@ -3,16 +3,17 @@ package org.printscript.parser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.BinaryOperator;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.statements.AssignmentSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
-import org.printscript.tokens.TokenType;
 
 class ParserTest {
   private static final String SOURCE =
@@ -23,7 +24,7 @@ class ParserTest {
           println("Result: " + a);
           """;
 
-  private ProgramSyntax program;
+  private List<StatementSyntax> parsed;
   private AssignmentSyntax assignment;
   private BinaryExpressionSyntax plus;
   private BinaryExpressionSyntax divide;
@@ -31,8 +32,8 @@ class ParserTest {
 
   @BeforeEach
   public void parseSource() {
-    program = TestSources.programOf(SOURCE);
-    assignment = (AssignmentSyntax) program.statements().get(2);
+    parsed = TestSources.statementListOf(SOURCE);
+    assignment = (AssignmentSyntax) parsed.get(2);
     plus =
         assertInstanceOf(
             BinaryExpressionSyntax.class, assignment.value(), "expected a binary expression");
@@ -41,50 +42,33 @@ class ParserTest {
             BinaryExpressionSyntax.class, plus.left(), "expected a nested binary expression");
     callStatement =
         assertInstanceOf(
-            ExpressionStatementSyntax.class,
-            program.statements().get(3),
-            "expected an expression statement");
+            ExpressionStatementSyntax.class, parsed.get(3), "expected an expression statement");
   }
 
   @Test
   public void parsesExpectedStatementCount() {
-    assertEquals(4, program.statements().size(), "expected 4 statements");
-  }
-
-  @Test
-  public void programSpanStartsAtFirstStatement() {
-    assertEquals(
-        program.statements().getFirst().span().start(),
-        program.span().start(),
-        "expected span to start at the first statement");
-  }
-
-  @Test
-  public void programSpanEndsAtEof() {
-    assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
+    assertEquals(4, parsed.size(), "expected 4 statements");
   }
 
   @Test
   public void parsesFirstStatementAsVariableDeclaration() {
     assertInstanceOf(
-        VariableDeclarationSyntax.class,
-        program.statements().get(0),
-        "expected a variable declaration");
+        VariableDeclarationSyntax.class, parsed.get(0), "expected a variable declaration");
   }
 
   @Test
   public void parsesThirdStatementAsAssignment() {
-    assertInstanceOf(AssignmentSyntax.class, program.statements().get(2), "expected an assignment");
+    assertInstanceOf(AssignmentSyntax.class, parsed.get(2), "expected an assignment");
   }
 
   @Test
   public void parsesAdditionAsTopLevelBinaryOperator() {
-    assertEquals(TokenType.PLUS, plus.operator().type(), "expected top-level '+' operator");
+    assertEquals(BinaryOperator.ADD, plus.operator(), "expected top-level '+' operator");
   }
 
   @Test
   public void parsesDivisionAsHigherPrecedenceThanAddition() {
-    assertEquals(TokenType.SLASH, divide.operator().type(), "expected nested '/' operator");
+    assertEquals(BinaryOperator.DIVIDE, divide.operator(), "expected nested '/' operator");
   }
 
   @Test

@@ -3,7 +3,6 @@ package org.printscript.analyzer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
@@ -31,34 +30,14 @@ import org.printscript.typetable.ValidatedStatementSource;
  * errors and undeclared variables are correctness, decided once and recorded in {@link
  * SemanticModel}; this class only judges style and policy on top of an already-valid program, and
  * reads {@link SemanticModel#resolveCall} rather than re-resolving which builtin a call targets.
- * All three {@code analyze} overloads walk the same statement; they differ only in how diagnostics
- * are collected (a returned list vs. a {@link Consumer} for streaming callers).
+ * {@link #analyze} checks one statement, streaming its diagnostics to a {@link Consumer}; {@link
+ * #analyzeAll} does the same over a whole {@link ValidatedStatementSource}.
  */
 public final class StaticAnalyzer {
   private final NamingStyleRules namingStyleRules;
 
-  public StaticAnalyzer() {
-    this(NamingStyleRules.v1());
-  }
-
   public StaticAnalyzer(NamingStyleRules namingStyleRules) {
     this.namingStyleRules = namingStyleRules;
-  }
-
-  public List<Diagnostic> analyze(
-      ProgramSyntax program, SemanticModel semanticModel, AnalyzerConfig config) {
-    List<Diagnostic> diagnostics = new ArrayList<>();
-    for (StatementSyntax statement : program.statements()) {
-      diagnostics.addAll(analyze(statement, semanticModel, config));
-    }
-    return List.copyOf(diagnostics);
-  }
-
-  public List<Diagnostic> analyze(
-      StatementSyntax statement, SemanticModel semanticModel, AnalyzerConfig config) {
-    List<Diagnostic> diagnostics = new ArrayList<>();
-    analyze(statement, semanticModel, config, diagnostics::add);
-    return List.copyOf(diagnostics);
   }
 
   public void analyze(
@@ -71,9 +50,8 @@ public final class StaticAnalyzer {
 
   /**
    * Drains a {@link ValidatedStatementSource}, analyzing each statement in turn. Lets {@code
-   * typetable.SemanticException} propagate rather than catching it, matching the other {@code
-   * analyze} overloads' contract — there is no recovery, analysis stops at the first invalid
-   * statement.
+   * DiagnosticException} propagate rather than catching it — there is no recovery, analysis stops
+   * at the first invalid statement.
    */
   public void analyzeAll(
       ValidatedStatementSource statements, AnalyzerConfig config, Consumer<Diagnostic> sink) {
@@ -97,11 +75,7 @@ public final class StaticAnalyzer {
 
     @Override
     public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
-      checkName(
-          declaration.identifier().semanticLexeme(),
-          declaration.identifier().span(),
-          config,
-          diagnostics);
+      checkName(declaration.name(), declaration.nameSpan(), config, diagnostics);
       declaration
           .initializer()
           .ifPresent(initializer -> checkCalls(initializer, semanticModel, config, diagnostics));

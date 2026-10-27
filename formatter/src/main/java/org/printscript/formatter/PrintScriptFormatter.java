@@ -1,254 +1,151 @@
 package org.printscript.formatter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
-import org.printscript.ast.StatementSource;
-import org.printscript.ast.nodes.ProgramSyntax;
-import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
-import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
-import org.printscript.ast.nodes.expressions.ExpressionSyntax;
-import org.printscript.ast.nodes.expressions.ExpressionVisitor;
-import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
-import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
-import org.printscript.ast.nodes.statements.AssignmentSyntax;
-import org.printscript.ast.nodes.statements.BlockStatementSyntax;
-import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
-import org.printscript.ast.nodes.statements.IfStatementSyntax;
-import org.printscript.ast.nodes.statements.StatementSyntax;
-import org.printscript.ast.nodes.statements.StatementVisitor;
-import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.tokens.SyntaxToken;
+import org.printscript.tokens.Token;
+import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
 
 /**
- * Rewrites source by flattening a statement into its tokens (each tagged with block-nesting {@code
- * depth}) and rewriting only the leading trivia {@link SpacingRules} has an opinion about; every
- * other character — including comments and untouched whitespace — is re-emitted byte for byte. This
- * is a targeted trivia rewrite, not a pretty-printer: it never reconstructs source from the AST's
- * structure alone.
+ * Rewrites source from its token stream alone: each token's text is re-emitted byte for byte, and
+ * only the leading trivia {@link SpacingRules} has an opinion about is rewritten — comments and
+ * untouched whitespace stay exactly as written. This is a targeted trivia rewrite, not a
+ * pretty-printer, so it needs neither a parser nor a tree: the little structure it does use (block
+ * nesting depth for indentation, and whether the previous top-level statement was a {@code println}
+ * call) is tracked from the tokens themselves.
  *
- * <p>{@link #newSession} starts a stateful {@link Session} that must see every statement of a
- * program in order (it tracks the previous token and whether the previous statement was a {@code
- * println}, both needed to decide the next statement's leading trivia) and must be finished with
- * {@link Session#finish} to flush the trailing trivia before the EOF token. {@link
- * #format(ProgramSyntax, FormatterConfigProvider)} is a convenience that drives a session over an
- * already-built tree; {@code toolchain.PrintScript}'s production path instead opens a session and
- * feeds it statements as they stream off a {@code StatementSource}.
+ * <p>Formatting never validates. Its input is any token sequence — whether that sequence is a valid
+ * program is for the caller to decide, not for formatting — so syntactically invalid code still
+ * formats (best effort: stray braces never drive the indentation depth below zero). Only a lexical
+ * error, raised by the {@link TokenSource} itself, stops it.
  */
 public final class PrintScriptFormatter {
   private final SpacingRules spacingRules;
-
-  public PrintScriptFormatter() {
-    this(SpacingRules.v1());
-  }
 
   public PrintScriptFormatter(SpacingRules spacingRules) {
     this.spacingRules = spacingRules;
   }
 
-  public Session newSession(FormatterConfigProvider config) {
-    return new Session(config);
+  /**
+   * Pulls every token from {@code tokens} up to and including EOF, writing the formatted source to
+   * {@code out} as it goes — one token at a time, never buffering the whole program.
+   */
+  public void formatAll(TokenSource tokens, FormatterConfigProvider config, Appendable out)
+      throws IOException {
+    Session session = new Session(config);
+    Token token = tokens.next();
+    while (!TokenType.EOF.equals(token.type())) {
+      session.format(token, out);
+      token = tokens.next();
+    }
+    out.append(rewriteTrailingTrivia(session.previous, token, config));
   }
 
   /**
-   * Drains a {@link StatementSource}, formatting each statement in turn into {@code out} and
-   * finishing with the source's trailing {@code eof} trivia. This is the production path's
-   * counterpart to {@link #format(ProgramSyntax, FormatterConfigProvider)}, which drives a session
-   * over an already-built tree instead. Formatting never validates — a syntactically valid but
-   * semantically invalid program still formats — so this takes a plain {@link StatementSource}, not
-   * a {@code typetable.ValidatedStatementSource}.
+   * The per-program formatting state. A top-level statement ends at a {@code ;} at depth 0, or at a
+   * {@code }} back at depth 0 that isn't followed by {@code else} — which can only be known once
+   * the next token arrives, hence {@link #blockMayEndStatement}. A statement is a {@code println}
+   * call when it is exactly {@code println(...)} followed by {@code ;}.
    */
-  public void formatAll(StatementSource statements, FormatterConfigProvider config, Appendable out)
-      throws IOException {
-    Session session = newSession(config);
-    while (statements.hasNext()) {
-      session.format(statements.next(), out);
-    }
-    session.finish(statements.eof(), out);
-  }
+  private final class Session {
+    private static final int NOT_CLOSED = -1;
 
-  public String format(ProgramSyntax program, FormatterConfigProvider config) {
-    Session session = newSession(config);
-    StringBuilder out = new StringBuilder();
-    for (StatementSyntax statement : program.statements()) {
-      out.append(session.format(statement));
-    }
-    out.append(session.finish(program.eof()));
-    return out.toString();
-  }
-
-  public final class Session {
     private final FormatterConfigProvider config;
-    private SyntaxToken previous;
-    private boolean previousStatementIsPrintln;
+    private Token previous;
+    private int depth;
+
+    private boolean inStatement;
+    private boolean blockMayEndStatement;
+    private boolean lastStatementWasPrintln;
+    private boolean currentStatementFollowsPrintln;
+    private int statementTokens;
+    private boolean expectingPrintlnParen;
+    private boolean startsWithPrintlnCall;
+    private int parenDepth;
+    private int firstCallClosedAt = NOT_CLOSED;
 
     private Session(FormatterConfigProvider config) {
       this.config = config;
     }
 
-    public String format(StatementSyntax statement) {
-      StringBuilder out = new StringBuilder();
-      try {
-        format(statement, out);
-      } catch (IOException exception) {
-        throw new IllegalStateException("StringBuilder append failed", exception);
-      }
-      return out.toString();
-    }
-
-    public void format(StatementSyntax statement, Appendable out) throws IOException {
-      boolean previousWasPrintln = previousStatementIsPrintln;
-      for (PositionedToken positioned : flatten(statement)) {
-        SyntaxToken token = positioned.token();
-        String leadingTrivia = rewriteLeadingTrivia(previous, token, config, previousWasPrintln);
-        String trivia = leadingTrivia;
-        if (positioned.depth() > 0 && hasLineBreak(trivia)) {
-          trivia =
-              config
-                  .blockIndentSpaces()
-                  .map(spaces -> reindent(leadingTrivia, positioned.depth(), spaces))
-                  .orElse(trivia);
+    void format(Token token, Appendable out) throws IOException {
+      if (blockMayEndStatement) {
+        blockMayEndStatement = false;
+        if (!TokenType.ELSE.equals(token.type())) {
+          endStatement(false);
         }
-        out.append(trivia);
-        out.append(token.text());
-        previous = token;
       }
-      previousStatementIsPrintln = isPrintlnStatement(statement);
-    }
-
-    public String finish(SyntaxToken eof) {
-      return rewriteTrailingTrivia(previous, eof, config);
-    }
-
-    public void finish(SyntaxToken eof, Appendable out) throws IOException {
-      out.append(finish(eof));
-    }
-  }
-
-  private record PositionedToken(SyntaxToken token, int depth) {}
-
-  private List<PositionedToken> flatten(StatementSyntax statement) {
-    List<PositionedToken> tokens = new ArrayList<>();
-    addStatement(statement, tokens, 0);
-    return List.copyOf(tokens);
-  }
-
-  private void addStatement(StatementSyntax statement, List<PositionedToken> tokens, int depth) {
-    statement.accept(new StatementFlattener(tokens, depth));
-  }
-
-  private final class StatementFlattener implements StatementVisitor<Void> {
-    private final List<PositionedToken> tokens;
-    private final int depth;
-
-    private StatementFlattener(List<PositionedToken> tokens, int depth) {
-      this.tokens = tokens;
-      this.depth = depth;
-    }
-
-    @Override
-    public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
-      tokens.add(new PositionedToken(declaration.keyword(), depth));
-      tokens.add(new PositionedToken(declaration.identifier(), depth));
-      tokens.add(new PositionedToken(declaration.colon(), depth));
-      tokens.add(new PositionedToken(declaration.type(), depth));
-      if (declaration.equals().isPresent()) {
-        tokens.add(new PositionedToken(declaration.equals().get(), depth));
-        addExpression(declaration.initializer().orElseThrow(), tokens, depth);
+      if (!inStatement) {
+        startStatement();
       }
-      tokens.add(new PositionedToken(declaration.semicolon(), depth));
-      return null;
-    }
-
-    @Override
-    public Void visitAssignment(AssignmentSyntax assignment) {
-      tokens.add(new PositionedToken(assignment.identifier(), depth));
-      tokens.add(new PositionedToken(assignment.equals(), depth));
-      addExpression(assignment.value(), tokens, depth);
-      tokens.add(new PositionedToken(assignment.semicolon(), depth));
-      return null;
-    }
-
-    @Override
-    public Void visitExpressionStatement(ExpressionStatementSyntax expressionStatement) {
-      addExpression(expressionStatement.expression(), tokens, depth);
-      tokens.add(new PositionedToken(expressionStatement.semicolon(), depth));
-      return null;
-    }
-
-    @Override
-    public Void visitIf(IfStatementSyntax ifStatement) {
-      tokens.add(new PositionedToken(ifStatement.ifKeyword(), depth));
-      tokens.add(new PositionedToken(ifStatement.leftParen(), depth));
-      addExpression(ifStatement.condition(), tokens, depth);
-      tokens.add(new PositionedToken(ifStatement.rightParen(), depth));
-      addBlock(ifStatement.thenBlock(), tokens, depth);
-      if (ifStatement.elseKeyword().isPresent()) {
-        tokens.add(new PositionedToken(ifStatement.elseKeyword().get(), depth));
-        addBlock(ifStatement.elseBlock().orElseThrow(), tokens, depth);
+      if (TokenType.RIGHT_BRACE.equals(token.type())) {
+        depth = Math.max(0, depth - 1);
       }
-      return null;
-    }
 
-    @Override
-    public Void visitBlock(BlockStatementSyntax block) {
-      addBlock(block, tokens, depth);
-      return null;
-    }
-  }
+      write(token, out);
 
-  private void addBlock(BlockStatementSyntax block, List<PositionedToken> tokens, int depth) {
-    tokens.add(new PositionedToken(block.leftBrace(), depth));
-    for (StatementSyntax inner : block.statements()) {
-      addStatement(inner, tokens, depth + 1);
-    }
-    tokens.add(new PositionedToken(block.rightBrace(), depth));
-  }
-
-  private void addExpression(ExpressionSyntax expression, List<PositionedToken> tokens, int depth) {
-    expression.accept(new ExpressionFlattener(tokens, depth));
-  }
-
-  private final class ExpressionFlattener implements ExpressionVisitor<Void> {
-    private final List<PositionedToken> tokens;
-    private final int depth;
-
-    private ExpressionFlattener(List<PositionedToken> tokens, int depth) {
-      this.tokens = tokens;
-      this.depth = depth;
-    }
-
-    @Override
-    public Void visitLiteral(LiteralExpressionSyntax literal) {
-      tokens.add(new PositionedToken(literal.literal(), depth));
-      return null;
-    }
-
-    @Override
-    public Void visitIdentifier(IdentifierExpressionSyntax identifier) {
-      tokens.add(new PositionedToken(identifier.identifier(), depth));
-      return null;
-    }
-
-    @Override
-    public Void visitBinary(BinaryExpressionSyntax binary) {
-      addExpression(binary.left(), tokens, depth);
-      tokens.add(new PositionedToken(binary.operator(), depth));
-      addExpression(binary.right(), tokens, depth);
-      return null;
-    }
-
-    @Override
-    public Void visitCall(CallExpressionSyntax call) {
-      tokens.add(new PositionedToken(call.callee(), depth));
-      tokens.add(new PositionedToken(call.leftParen(), depth));
-      for (ExpressionSyntax argument : call.arguments()) {
-        addExpression(argument, tokens, depth);
+      if (TokenType.LEFT_BRACE.equals(token.type())) {
+        depth++;
       }
-      tokens.add(new PositionedToken(call.rightParen(), depth));
-      return null;
+      trackStatement(token);
+      previous = token;
+    }
+
+    private void write(Token token, Appendable out) throws IOException {
+      String leadingTrivia =
+          rewriteLeadingTrivia(previous, token, config, currentStatementFollowsPrintln);
+      String trivia = leadingTrivia;
+      if (depth > 0 && hasLineBreak(trivia)) {
+        int indentDepth = depth;
+        trivia =
+            config
+                .blockIndentSpaces()
+                .map(spaces -> reindent(leadingTrivia, indentDepth, spaces))
+                .orElse(trivia);
+      }
+      out.append(trivia);
+      out.append(token.text());
+    }
+
+    private void trackStatement(Token token) {
+      if (statementTokens == 0) {
+        expectingPrintlnParen =
+            TokenType.IDENTIFIER.equals(token.type()) && "println".equals(token.semanticLexeme());
+      } else if (expectingPrintlnParen) {
+        startsWithPrintlnCall = TokenType.LEFT_PAREN.equals(token.type());
+        expectingPrintlnParen = false;
+      }
+      statementTokens++;
+
+      if (TokenType.LEFT_PAREN.equals(token.type())) {
+        parenDepth++;
+      } else if (TokenType.RIGHT_PAREN.equals(token.type())) {
+        parenDepth = Math.max(0, parenDepth - 1);
+        if (parenDepth == 0 && firstCallClosedAt == NOT_CLOSED) {
+          firstCallClosedAt = statementTokens;
+        }
+      }
+
+      if (depth == 0 && TokenType.SEMICOLON.equals(token.type())) {
+        endStatement(startsWithPrintlnCall && firstCallClosedAt == statementTokens - 1);
+      } else if (depth == 0 && TokenType.RIGHT_BRACE.equals(token.type())) {
+        blockMayEndStatement = true;
+      }
+    }
+
+    private void startStatement() {
+      inStatement = true;
+      currentStatementFollowsPrintln = lastStatementWasPrintln;
+    }
+
+    private void endStatement(boolean wasPrintln) {
+      lastStatementWasPrintln = wasPrintln;
+      inStatement = false;
+      statementTokens = 0;
+      expectingPrintlnParen = false;
+      startsWithPrintlnCall = false;
+      parenDepth = 0;
+      firstCallClosedAt = NOT_CLOSED;
     }
   }
 
@@ -258,8 +155,8 @@ public final class PrintScriptFormatter {
   }
 
   private String rewriteLeadingTrivia(
-      SyntaxToken previous,
-      SyntaxToken token,
+      Token previous,
+      Token token,
       FormatterConfigProvider config,
       boolean previousStatementIsPrintln) {
     if (previous == null) {
@@ -277,7 +174,7 @@ public final class PrintScriptFormatter {
       return token.leadingTrivia();
     }
     if (previousStatementIsPrintln && TokenType.SEMICOLON.equals(previous.type())) {
-      Optional<String> blankLines = config.blankLinesBeforePrintln().map(n -> "\n".repeat(n + 1));
+      Optional<String> blankLines = config.blankLinesAfterPrintln().map(n -> "\n".repeat(n + 1));
       if (blankLines.isPresent()) {
         return blankLines.get();
       }
@@ -285,8 +182,7 @@ public final class PrintScriptFormatter {
     return spacingRules.leadingTriviaFor(token, previous, config).orElse(token.leadingTrivia());
   }
 
-  private String rewriteTrailingTrivia(
-      SyntaxToken previous, SyntaxToken eof, FormatterConfigProvider config) {
+  private String rewriteTrailingTrivia(Token previous, Token eof, FormatterConfigProvider config) {
     if (previous == null || containsComment(eof.leadingTrivia())) {
       return eof.leadingTrivia();
     }
@@ -299,16 +195,6 @@ public final class PrintScriptFormatter {
     return eof.leadingTrivia();
   }
 
-  private boolean isPrintlnStatement(StatementSyntax statement) {
-    if (!(statement instanceof ExpressionStatementSyntax expressionStatement)) {
-      return false;
-    }
-    if (!(expressionStatement.expression() instanceof CallExpressionSyntax call)) {
-      return false;
-    }
-    return "println".equals(call.callee().semanticLexeme());
-  }
-
   private boolean containsComment(String trivia) {
     return trivia.indexOf('#') >= 0;
   }
@@ -319,7 +205,9 @@ public final class PrintScriptFormatter {
 
   private String rewriteWhitespaceBeforeFirstComment(String trivia, String replacement) {
     int comment = trivia.indexOf('#');
-    if (comment < 0) return trivia;
+    if (comment < 0) {
+      return trivia;
+    }
     return replacement + trivia.substring(comment);
   }
 }

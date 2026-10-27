@@ -8,17 +8,16 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import org.printscript.ast.StatementSource;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticCode;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.tokens.SyntaxException;
-import org.printscript.tokens.Token;
-import org.printscript.tokens.TokenSource;
-import org.printscript.tokens.TokenType;
 
 /**
  * The REPL adapter: a second, thin composition root alongside {@code cli}, reading statements from
@@ -39,9 +38,16 @@ import org.printscript.tokens.TokenType;
  * requires blocking on statement N+1's first token. In practice that means the prompt for N+1
  * doesn't appear, and N's own output doesn't print, until the user has already started typing N+1 —
  * verified by hand, not a hypothetical: every statement's prompt and output land one command late.
- * Buffering a line at a time and only parsing once {@link #isOpenBlock} says the buffer looks
- * complete avoids this entirely, since every parse then runs over an in-memory, already-fully-read
- * {@link StringReader} with a definite end, never blocking mid-parse.
+ * Buffering a line at a time and parsing the whole buffer after each line avoids this entirely,
+ * since every parse then runs over an in-memory, already-fully-read {@link StringReader} with a
+ * definite end, never blocking mid-parse.
+ *
+ * <p>Whether the buffer is finished is the parser's call, not a guess made here from tokens: if
+ * parsing fails with {@link DiagnosticCode#UNEXPECTED_END_OF_INPUT} (an unclosed block, a missing
+ * {@code ;}, a trailing operator), the REPL shows the continuation prompt and reads another line.
+ * Nothing in the buffer runs until all of it parses. A blank line while continuing forces
+ * evaluation, reporting the incomplete statement instead of waiting forever. Any other syntax error
+ * (a lexical one included) is reported right away.
  */
 public final class Repl {
   private static final String PROMPT = "ps> ";
@@ -72,15 +78,21 @@ public final class Repl {
       if (line == null) {
         return;
       }
+      boolean continuing = !buffer.isEmpty();
       buffer.append(line).append('\n');
 
-      if (isOpenBlock(buffer.toString(), keywords)) {
+      Parsed parsed = parse(buffer.toString(), keywords);
+      boolean forceEvaluation = continuing && line.isBlank();
+      if (parsed.endedTooEarly() && !forceEvaluation) {
         out.print(CONTINUATION_PROMPT);
         out.flush();
         continue;
       }
 
-      runBuffer(buffer.toString(), keywords, session, err);
+      for (StatementSyntax statement : parsed.statements()) {
+        printAll(session.step(statement), err);
+      }
+      printAll(parsed.syntaxError(), err);
       buffer.setLength(0);
       out.print(PROMPT);
       out.flush();
@@ -96,59 +108,39 @@ public final class Repl {
   }
 
   /**
-   * True if {@code source} has an unclosed {@code { }} block and the caller should read another
-   * line before attempting a real parse. A lex error here is deliberately treated as "not open" —
-   * the real parse in {@link #runBuffer} will hit the identical error and report it, rather than
-   * waiting forever for more input that wouldn't fix it.
+   * The statements that parsed from a buffer, followed by the syntax error that stopped parsing (if
+   * any). {@link #endedTooEarly} is the parser's own verdict that more input could complete the
+   * buffer — never a guess made here from tokens.
    */
-  private static boolean isOpenBlock(String source, KeywordTable keywords) {
-    TokenSource tokens = new Lexer(new StringReader(source), keywords);
-    int depth = 0;
-    while (true) {
-      Token token;
-      try {
-        token = tokens.next();
-      } catch (SyntaxException exception) {
-        return false;
-      }
-      if (token.type() == TokenType.EOF) {
-        return depth > 0;
-      }
-      if (token.type() == TokenType.LEFT_BRACE) {
-        depth++;
-      } else if (token.type() == TokenType.RIGHT_BRACE) {
-        depth--;
-      }
+  private record Parsed(List<StatementSyntax> statements, List<Diagnostic> syntaxError) {
+    boolean endedTooEarly() {
+      return syntaxError.stream()
+          .anyMatch(diagnostic -> diagnostic.code() == DiagnosticCode.UNEXPECTED_END_OF_INPUT);
     }
   }
 
   /**
-   * Parses and executes {@code source} statement by statement, stopping at the first failure —
-   * matching how {@code toolchain.PrintScript.execute} handles a whole file. {@code source} is
-   * already fully buffered, so this never blocks: a syntax error is a normal, bounded parse failure
-   * here, not the state {@link Repl}'s class doc describes needing to recover from.
+   * Parses all of {@code source}, stopping at the first syntax error. {@code source} is already
+   * fully buffered, so this never blocks: a syntax error is a normal, bounded parse failure here,
+   * not the state {@link Repl}'s class doc describes needing to recover from.
    */
-  private static void runBuffer(
-      String source, KeywordTable keywords, ReplSession session, PrintStream err) {
-    StatementSource statements;
+  private static Parsed parse(String source, KeywordTable keywords) {
+    List<StatementSyntax> statements = new ArrayList<>();
     try {
-      statements = new StatementSyntaxReader(new Lexer(new StringReader(source), keywords));
-    } catch (SyntaxException exception) {
-      err.println(render(exception.diagnostic()));
-      return;
+      StatementSource reader =
+          new StatementSyntaxReader(new Lexer(new StringReader(source), keywords));
+      while (reader.hasNext()) {
+        statements.add(reader.next());
+      }
+      return new Parsed(statements, List.of());
+    } catch (DiagnosticException exception) {
+      return new Parsed(statements, exception.diagnostics());
     }
-    while (statements.hasNext()) {
-      StatementSyntax statement;
-      try {
-        statement = statements.next();
-      } catch (SyntaxException exception) {
-        err.println(render(exception.diagnostic()));
-        return;
-      }
-      List<Diagnostic> diagnostics = session.step(statement);
-      for (Diagnostic diagnostic : diagnostics) {
-        err.println(render(diagnostic));
-      }
+  }
+
+  private static void printAll(List<Diagnostic> diagnostics, PrintStream err) {
+    for (Diagnostic diagnostic : diagnostics) {
+      err.println(render(diagnostic));
     }
   }
 

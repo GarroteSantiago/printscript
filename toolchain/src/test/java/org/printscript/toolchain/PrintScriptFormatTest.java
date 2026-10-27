@@ -8,24 +8,21 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import org.junit.jupiter.api.Test;
 import org.printscript.formatter.FormatterConfig;
+import org.printscript.testkit.TestConfigs;
 
 class PrintScriptFormatTest {
   private static final String SOURCE = "let text: string = \"hello\";\nprintln(text);";
 
   @Test
   public void formatsAStringSourceSuccessfully() {
-    CommandResult<String> result =
-        new PrintScript()
-            .format(SOURCE, LanguageVersion.V1_0_0, defaultConfig(), ProgressReporter.NONE);
+    CommandResult<String> result = Commands.format(SOURCE, LanguageVersion.V1_0_0, defaultConfig());
 
     assertTrue(result.isSuccess(), "expected formatting to succeed");
   }
 
   @Test
   public void formatsAStringSourceWithExpectedOutput() {
-    CommandResult<String> result =
-        new PrintScript()
-            .format(SOURCE, LanguageVersion.V1_0_0, defaultConfig(), ProgressReporter.NONE);
+    CommandResult<String> result = Commands.format(SOURCE, LanguageVersion.V1_0_0, defaultConfig());
 
     assertEquals(
         "let text: string = \"hello\";\nprintln(text);\n",
@@ -68,40 +65,25 @@ class PrintScriptFormatTest {
   private record FormatSinkRun(CommandResult<Void> result, StringWriter output) {}
 
   @Test
-  public void rejectsAnUnsupportedVersion() {
-    CommandResult<String> result = formatWithUnsupportedVersion();
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail");
-  }
-
-  @Test
-  public void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
-    CommandResult<String> result = formatWithUnsupportedVersion();
-
-    assertTrue(
-        result.diagnostics().getFirst().message().contains("Unsupported PrintScript version"),
-        "expected an unsupported-version diagnostic");
-  }
-
-  private CommandResult<String> formatWithUnsupportedVersion() {
-    return new PrintScript()
-        .format(SOURCE, new LanguageVersion(9, 9, 0), defaultConfig(), ProgressReporter.NONE);
-  }
-
-  @Test
-  public void reportsASyntaxErrorAsADiagnosticFailure() {
+  public void formatsSyntacticallyInvalidCodeWithoutValidatingIt() {
     CommandResult<String> result =
-        new PrintScript()
-            .format(
-                "let x number = 1;",
-                LanguageVersion.V1_0_0,
-                defaultConfig(),
-                ProgressReporter.NONE);
+        Commands.format("let x number = 1;", LanguageVersion.V1_0_0, defaultConfig());
 
-    assertFalse(result.isSuccess(), "expected a syntax error to fail formatting");
+    assertEquals(
+        "let x number = 1;\n",
+        result.value(),
+        "expected formatting to work on the tokens alone, leaving validation to validate");
+  }
+
+  @Test
+  public void reportsALexicalErrorAsADiagnosticFailure() {
+    CommandResult<String> result =
+        Commands.format("let s: string = \"unterminated;", LanguageVersion.V1_0_0, defaultConfig());
+
+    assertFalse(result.isSuccess(), "expected source that can't be tokenized to fail formatting");
   }
 
   private FormatterConfig defaultConfig() {
-    return new FormatterConfig(0, 0, 1, 1, 1, 2);
+    return TestConfigs.formatterOneBlankLineAfterPrintln();
   }
 }

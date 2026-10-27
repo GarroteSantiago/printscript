@@ -1,7 +1,6 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
@@ -16,6 +15,7 @@ import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.StatementVisitor;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.types.TypeName;
 import org.printscript.types.TypeNameVisitor;
@@ -25,30 +25,25 @@ import org.printscript.typetable.ValidatedStatementSource;
 
 /**
  * Executes already-validated statements against a {@link SemanticModel}. Runtime state ({@link
- * RuntimeEnvironment}) is immutable: {@link #executeStatement} returns a new environment rather
- * than mutating one in place, so PrintScript variables can still be reassigned while the
- * interpreter's own state is always a value, not a mutable object.
+ * RuntimeEnvironment}) is immutable: executing a statement returns a new environment rather than
+ * mutating one in place, so PrintScript variables can still be reassigned while the interpreter's
+ * own state is always a value, not a mutable object.
  *
  * <p>This class never re-derives a type decision that {@link SemanticModel} already recorded — e.g.
  * {@code evaluateBinary} reads {@code semanticModel.typeOf(binary)} to decide string concatenation
  * vs. numeric addition, rather than inspecting the runtime values itself. The only per-version
  * strategy this class owns is {@link ArithmeticOperators} (constructor-injected, default {@link
  * ArithmeticOperators#v1()}); everything else version-specific was already resolved by the time a
- * {@link ProgramSyntax}/statement reaches here. I/O is reached only through the {@link
- * OutputPort}/{@link InputPort}/{@link EnvironmentPort} ports, never directly — the 2-argument
- * constructor's defaults reject {@code readInput}/{@code readEnv} with an {@link
- * UnsupportedOperationException} for callers (such as {@code format}/{@code analyze}/{@code
- * validate}) that never wire real I/O in.
+ * statement reaches here. I/O is reached only through the {@link OutputPort}/{@link
+ * InputPort}/{@link EnvironmentPort} ports, never directly — the 2-argument constructor's defaults
+ * reject {@code readInput}/{@code readEnv} with an {@link UnsupportedOperationException} for
+ * callers (such as {@code format}/{@code analyze}/{@code validate}) that never wire real I/O in.
  */
 public final class Interpreter {
   private final OutputPort output;
   private final ArithmeticOperators operators;
   private final InputPort input;
   private final EnvironmentPort env;
-
-  public Interpreter(OutputPort output) {
-    this(output, ArithmeticOperators.v1());
-  }
 
   public Interpreter(OutputPort output, ArithmeticOperators operators) {
     this(output, operators, unsupportedInput(), unsupportedEnvironment());
@@ -74,31 +69,17 @@ public final class Interpreter {
     };
   }
 
-  public RuntimeEnvironment execute(ProgramSyntax program, SemanticModel semanticModel) {
-    RuntimeEnvironment environment = RuntimeEnvironment.empty();
-    for (StatementSyntax statement : program.statements()) {
-      environment = execute(statement, environment, semanticModel);
-    }
-    return environment;
-  }
-
-  public RuntimeEnvironment executeStatement(
-      StatementSyntax statement, RuntimeEnvironment environment, SemanticModel semanticModel) {
-    return execute(statement, environment, semanticModel);
-  }
-
   /**
    * Drains a {@link ValidatedStatementSource}, executing each statement in turn against the running
-   * {@link RuntimeEnvironment}. Lets {@link RuntimeFailure} and {@code typetable.SemanticException}
-   * propagate rather than catching them, matching {@link #executeStatement}'s contract — there is
-   * no recovery, execution stops at the first one.
+   * {@link RuntimeEnvironment}. Lets a {@link DiagnosticException} (a semantic or runtime failure)
+   * propagate rather than catching it — there is no recovery, execution stops at the first one.
    */
   public RuntimeEnvironment executeAll(
       ValidatedStatementSource statements, RuntimeEnvironment initial) {
     RuntimeEnvironment environment = initial;
     while (statements.hasNext()) {
       ValidatedStatement validated = statements.next();
-      environment = executeStatement(validated.statement(), environment, validated.model());
+      environment = execute(validated.statement(), environment, validated.model());
     }
     return environment;
   }
@@ -124,16 +105,14 @@ public final class Interpreter {
           .map(
               initializer ->
                   environment.put(
-                      declaration.identifier().semanticLexeme(),
-                      evaluate(initializer, environment, semanticModel)))
+                      declaration.name(), evaluate(initializer, environment, semanticModel)))
           .orElse(environment);
     }
 
     @Override
     public RuntimeEnvironment visitAssignment(AssignmentSyntax assignment) {
       return environment.put(
-          assignment.identifier().semanticLexeme(),
-          evaluate(assignment.value(), environment, semanticModel));
+          assignment.name(), evaluate(assignment.value(), environment, semanticModel));
     }
 
     @Override
@@ -196,12 +175,9 @@ public final class Interpreter {
     @Override
     public RuntimeValue visitIdentifier(IdentifierExpressionSyntax identifier) {
       return environment
-          .find(identifier.identifier().semanticLexeme())
+          .find(identifier.name())
           .orElseThrow(
-              () ->
-                  runtime(
-                      "Variable '" + identifier.identifier().semanticLexeme() + "' is not declared",
-                      identifier));
+              () -> runtime("Variable '" + identifier.name() + "' is not declared", identifier));
     }
 
     @Override
@@ -224,17 +200,17 @@ public final class Interpreter {
 
     @Override
     public RuntimeValue visitNumber() {
-      return new RuntimeValue.NumberValue(new BigDecimal(literal.literal().semanticLexeme()));
+      return new RuntimeValue.NumberValue(new BigDecimal(literal.value()));
     }
 
     @Override
     public RuntimeValue visitString() {
-      return new RuntimeValue.StringValue(literal.literal().semanticLexeme());
+      return new RuntimeValue.StringValue(literal.value());
     }
 
     @Override
     public RuntimeValue visitBoolean() {
-      return new RuntimeValue.BooleanValue("true".equals(literal.literal().semanticLexeme()));
+      return new RuntimeValue.BooleanValue("true".equals(literal.value()));
     }
   }
 
@@ -249,9 +225,9 @@ public final class Interpreter {
     BigDecimal rightNumber = ((RuntimeValue.NumberValue) right).value();
     BigDecimal result;
     try {
-      result = operators.apply(binary.operator().type(), leftNumber, rightNumber);
+      result = operators.apply(binary.operator(), leftNumber, rightNumber);
     } catch (ArithmeticException exception) {
-      RuntimeFailure failure = runtime(exception.getMessage(), binary);
+      DiagnosticException failure = runtime(exception.getMessage(), binary);
       failure.initCause(exception);
       throw failure;
     }
@@ -261,9 +237,9 @@ public final class Interpreter {
   private RuntimeValue evaluateCall(
       CallExpressionSyntax call, RuntimeEnvironment environment, SemanticModel semanticModel) {
     if (semanticModel.resolveCall(call).isEmpty()) {
-      throw runtime("Unknown callable '" + call.callee().semanticLexeme() + "'", call);
+      throw runtime("Unknown callable '" + call.callee() + "'", call);
     }
-    String name = call.callee().semanticLexeme();
+    String name = call.callee();
     RuntimeValue argument = evaluate(call.arguments().getFirst(), environment, semanticModel);
     BuiltinBehavior behavior =
         BuiltinBehaviors.find(name)
@@ -316,7 +292,7 @@ public final class Interpreter {
     }
 
     @Override
-    public RuntimeFailure runtimeFailure(String message) {
+    public DiagnosticException runtimeFailure(String message) {
       return runtime(message, call);
     }
   }
@@ -349,7 +325,7 @@ public final class Interpreter {
       try {
         return new RuntimeValue.NumberValue(new BigDecimal(raw));
       } catch (NumberFormatException exception) {
-        RuntimeFailure failure = runtime("Expected a number but got '" + raw + "'", call);
+        DiagnosticException failure = runtime("Expected a number but got '" + raw + "'", call);
         failure.initCause(exception);
         throw failure;
       }
@@ -391,7 +367,7 @@ public final class Interpreter {
         });
   }
 
-  private RuntimeFailure runtime(String message, ExpressionSyntax expression) {
-    return new RuntimeFailure(Diagnostic.error(Phase.RUNTIME, message, expression.span()));
+  private DiagnosticException runtime(String message, ExpressionSyntax expression) {
+    return new DiagnosticException(Diagnostic.error(Phase.RUNTIME, message, expression.span()));
   }
 }

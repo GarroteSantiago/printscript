@@ -1,25 +1,61 @@
 package org.printscript.toolchain;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 class LanguageVersionTest {
+  private static final LanguageVersionVisitor<String> NAMER =
+      new LanguageVersionVisitor<>() {
+        @Override
+        public String visitV1_0() {
+          return "v1.0";
+        }
+
+        @Override
+        public String visitV1_1() {
+          return "v1.1";
+        }
+      };
+
   @Test
-  public void parsesAMajorMinorVersion() {
-    assertEquals(
-        new LanguageVersion(1, 0, 0), LanguageVersion.parse("1.0"), "expected major.minor parsing");
+  public void parsesAMajorMinorVersionOneZero() {
+    assertSame(LanguageVersion.V1_0_0, LanguageVersion.parse("1.0"), "expected 1.0");
   }
 
   @Test
-  public void parsesAMajorMinorPatchVersion() {
-    assertEquals(
-        new LanguageVersion(1, 2, 3),
-        LanguageVersion.parse("1.2.3"),
-        "expected major.minor.patch parsing");
+  public void parsesAMajorMinorPatchVersionOneZero() {
+    assertSame(LanguageVersion.V1_0_0, LanguageVersion.parse("1.0.0"), "expected 1.0.0");
+  }
+
+  @Test
+  public void parsesAMajorMinorVersionOneOne() {
+    assertSame(LanguageVersion.V1_1_0, LanguageVersion.parse("1.1"), "expected 1.1");
+  }
+
+  @Test
+  public void ignoresThePatchNumber() {
+    assertSame(LanguageVersion.V1_1_0, LanguageVersion.parse("1.1.7"), "expected any 1.1 patch");
+  }
+
+  @Test
+  public void rejectsAnUnsupportedVersion() {
+    assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse("9.9"));
+  }
+
+  @Test
+  public void namesTheRejectedVersionInTheMessage() {
+    assertTrue(
+        rejectionMessage("9.9").contains("Unsupported PrintScript version: 9.9"),
+        "expected the rejected version in the message");
+  }
+
+  private static String rejectionMessage(String raw) {
+    return assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse(raw))
+        .getMessage();
   }
 
   @Test
@@ -29,26 +65,36 @@ class LanguageVersionTest {
 
   @Test
   public void rejectsAVersionWithTooManyParts() {
-    assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse("one.two.three.four"));
+    assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse("1.0.0.0.0"));
   }
 
   @Test
-  public void supportsV1ForVersionOneZero() {
-    assertTrue(LanguageVersion.V1_0_0.supportsV1(), "expected 1.0 to support v1");
+  public void rejectsANonNumericVersion() {
+    assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse("one.zero"));
   }
 
   @Test
-  public void doesNotSupportV1ForVersionOneOne() {
-    assertFalse(LanguageVersion.V1_1_0.supportsV1(), "expected 1.1 to not support the v1 flag");
+  public void rejectsAnEmptyPart() {
+    assertThrows(IllegalArgumentException.class, () -> LanguageVersion.parse("1."));
   }
 
   @Test
-  public void supportsV11ForVersionOneOne() {
-    assertTrue(LanguageVersion.V1_1_0.supportsV1_1(), "expected 1.1 to support v1.1");
+  public void dispatchesVersionOneZeroToItsVisitorMethod() {
+    assertEquals("v1.0", LanguageVersion.V1_0_0.accept(NAMER), "expected visitV1_0");
   }
 
   @Test
-  public void doesNotSupportV11ForVersionOneZero() {
-    assertFalse(LanguageVersion.V1_0_0.supportsV1_1(), "expected 1.0 to not support v1.1");
+  public void dispatchesVersionOneOneToItsVisitorMethod() {
+    assertEquals("v1.1", LanguageVersion.V1_1_0.accept(NAMER), "expected visitV1_1");
+  }
+
+  @Test
+  public void printsVersionOneZero() {
+    assertEquals("1.0.0", LanguageVersion.V1_0_0.toString(), "expected 1.0.0");
+  }
+
+  @Test
+  public void printsVersionOneOne() {
+    assertEquals("1.1.0", LanguageVersion.V1_1_0.toString(), "expected 1.1.0");
   }
 }

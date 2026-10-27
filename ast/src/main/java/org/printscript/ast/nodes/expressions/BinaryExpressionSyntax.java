@@ -1,10 +1,9 @@
 package org.printscript.ast.nodes.expressions;
 
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxToken;
 
 public record BinaryExpressionSyntax(
-    ExpressionSyntax left, SyntaxToken operator, ExpressionSyntax right)
+    ExpressionSyntax left, BinaryOperator operator, ExpressionSyntax right)
     implements ExpressionSyntax {
   @Override
   public SourceSpan span() {

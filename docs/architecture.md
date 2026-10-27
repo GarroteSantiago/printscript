@@ -30,9 +30,14 @@ some of these modules' `build.gradle`/`module-info.java` descriptors.
 
 ## Module dependency graph
 
-Each arrow is a real Gradle module dependency (verified against every module's `build.gradle`), not
-an aspiration. `cli` is the only module allowed to depend on `toolchain`; every other module below
-it is part of the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
+Each arrow is a `requires` in that module's `module-info.java`, which is also the only place main
+dependencies are declared: the `org.gradlex.java-module-dependencies` plugin (applied in
+`settings.gradle`) derives every Gradle dependency from those directives, so this graph and the build
+cannot drift apart. Every arrow is a direct use: a module `requires` exactly the modules it imports
+from, never relying on one reached transitively.
+
+`cli` is the only module allowed to depend on `toolchain`; every other module below it is part of
+the language core and must stay adapter-agnostic. `cli --> diagnostics` is the one
 edge that reaches past `toolchain`, and it's a deliberate exception, not a leak: `Diagnostic` is
 zero-dependency, stable, shared vocabulary (the same category as an error/result type in any
 API) — `CommandResult.diagnostics()` returns it, so anything that renders *why* an operation failed
@@ -51,36 +56,52 @@ stateful API, `repl` is its own thin composition root straight over the language
 graph TD
     cli["cli (adapter)"] --> toolchain
     cli --> diagnostics
-    repl["repl (adapter)"] --> lexer
+    repl --> lexer
     repl --> parser
     repl --> typechecker
+    repl --> typetable
     repl --> interpreter
-    toolchain --> formatter
-    toolchain --> analyzer
-    toolchain --> interpreter
-    toolchain --> lexer
+    repl["repl (adapter)"] --> ast
+    repl --> diagnostics
+    toolchain --> diagnostics
     toolchain --> parser
     toolchain --> typechecker
-    interpreter --> ast
-    interpreter --> typetable
-    formatter --> ast
+    toolchain --> interpreter
+    toolchain --> formatter
+    toolchain --> analyzer
+    toolchain --> lexer
+    formatter --> tokens
+    analyzer --> diagnostics
     analyzer --> ast
     analyzer --> typetable
+    interpreter --> diagnostics
+    interpreter --> ast
+    interpreter --> typetable
+    interpreter --> types
+    typechecker --> diagnostics
+    typechecker --> ast
     typechecker --> typetable
+    typechecker --> types
+    typetable --> diagnostics
     typetable --> ast
     typetable --> types
+    parser --> diagnostics
+    parser --> source
+    parser --> types
     parser --> ast
     parser --> tokens
-    ast --> tokens
-    ast --> types
+    lexer --> diagnostics
+    lexer --> source
     lexer --> tokens
-    tokens --> diagnostics
+    ast --> source
+    ast --> types
+    tokens --> source
     diagnostics --> source
 ```
 
 Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,
 see [Tokens Module](../tokens/ARCHITECTURE.md). The same reasoning splits `parser` out of `ast`,
-`typechecker` out of `typetable`, and `types` out of `ast`: `formatter`/`interpreter`/`analyzer`
+`typechecker` out of `typetable`, and `types` out of `ast`: `interpreter`/`analyzer`
 walk the AST `ast` defines and read a `SemanticModel`, but none of them build a tree or run the
 checker that produces one. `types` has zero dependencies — pure vocabulary, no tree or stream
 shape attached.
@@ -88,8 +109,9 @@ shape attached.
 ## Pipeline data flow
 
 What actually happens when `toolchain.PrintScript` runs a command, for the statements that make it
-through validation. Formatting instead reads token trivia off the same lexer/parser stages; see
-[AST Module](../ast/ARCHITECTURE.md) for that second consumption path.
+through validation. Formatting skips the parser entirely: `PrintScriptFormatter` reads the lexer's
+token stream, trivia included, and never validates; see
+[Formatter Module](../formatter/ARCHITECTURE.md).
 
 ```mermaid
 flowchart TD
@@ -104,9 +126,10 @@ flowchart TD
 
 ## Recurring pattern: interface-with-singletons + visitor
 
-Six otherwise-unrelated "closed set of kinds" types across the core follow the same shape, so it's
-documented once here instead of six times: `tokens.TokenType`, `lexer.Punctuation`,
-`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
+Eight otherwise-unrelated "closed set of kinds" types across the codebase follow the same shape, so
+it's documented once here instead of eight times: `tokens.TokenType`, `lexer.Punctuation`,
+`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`,
+`toolchain.LanguageVersion`, and the AST's `ast.nodes.expressions.BinaryOperator` and
 `ast.nodes.expressions.ExpressionSyntax` / `ast.nodes.statements.StatementSyntax`. Each is
 modeled as an interface with one singleton constant (or sealed subtype) per kind and an
 `accept(XVisitor<R>)` method, rather than a Java `enum` with a `switch`.
@@ -114,35 +137,34 @@ modeled as an interface with one singleton constant (or sealed subtype) per kind
 ```mermaid
 classDiagram
     direction TB
-    class TokenType {
+    class BinaryOperator {
         <<interface>>
-        +accept(TokenTypeVisitor) R
+        +accept(BinaryOperatorVisitor) R
+        +symbol() String
     }
-    class TokenTypeVisitor~R~ {
+    class BinaryOperatorVisitor~R~ {
         <<interface>>
-        +visitPlus() R
-        +visitMinus() R
-        +visitLet() R
+        +visitAdd() R
+        +visitSubtract() R
+        +visitMultiply() R
+        +visitDivide() R
     }
-    class LET
-    class PLUS
+    class ADD
+    class DIVIDE
     class ArithmeticOperators_V1Visitor {
-        implements TokenTypeVisitor
+        implements BinaryOperatorVisitor
     }
-    class SpacingRules_V1Visitor {
-        implements TokenTypeVisitor
-    }
-    TokenType <|.. LET
-    TokenType <|.. PLUS
-    TokenType --> TokenTypeVisitor : accept()
-    TokenTypeVisitor <|.. ArithmeticOperators_V1Visitor
-    TokenTypeVisitor <|.. SpacingRules_V1Visitor
+    BinaryOperator <|.. ADD
+    BinaryOperator <|.. DIVIDE
+    BinaryOperator --> BinaryOperatorVisitor : accept()
+    BinaryOperatorVisitor <|.. ArithmeticOperators_V1Visitor
 ```
 
-The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile error in every
-`XVisitor` implementation across every module that dispatches on it — `interpreter.ArithmeticOperators`,
-`formatter.SpacingRules`, and any future one — until every case is handled. A `switch` over an
-`enum` only gets that same exhaustiveness check if every call site remembers to write one.
+The payoff: adding a new kind (e.g. a new `BinaryOperator` constant) forces a compile error in every
+`XVisitor` implementation across every module that dispatches on it — `interpreter.ArithmeticOperators`
+for operators, `formatter.SpacingRules` for a new `TokenType`, and any future one — until every case
+is handled. A `switch` over an `enum` only gets that same exhaustiveness check if every call site
+remembers to write one.
 
 ## Main Direction
 
@@ -160,7 +182,8 @@ The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile
 ## Design Rules
 
 - AST is for language meaning.
-- Lossless CST/token trivia is for formatting and comment preservation.
+- Token trivia (whitespace and comments) is for formatting and comment preservation; the formatter
+  works on tokens, never on a tree.
 - Parser recovery is not part of the current design; commands stop at the first syntax error.
 - Runtime errors stop execution immediately.
 - Variables require explicit type annotations.

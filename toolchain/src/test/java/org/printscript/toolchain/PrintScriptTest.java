@@ -7,10 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.interpreter.RuntimeEnvironment;
+import org.printscript.testkit.TestConfigs;
 
 class PrintScriptTest {
   private static final String VERSION_ONE_SOURCE =
@@ -26,24 +27,20 @@ class PrintScriptTest {
 
   @Test
   public void executesVersionOneProgramSuccessfully() {
-    CommandResult<ExecutionResult> result = executeVersionOneProgram();
+    CommandResult<List<String>> result = executeVersionOneProgram();
 
     assertTrue(result.isSuccess(), "expected execution to succeed");
   }
 
   @Test
   public void executesVersionOneProgramWithExpectedOutput() {
-    CommandResult<ExecutionResult> result = executeVersionOneProgram();
+    CommandResult<List<String>> result = executeVersionOneProgram();
 
-    assertEquals(
-        List.of("Joe Doe", "Result: 3"),
-        result.value().outputLines(),
-        "expected println output lines");
+    assertEquals(List.of("Joe Doe", "Result: 3"), result.value(), "expected println output lines");
   }
 
-  private CommandResult<ExecutionResult> executeVersionOneProgram() {
-    return new PrintScript()
-        .execute(VERSION_ONE_SOURCE, LanguageVersion.V1_0_0, ProgressReporter.NONE);
+  private CommandResult<List<String>> executeVersionOneProgram() {
+    return Commands.execute(VERSION_ONE_SOURCE, LanguageVersion.V1_0_0);
   }
 
   @Test
@@ -75,6 +72,8 @@ class PrintScriptTest {
                     """),
             LanguageVersion.V1_0_0,
             output::add,
+            prompt -> "",
+            name -> Optional.empty(),
             ProgressReporter.NONE);
   }
 
@@ -113,37 +112,15 @@ class PrintScriptTest {
         .analyze(
             new StringReader("let badName: string = \"hello\";"),
             LanguageVersion.V1_0_0,
-            AnalyzerConfig.defaults(),
+            TestConfigs.analyzerDefaults(),
             diagnostics::add,
             ProgressReporter.NONE);
   }
 
   @Test
-  public void executeRejectsAnUnsupportedVersion() {
-    CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail execution");
-  }
-
-  @Test
-  public void executeRejectsAnUnsupportedVersionWithExpectedDiagnostic() {
-    CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
-
-    assertTrue(
-        result.diagnostics().getFirst().message().contains("Unsupported PrintScript version"),
-        "expected an unsupported-version diagnostic");
-  }
-
-  private CommandResult<ExecutionResult> executeWithUnsupportedVersion() {
-    return new PrintScript()
-        .execute("println(\"hi\");", new LanguageVersion(9, 9, 0), ProgressReporter.NONE);
-  }
-
-  @Test
   public void executeReportsARuntimeFailureAsADiagnosticFailure() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript()
-            .execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result =
+        Commands.execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0);
 
     assertFalse(
         result.isSuccess(), "expected a division-by-zero runtime failure to fail execution");
@@ -151,9 +128,8 @@ class PrintScriptTest {
 
   @Test
   public void executeReportsARuntimeFailureMessage() {
-    CommandResult<ExecutionResult> result =
-        new PrintScript()
-            .execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0, ProgressReporter.NONE);
+    CommandResult<List<String>> result =
+        Commands.execute("let a: number = 1 / 0;", LanguageVersion.V1_0_0);
 
     assertEquals(
         "Division by zero",
@@ -164,26 +140,11 @@ class PrintScriptTest {
   @Test
   public void analyzeStringOverloadCollectsDiagnostics() {
     CommandResult<List<Diagnostic>> result =
-        new PrintScript()
-            .analyze(
-                "let badName: string = \"hello\";",
-                LanguageVersion.V1_0_0,
-                AnalyzerConfig.defaults(),
-                ProgressReporter.NONE);
+        Commands.analyze(
+            "let badName: string = \"hello\";",
+            LanguageVersion.V1_0_0,
+            TestConfigs.analyzerDefaults());
 
     assertEquals(1, result.value().size(), "expected the collected diagnostics list");
-  }
-
-  @Test
-  public void analyzeStringOverloadRejectsAnUnsupportedVersion() {
-    CommandResult<List<Diagnostic>> result =
-        new PrintScript()
-            .analyze(
-                "println(\"hi\");",
-                new LanguageVersion(9, 9, 0),
-                AnalyzerConfig.defaults(),
-                ProgressReporter.NONE);
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail analysis");
   }
 }

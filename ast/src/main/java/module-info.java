@@ -1,5 +1,5 @@
 module org.printscript.ast {
-  requires transitive org.printscript.tokens;
+  requires transitive org.printscript.source;
   requires transitive org.printscript.types;
 
   exports org.printscript.ast;
