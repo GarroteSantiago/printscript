@@ -28,7 +28,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Set up just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v4
 
       - name: Compile
         run: just compile
