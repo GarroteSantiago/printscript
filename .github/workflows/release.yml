@@ -76,7 +76,8 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
   publish:
-    name: Publish v${{ needs.plan.outputs.version }}
+    # A plain name: when the job is skipped, GitHub shows expressions here unevaluated.
+    name: Publish
     needs: [quality, plan]
     if: needs.plan.outputs.release == 'true'
     runs-on: ubuntu-latest
