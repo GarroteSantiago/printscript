@@ -189,7 +189,7 @@ public final class PrintScriptFormatter {
       return token.leadingTrivia();
     }
     if (previousStatementIsPrintln && TokenType.SEMICOLON.equals(previous.type())) {
-      Optional<String> blankLines = config.blankLinesBeforePrintln().map(n -> "\n".repeat(n + 1));
+      Optional<String> blankLines = config.blankLinesAfterPrintln().map(n -> "\n".repeat(n + 1));
       if (blankLines.isPresent()) {
         return blankLines.get();
       }

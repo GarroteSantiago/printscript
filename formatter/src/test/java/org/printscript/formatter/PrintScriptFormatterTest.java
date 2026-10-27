@@ -34,7 +34,7 @@ class PrintScriptFormatterTest {
   }
 
   @Test
-  public void doesNotInsertBlankLineBeforePrintlnFollowingANonPrintlnStatement() {
+  public void doesNotInsertBlankLinesAfterANonPrintlnStatement() {
     String source = "let text: string = \"hello\";\nprintln(text);";
 
     String formatted =

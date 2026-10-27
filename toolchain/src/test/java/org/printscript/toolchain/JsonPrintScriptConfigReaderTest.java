@@ -45,7 +45,7 @@ class JsonPrintScriptConfigReaderTest {
   public void readsLineBreaksAfterPrintlnAsAnInteger() throws Exception {
     FormatterConfigProvider config = readFormatterConfig("{\"line-breaks-after-println\": 2}");
 
-    assertEquals(Optional.of(2), config.blankLinesBeforePrintln(), "blankLinesBeforePrintln");
+    assertEquals(Optional.of(2), config.blankLinesAfterPrintln(), "blankLinesAfterPrintln");
   }
 
   @Test
