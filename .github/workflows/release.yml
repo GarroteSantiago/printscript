@@ -55,7 +55,10 @@ jobs:
           title=$(jq -r .title <<<"$pr")
           body=$(jq -r '.body // ""' <<<"$pr")
 
-          bump=$(.github/scripts/release-version.sh bump "$title" "$body")
+          if ! bump=$(.github/scripts/release-version.sh bump "$title" "$body" 2>reason.txt); then
+            echo "::error title=No release: PR #$number has an invalid title::$(tr '\n' ' ' <reason.txt)"
+            exit 1
+          fi
           if [ "$bump" = none ]; then
             echo "PR #$number (\"$title\") does not create a release." | tee -a "$GITHUB_STEP_SUMMARY"
             echo "release=false" >> "$GITHUB_OUTPUT"

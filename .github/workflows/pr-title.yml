@@ -26,7 +26,11 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          bump=$(.github/scripts/release-version.sh bump "$PR_TITLE" "$PR_BODY")
+          if ! bump=$(.github/scripts/release-version.sh bump "$PR_TITLE" "$PR_BODY" 2>reason.txt); then
+            # An annotation shows the reason on the PR's checks, not only in this log.
+            echo "::error title=PR title is not a Conventional Commit::$(tr '\n' ' ' <reason.txt)"
+            exit 1
+          fi
           if [ "$bump" = none ]; then
             message="Merging this PR will not create a release."
           else
