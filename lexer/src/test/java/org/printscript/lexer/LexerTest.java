@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import org.junit.jupiter.api.Test;
-import org.printscript.tokens.SyntaxException;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenType;
 
@@ -92,7 +92,7 @@ class LexerTest {
 
   @Test
   public void throwsOnAnUnterminatedString() {
-    assertThrows(SyntaxException.class, () -> new Lexer("\"unterminated").next());
+    assertThrows(DiagnosticException.class, () -> new Lexer("\"unterminated").next());
   }
 
   @Test
@@ -118,7 +118,7 @@ class LexerTest {
 
   @Test
   public void throwsWhenADecimalPointIsNotFollowedByADigit() {
-    assertThrows(SyntaxException.class, () -> new Lexer("4.").next());
+    assertThrows(DiagnosticException.class, () -> new Lexer("4.").next());
   }
 
   @Test
@@ -144,7 +144,7 @@ class LexerTest {
 
   @Test
   public void throwsOnAnUnexpectedCharacter() {
-    assertThrows(SyntaxException.class, () -> new Lexer("@").next());
+    assertThrows(DiagnosticException.class, () -> new Lexer("@").next());
   }
 
   @Test

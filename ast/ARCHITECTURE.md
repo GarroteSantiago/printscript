@@ -1,7 +1,7 @@
 # AST Module
 
 The ast module owns source structure. It builds on [tokens](../tokens/ARCHITECTURE.md) (the
-`SyntaxToken` shape every node holds, plus `SyntaxException`) and [types](../types/ARCHITECTURE.md)
+`SyntaxToken` shape every node holds) and [types](../types/ARCHITECTURE.md)
 (for the one place a tree shape needs a type: `LiteralExpressionSyntax.literalType`).
 
 Responsibilities:

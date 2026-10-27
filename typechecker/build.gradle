@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    api project(':diagnostics')
     api project(':typetable')
     testImplementation project(':testkit')
 }

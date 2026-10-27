@@ -30,8 +30,8 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | Module | Responsibility |
 |---|---|
 | [`source`](source/ARCHITECTURE.md) | Source-position/span value types. Zero dependencies. |
-| [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`). |
-| [`tokens`](tokens/ARCHITECTURE.md) | The token-streaming contract (`Token`, `TokenType`, `TokenSource`, `SyntaxException`) shared by `lexer` and `parser` without either depending on the other. |
+| [`diagnostics`](diagnostics/ARCHITECTURE.md) | Shared vocabulary for reporting problems in user code (`Diagnostic`, `Severity`, `Phase`, and `DiagnosticException`, the one exception every stage throws). |
+| [`tokens`](tokens/ARCHITECTURE.md) | The token-streaming contract (`Token`, `TokenType`, `TokenSource`) shared by `lexer` and `parser` without either depending on the other. |
 | [`lexer`](lexer/ARCHITECTURE.md) | Scans source text into tokens (`Lexer`). |
 | [`types`](types/ARCHITECTURE.md) | The type-system vocabulary (`TypeName`, `TypeAnnotationTable`). Zero dependencies. |
 | [`ast`](ast/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |

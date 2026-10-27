@@ -16,6 +16,7 @@ import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.StatementVisitor;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.types.TypeName;
 import org.printscript.types.TypeNameVisitor;
@@ -89,9 +90,9 @@ public final class Interpreter {
 
   /**
    * Drains a {@link ValidatedStatementSource}, executing each statement in turn against the running
-   * {@link RuntimeEnvironment}. Lets {@link RuntimeFailure} and {@code typetable.SemanticException}
-   * propagate rather than catching them, matching {@link #executeStatement}'s contract — there is
-   * no recovery, execution stops at the first one.
+   * {@link RuntimeEnvironment}. Lets a {@link DiagnosticException} (a semantic or runtime failure)
+   * propagate rather than catching it, matching {@link #executeStatement}'s contract — there is no
+   * recovery, execution stops at the first one.
    */
   public RuntimeEnvironment executeAll(
       ValidatedStatementSource statements, RuntimeEnvironment initial) {
@@ -251,7 +252,7 @@ public final class Interpreter {
     try {
       result = operators.apply(binary.operator().type(), leftNumber, rightNumber);
     } catch (ArithmeticException exception) {
-      RuntimeFailure failure = runtime(exception.getMessage(), binary);
+      DiagnosticException failure = runtime(exception.getMessage(), binary);
       failure.initCause(exception);
       throw failure;
     }
@@ -316,7 +317,7 @@ public final class Interpreter {
     }
 
     @Override
-    public RuntimeFailure runtimeFailure(String message) {
+    public DiagnosticException runtimeFailure(String message) {
       return runtime(message, call);
     }
   }
@@ -349,7 +350,7 @@ public final class Interpreter {
       try {
         return new RuntimeValue.NumberValue(new BigDecimal(raw));
       } catch (NumberFormatException exception) {
-        RuntimeFailure failure = runtime("Expected a number but got '" + raw + "'", call);
+        DiagnosticException failure = runtime("Expected a number but got '" + raw + "'", call);
         failure.initCause(exception);
         throw failure;
       }
@@ -391,7 +392,7 @@ public final class Interpreter {
         });
   }
 
-  private RuntimeFailure runtime(String message, ExpressionSyntax expression) {
-    return new RuntimeFailure(Diagnostic.error(Phase.RUNTIME, message, expression.span()));
+  private DiagnosticException runtime(String message, ExpressionSyntax expression) {
+    return new DiagnosticException(Diagnostic.error(Phase.RUNTIME, message, expression.span()));
   }
 }

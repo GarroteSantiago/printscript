@@ -12,9 +12,9 @@ Responsibilities:
 - `BuiltinRegistry` / `BuiltinSignature` — which callables (`println`, `readInput`, `readEnv`) exist
   for a given language version, and their signatures.
 - `VariableSymbol` — a declared variable's resolved name, type, mutability, and declaration site.
-- `ValidatedStatementSource` / `ValidatedStatement` / `SemanticException` — the pull-based port a
+- `ValidatedStatementSource` / `ValidatedStatement` — the pull-based port a
   validated statement stream is read through (mirroring `ast.StatementSource` one layer down):
-  `next()` throws `SemanticException` the moment a statement fails validation instead of returning a
+  `next()` throws `diagnostics.DiagnosticException` the moment a statement fails validation instead of returning a
   result the caller must check. `typechecker.ValidatingStatementSource` is the sole production
   implementation; `interpreter`/`analyzer` consume the port directly (`Interpreter#executeAll`,
   `StaticAnalyzer#analyzeAll`) without depending on `typechecker` itself.

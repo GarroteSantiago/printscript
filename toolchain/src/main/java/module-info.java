@@ -1,4 +1,5 @@
 module org.printscript.toolchain {
+  requires transitive org.printscript.diagnostics;
   requires org.printscript.parser;
   requires org.printscript.typechecker;
   requires transitive org.printscript.interpreter;

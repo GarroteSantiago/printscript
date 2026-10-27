@@ -14,15 +14,14 @@ Responsibilities:
   [parser](../parser/ARCHITECTURE.md) avoid depending on each other directly: `lexer` depends on
   `tokens` to implement `TokenSource`, `parser` depends on `tokens` to consume it, and neither
   depends on the other.
-- `SyntaxException` — the shared syntax-phase error type, since both the lexer's scanning errors
-  and the parser's parse errors are surfaced the same way.
 - `SyntaxToken` — the immutable, trivia-carrying token shape the AST retains, built from a `Token`
   via `SyntaxToken.from(Token)`.
 
 Design rules:
 
-- Depends on [diagnostics](../diagnostics/ARCHITECTURE.md) (`requires transitive`, since
-  `SyntaxException` exposes `Diagnostic`, and `Token` exposes `SourceSpan` transitively through it).
+- Depends only on [source](../source/ARCHITECTURE.md) (`requires transitive`, since `Token`
+  exposes `SourceSpan`). Syntax errors are `diagnostics.DiagnosticException`s thrown by the lexer
+  and parser, not a type owned here, so this module doesn't depend on `diagnostics`.
 - Never depend on `lexer` or `parser`. This module exists specifically so those two do not need to
   depend on each other.
 
@@ -30,7 +29,7 @@ Design rules:
 
 ```mermaid
 graph TD
-    Lexer["lexer.Lexer\n(implements TokenSource)"] -->|depends on| Tokens["tokens\n(TokenSource, Token, TokenType, SyntaxException)"]
+    Lexer["lexer.Lexer\n(implements TokenSource)"] -->|depends on| Tokens["tokens\n(TokenSource, Token, TokenType)"]
     Parser["syntax.StatementSyntaxReader\n(consumes TokenSource)"] -->|depends on| Tokens
     Toolchain["toolchain.PrintScript\n(composition root)"] -.constructs.-> Lexer
     Toolchain -.injects Lexer as TokenSource into.-> Parser
@@ -40,5 +39,5 @@ graph TD
 [toolchain](../toolchain/ARCHITECTURE.md) is the only place that knows both concrete types
 exist and wires one into the other; every module in between types against `TokenSource`.
 
-Representative tests: `src/test/java/org/printscript/tokens/SyntaxExceptionTest.java`,
-`TokenTypeTest.java`, `SyntaxTokenTest.java`.
+Representative tests: `src/test/java/org/printscript/tokens/TokenTypeTest.java`,
+`SyntaxTokenTest.java`.

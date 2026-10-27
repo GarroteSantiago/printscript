@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.lexer.KeywordTable;
@@ -26,9 +27,10 @@ class InterpreterRuntimeFailureTest {
       };
   private static final EnvironmentPort EMPTY_ENVIRONMENT = name -> Optional.empty();
 
-  private RuntimeFailure runAndCaptureFailure(String source, InputPort input, EnvironmentPort env) {
+  private DiagnosticException runAndCaptureFailure(
+      String source, InputPort input, EnvironmentPort env) {
     return assertThrows(
-        RuntimeFailure.class,
+        DiagnosticException.class,
         () -> {
           List<String> output = new ArrayList<>();
           var statements = TestSources.statementsOf(source);
@@ -48,7 +50,7 @@ class InterpreterRuntimeFailureTest {
 
   @Test
   public void divisionByZeroThrowsARuntimeFailure() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
     assertEquals("Division by zero", failure.getMessage(), "expected a division-by-zero message");
@@ -56,23 +58,26 @@ class InterpreterRuntimeFailureTest {
 
   @Test
   public void divisionByZeroDiagnosticHasErrorSeverity() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
-    assertEquals(Severity.ERROR, failure.diagnostic().severity(), "expected an error severity");
+    assertEquals(
+        Severity.ERROR, failure.diagnostics().getFirst().severity(), "expected an error severity");
   }
 
   @Test
   public void divisionByZeroDiagnosticIsFromTheRuntimePhase() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure("let result: number = 1 / 0;", FAILING_INPUT, EMPTY_ENVIRONMENT);
 
-    assertEquals(Phase.RUNTIME, failure.diagnostic().phase(), "expected the runtime phase");
+    assertEquals(
+        Phase.RUNTIME, failure.diagnostics().getFirst().phase(), "expected the runtime phase");
   }
 
   @Test
   public void readInputFailsOnUnparseableNumber() {
-    RuntimeFailure failure = runV11AndCaptureFailure("let count: number = readInput(\"prompt\");");
+    DiagnosticException failure =
+        runV11AndCaptureFailure("let count: number = readInput(\"prompt\");");
 
     assertEquals(
         "Expected a number but got 'not-a-number'",
@@ -80,9 +85,9 @@ class InterpreterRuntimeFailureTest {
         "expected an unparseable-number failure message");
   }
 
-  private RuntimeFailure runV11AndCaptureFailure(String source) {
+  private DiagnosticException runV11AndCaptureFailure(String source) {
     return assertThrows(
-        RuntimeFailure.class,
+        DiagnosticException.class,
         () -> {
           List<String> output = new ArrayList<>();
           var statements = TestSources.statementsOf(source, KeywordTable.v1_1());
@@ -108,7 +113,7 @@ class InterpreterRuntimeFailureTest {
 
   @Test
   public void referencingAVariableDeclaredWithoutAnInitializerBeforeItIsAssignedFails() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure(
             """
             let result: number;
@@ -134,11 +139,11 @@ class InterpreterRuntimeFailureTest {
     SemanticStatementResult semantic = semanticContext.validate(statement);
 
     assertThrows(
-        RuntimeFailure.class,
+        DiagnosticException.class,
         () ->
             interpreter.executeStatement(
                 statement, RuntimeEnvironment.empty(), semantic.semanticModel()),
-        "expected readInput to fail as a structured RuntimeFailure without an injected input port");
+        "expected readInput to fail as a structured DiagnosticException without an injected input port");
   }
 
   @Test
@@ -152,11 +157,11 @@ class InterpreterRuntimeFailureTest {
     SemanticStatementResult semantic = semanticContext.validate(statement);
 
     assertThrows(
-        RuntimeFailure.class,
+        DiagnosticException.class,
         () ->
             interpreter.executeStatement(
                 statement, RuntimeEnvironment.empty(), semantic.semanticModel()),
-        "expected readEnv to fail as a structured RuntimeFailure without an injected environment port");
+        "expected readEnv to fail as a structured DiagnosticException without an injected environment port");
   }
 
   @Test

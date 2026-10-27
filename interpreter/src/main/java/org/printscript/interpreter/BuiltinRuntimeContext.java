@@ -1,6 +1,7 @@
 package org.printscript.interpreter;
 
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.typetable.SemanticModel;
 
 /** What a {@link BuiltinBehavior} needs from the interpreter to do its work. */
@@ -19,5 +20,5 @@ public interface BuiltinRuntimeContext {
 
   RuntimeValue parseValue(String raw);
 
-  RuntimeFailure runtimeFailure(String message);
+  DiagnosticException runtimeFailure(String message);
 }

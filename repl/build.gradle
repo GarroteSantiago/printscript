@@ -3,6 +3,7 @@ plugins {
 }
 
 dependencies {
+    implementation project(':diagnostics')
     implementation project(':lexer')
     implementation project(':parser')
     implementation project(':typechecker')

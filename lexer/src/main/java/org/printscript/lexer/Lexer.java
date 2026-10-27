@@ -5,10 +5,10 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Optional;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
@@ -16,11 +16,11 @@ import org.printscript.tokens.TokenType;
 /**
  * Character-level scanner: the sole production implementation of {@link TokenSource}. Scans lazily,
  * one {@link #next()} call at a time, over a {@link Reader} — never materializes the whole token
- * stream up front. Fails fast with a {@link SyntaxException} on the first unrecognized character or
- * unterminated string/number rather than attempting recovery. Which lexemes count as keywords is
- * not hardcoded here; it is delegated to the constructor-injected {@link KeywordTable} (default
- * {@link KeywordTable#v1()}), so a new language version's keyword set never requires a change to
- * this scanning logic.
+ * stream up front. Fails fast with a {@link DiagnosticException} on the first unrecognized
+ * character or unterminated string/number rather than attempting recovery. Which lexemes count as
+ * keywords is not hardcoded here; it is delegated to the constructor-injected {@link KeywordTable}
+ * (default {@link KeywordTable#v1()}), so a new language version's keyword set never requires a
+ * change to this scanning logic.
  */
 public final class Lexer implements TokenSource {
   private static final char NEWLINE = '\n';
@@ -191,8 +191,9 @@ public final class Lexer implements TokenSource {
     return new SourcePosition(row, column, offset);
   }
 
-  private SyntaxException syntaxError(String message, SourcePosition position) {
-    return new SyntaxException(Diagnostic.error(Phase.SYNTAX, message, SourceSpan.at(position)));
+  private DiagnosticException syntaxError(String message, SourcePosition position) {
+    return new DiagnosticException(
+        Diagnostic.error(Phase.SYNTAX, message, SourceSpan.at(position)));
   }
 
   private static boolean isIdentifierStart(char c) {

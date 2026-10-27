@@ -74,8 +74,16 @@ graph TD
     ast --> tokens
     ast --> types
     lexer --> tokens
-    tokens --> diagnostics
+    tokens --> source
     diagnostics --> source
+    lexer --> diagnostics
+    parser --> diagnostics
+    typetable --> diagnostics
+    typechecker --> diagnostics
+    interpreter --> diagnostics
+    analyzer --> diagnostics
+    toolchain --> diagnostics
+    repl --> diagnostics
 ```
 
 Notice `lexer` and `parser` both depend on `tokens` but never on each other — that's deliberate,

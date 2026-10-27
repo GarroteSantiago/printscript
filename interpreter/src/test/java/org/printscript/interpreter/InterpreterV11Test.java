@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.statements.StatementSyntax;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
@@ -37,9 +38,10 @@ class InterpreterV11Test {
     return output;
   }
 
-  private RuntimeFailure runAndCaptureFailure(String source, InputPort input, EnvironmentPort env) {
+  private DiagnosticException runAndCaptureFailure(
+      String source, InputPort input, EnvironmentPort env) {
     return assertThrows(
-        RuntimeFailure.class, () -> run(source, input, env), "expected execution to fail");
+        DiagnosticException.class, () -> run(source, input, env), "expected execution to fail");
   }
 
   @Test
@@ -112,7 +114,7 @@ class InterpreterV11Test {
 
   @Test
   public void readInputFailsOnUnparseableBoolean() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure(
             "let flag: boolean = readInput(\"prompt\");",
             prompt -> "not-a-boolean",
@@ -140,7 +142,7 @@ class InterpreterV11Test {
 
   @Test
   public void readEnvFailsWhenVariableIsMissing() {
-    RuntimeFailure failure =
+    DiagnosticException failure =
         runAndCaptureFailure(
             "let count: number = readEnv(\"MISSING\");", FAILING_INPUT, EMPTY_ENVIRONMENT);
 

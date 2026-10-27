@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    api project(':diagnostics')
     api project(':formatter')
     api project(':analyzer')
     api project(':interpreter')

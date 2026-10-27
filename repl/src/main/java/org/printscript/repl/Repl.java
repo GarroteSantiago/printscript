@@ -12,10 +12,10 @@ import java.util.List;
 import org.printscript.ast.StatementSource;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
@@ -108,7 +108,7 @@ public final class Repl {
       Token token;
       try {
         token = tokens.next();
-      } catch (SyntaxException exception) {
+      } catch (DiagnosticException exception) {
         return false;
       }
       if (token.type() == TokenType.EOF) {
@@ -133,22 +133,25 @@ public final class Repl {
     StatementSource statements;
     try {
       statements = new StatementSyntaxReader(new Lexer(new StringReader(source), keywords));
-    } catch (SyntaxException exception) {
-      err.println(render(exception.diagnostic()));
+    } catch (DiagnosticException exception) {
+      printAll(exception.diagnostics(), err);
       return;
     }
     while (statements.hasNext()) {
       StatementSyntax statement;
       try {
         statement = statements.next();
-      } catch (SyntaxException exception) {
-        err.println(render(exception.diagnostic()));
+      } catch (DiagnosticException exception) {
+        printAll(exception.diagnostics(), err);
         return;
       }
-      List<Diagnostic> diagnostics = session.step(statement);
-      for (Diagnostic diagnostic : diagnostics) {
-        err.println(render(diagnostic));
-      }
+      printAll(session.step(statement), err);
+    }
+  }
+
+  private static void printAll(List<Diagnostic> diagnostics, PrintStream err) {
+    for (Diagnostic diagnostic : diagnostics) {
+      err.println(render(diagnostic));
     }
   }
 

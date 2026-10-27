@@ -23,7 +23,7 @@ Responsibilities:
 - `ValidatingStatementSource` — the sole production implementation of
   `typetable.ValidatedStatementSource`: wraps a raw `ast.StatementSource` and a `SemanticContext`,
   threading the context across pulls internally so no caller manages that state across a loop, and
-  throwing `typetable.SemanticException` the moment a statement fails validation.
+  throwing `diagnostics.DiagnosticException` the moment a statement fails validation.
 - `SemanticContext.forVersion(boolean)` — selects the `BuiltinRegistry`/`TypeAnnotationTable`
   strategy pair for a language version, so `toolchain` never needs to import `typetable`/`types`
   itself just to pick one.

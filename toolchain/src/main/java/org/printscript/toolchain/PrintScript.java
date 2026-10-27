@@ -12,6 +12,7 @@ import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.NamingStyleRules;
 import org.printscript.analyzer.StaticAnalyzer;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Severity;
 import org.printscript.formatter.FormatterConfigProvider;
 import org.printscript.formatter.PrintScriptFormatter;
@@ -19,22 +20,19 @@ import org.printscript.formatter.SpacingRules;
 import org.printscript.interpreter.ArithmeticOperators;
 import org.printscript.interpreter.Interpreter;
 import org.printscript.interpreter.RuntimeEnvironment;
-import org.printscript.interpreter.RuntimeFailure;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.ValidatingStatementSource;
-import org.printscript.typetable.SemanticException;
 
 /**
  * The use-case facade and composition root for PrintScript: {@link #execute}, {@link #format},
  * {@link #analyze}, and {@link #validate} are the only operations any interaction layer (currently
  * the {@code cli} module) needs. Every method returns a {@link CommandResult} and never lets a
- * {@link SyntaxException}, {@link SemanticException}, or {@link RuntimeFailure} escape — all three
- * are caught here and converted to a failed {@code CommandResult} carrying the underlying {@link
- * Diagnostic}(s).
+ * {@link DiagnosticException} escape — whichever stage throws it (syntax, semantic, or runtime),
+ * it's caught here and converted to a failed {@code CommandResult} carrying its {@link
+ * Diagnostic}s.
  *
  * <p>This is the one place (besides {@code testkit}, for tests) allowed to construct a concrete
  * {@code lexer.Lexer}, wire it into a {@code parser.StatementSyntaxReader}, and wrap that into a
@@ -128,11 +126,7 @@ public final class PrintScript {
           new ValidatingStatementSource(statements, SemanticContext.forVersion(pipeline.v11()));
       progress.report("Executing statements");
       return CommandResult.success(interpreter.executeAll(validated, RuntimeEnvironment.empty()));
-    } catch (RuntimeFailure failure) {
-      return CommandResult.failure(List.of(failure.diagnostic()));
-    } catch (SyntaxException exception) {
-      return CommandResult.failure(List.of(exception.diagnostic()));
-    } catch (SemanticException exception) {
+    } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
   }
@@ -175,8 +169,8 @@ public final class PrintScript {
       progress.report("Formatting statements");
       pipeline.formatter().formatAll(statements, config, output);
       return CommandResult.success(null);
-    } catch (SyntaxException exception) {
-      return CommandResult.failure(List.of(exception.diagnostic()));
+    } catch (DiagnosticException exception) {
+      return CommandResult.failure(exception.diagnostics());
     }
   }
 
@@ -222,9 +216,7 @@ public final class PrintScript {
                 }
               });
       return CommandResult.success(new AnalysisResult(diagnosticCount.get(), errorCount.get()));
-    } catch (SyntaxException exception) {
-      return CommandResult.failure(List.of(exception.diagnostic()));
-    } catch (SemanticException exception) {
+    } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
   }
@@ -244,9 +236,7 @@ public final class PrintScript {
           new ValidatingStatementSource(statements, SemanticContext.forVersion(pipeline.v11()));
       validated.drain();
       return CommandResult.success(null);
-    } catch (SyntaxException exception) {
-      return CommandResult.failure(List.of(exception.diagnostic()));
-    } catch (SemanticException exception) {
+    } catch (DiagnosticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
   }

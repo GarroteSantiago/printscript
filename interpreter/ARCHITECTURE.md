@@ -54,4 +54,4 @@ validation.
 
 Representative tests: `src/test/java/org/printscript/interpreter/InterpreterV11Test.java`
 (const/if/boolean/readInput/readEnv behavior), `InterpreterRuntimeFailureTest.java` (division by
-zero, unset env vars, malformed `readInput`/`readEnv` input all surfacing as `RuntimeFailure`).
+zero, unset env vars, malformed `readInput`/`readEnv` input all surfacing as a `DiagnosticException` with a `RUNTIME` diagnostic).

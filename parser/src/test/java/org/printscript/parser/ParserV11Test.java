@@ -11,9 +11,9 @@ import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.types.TypeName;
 
 class ParserV11Test {
@@ -128,7 +128,7 @@ class ParserV11Test {
         """;
 
     assertThrows(
-        SyntaxException.class, () -> parse(source), "expected 'else if' to be a syntax error");
+        DiagnosticException.class, () -> parse(source), "expected 'else if' to be a syntax error");
   }
 
   @Test
@@ -140,7 +140,7 @@ class ParserV11Test {
         """;
 
     assertThrows(
-        SyntaxException.class,
+        DiagnosticException.class,
         () -> parse(source),
         "expected a missing block brace to be a syntax error");
   }

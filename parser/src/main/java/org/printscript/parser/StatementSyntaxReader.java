@@ -16,8 +16,8 @@ import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
-import org.printscript.tokens.SyntaxException;
 import org.printscript.tokens.SyntaxToken;
 import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
@@ -31,7 +31,7 @@ import org.printscript.types.TypeName;
  * disambiguate an assignment (`identifier =`) from an expression statement. Expression parsing
  * implements a fixed two-level precedence (addition/subtraction over multiplication/division; no
  * further operators exist in this grammar). There is no error recovery: the first malformed
- * construct throws a {@link org.printscript.tokens.SyntaxException} and parsing stops.
+ * construct throws a {@link DiagnosticException} and parsing stops.
  */
 public final class StatementSyntaxReader implements StatementSource {
   private final TokenSource tokenSource;
@@ -223,7 +223,7 @@ public final class StatementSyntaxReader implements StatementSource {
     return SyntaxToken.from(token);
   }
 
-  private SyntaxException error(Token token, String message) {
-    return new SyntaxException(Diagnostic.error(Phase.SYNTAX, message, token.span()));
+  private DiagnosticException error(Token token, String message) {
+    return new DiagnosticException(Diagnostic.error(Phase.SYNTAX, message, token.span()));
   }
 }

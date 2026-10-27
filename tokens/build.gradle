@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    api project(':diagnostics')
+    api project(':source')
 }

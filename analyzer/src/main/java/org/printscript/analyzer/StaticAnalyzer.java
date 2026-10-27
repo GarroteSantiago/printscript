@@ -71,9 +71,8 @@ public final class StaticAnalyzer {
 
   /**
    * Drains a {@link ValidatedStatementSource}, analyzing each statement in turn. Lets {@code
-   * typetable.SemanticException} propagate rather than catching it, matching the other {@code
-   * analyze} overloads' contract — there is no recovery, analysis stops at the first invalid
-   * statement.
+   * DiagnosticException} propagate rather than catching it, matching the other {@code analyze}
+   * overloads' contract — there is no recovery, analysis stops at the first invalid statement.
    */
   public void analyzeAll(
       ValidatedStatementSource statements, AnalyzerConfig config, Consumer<Diagnostic> sink) {

@@ -31,7 +31,7 @@ later statement is never even parsed once an earlier one has failed. `SyntaxTree
 callers that genuinely want the whole program up front, which today is only
 `testkit.TestSources#programOf` and this module's own tests.
 
-There is no error recovery: the first malformed construct throws a `tokens.SyntaxException` and
+There is no error recovery: the first malformed construct throws a `diagnostics.DiagnosticException` and
 parsing stops. If recovery is needed later, semicolon should be the main synchronization point.
 
 Representative tests: `ParserTest.java` (v1 grammar), `ParserV11Test.java`
