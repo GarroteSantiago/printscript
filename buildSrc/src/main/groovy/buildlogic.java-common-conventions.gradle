@@ -82,6 +82,10 @@ jacocoTestCoverageVerification {
                 counter = 'LINE'
                 minimum = 0.80
             }
+            limit {
+                counter = 'BRANCH'
+                minimum = 0.80
+            }
         }
     }
 }
