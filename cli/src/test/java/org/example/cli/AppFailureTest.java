@@ -12,10 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.printscript.analyzer.AnalyzerConfig;
-import org.printscript.formatter.FormatterConfig;
-import org.printscript.testkit.TestConfigs;
-import org.printscript.toolchain.PrintScriptConfigReader;
+import picocli.CommandLine;
 
 /** Commands that fail on the user's code, and the real stdin prompt for a missing config file. */
 class AppFailureTest {
@@ -28,18 +25,10 @@ class AppFailureTest {
 
   @TempDir Path tempDir;
 
-  private static final PrintScriptConfigReader DEFAULT_CONFIGS =
-      new PrintScriptConfigReader() {
-        @Override
-        public FormatterConfig readFormatterConfig(Path path) {
-          return TestConfigs.formatterDefaults();
-        }
-
-        @Override
-        public AnalyzerConfig readAnalyzerConfig(Path path) {
-          return TestConfigs.analyzerDefaults();
-        }
-      };
+  /** Runs the CLI exactly as {@code App.main} does, returning the exit code instead of exiting. */
+  private static int execute(App app, String... args) {
+    return new CommandLine(app).execute(args);
+  }
 
   /** Runs the CLI with {@code stdin} as standard input, discarding stdout and stderr. */
   @SuppressWarnings(CLOSE_RESOURCE_SUPPRESSION) // the saved streams are restored, not ours to close
@@ -52,7 +41,7 @@ class AppFailureTest {
       System.setIn(new ByteArrayInputStream(stdin.getBytes(StandardCharsets.UTF_8)));
       System.setOut(discard);
       System.setErr(discard);
-      return new App(DEFAULT_CONFIGS).run(args);
+      return execute(new App(), args);
     } finally {
       System.setIn(originalIn);
       System.setOut(originalOut);

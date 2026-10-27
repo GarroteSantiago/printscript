@@ -22,6 +22,7 @@ import org.printscript.testkit.TestConfigs;
 import org.printscript.toolchain.PrintScript;
 import org.printscript.toolchain.PrintScriptConfigReader;
 import org.printscript.toolchain.ProgressReporter;
+import picocli.CommandLine;
 
 class AppTest {
   private static final String SOURCE_FILE_NAME = "source.pisp";
@@ -45,6 +46,25 @@ class AppTest {
   private static final String PRINTLN_HI_SOURCE = "println(\"hi\");";
 
   @TempDir Path tempDir;
+
+  /** Runs the CLI exactly as {@code App.main} does, returning the exit code instead of exiting. */
+  private static int execute(App app, String... args) {
+    return new CommandLine(app).execute(args);
+  }
+
+  /** For tests that always pass {@code --config}: asking for a config path would be a bug. */
+  private static final App.ConfigPathPrompt NO_PROMPT =
+      prompt -> {
+        throw new AssertionError("unexpected config-path prompt: " + prompt);
+      };
+
+  private static App appWith(PrintScriptConfigReader reader) {
+    return appWith(reader, NO_PROMPT);
+  }
+
+  private static App appWith(PrintScriptConfigReader reader, App.ConfigPathPrompt prompt) {
+    return new App(reader, new PrintScript(), ProgressReporter.NONE, prompt);
+  }
 
   @Test
   void executeCommandReadingStdinExitsSuccessfully() throws Exception {
@@ -77,7 +97,7 @@ class AppTest {
       System.setOut(redirectedOut);
       System.setIn(new ByteArrayInputStream("Ada\n".getBytes(StandardCharsets.UTF_8)));
       exitCode =
-          new App().run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
+          execute(new App(), EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, "1.1");
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -129,15 +149,15 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       exitCode =
-          new App(reader)
-              .run(
-                  FORMAT_COMMAND,
-                  SOURCE_FLAG,
-                  source.toString(),
-                  VERSION_FLAG,
-                  VERSION_ONE_ZERO,
-                  CONFIG_FLAG,
-                  config.toString());
+          execute(
+              appWith(reader),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO,
+              CONFIG_FLAG,
+              config.toString());
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -192,8 +212,13 @@ class AppTest {
         PrintStream redirectedOut = new PrintStream(capturedOut, true, StandardCharsets.UTF_8)) {
       System.setOut(redirectedOut);
       exitCode =
-          new App(reader, prompt)
-              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+          execute(
+              appWith(reader, prompt),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO);
       stdout = capturedOut.toString(StandardCharsets.UTF_8);
     } finally {
       System.setOut(originalOut);
@@ -232,8 +257,13 @@ class AppTest {
     PromptStub prompt = new PromptStub(config);
 
     int exitCode =
-        new App(reader, prompt)
-            .run(ANALYZE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            appWith(reader, prompt),
+            ANALYZE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     return new AnalyzeRun(exitCode, config, reader, prompt.prompts);
   }
@@ -244,8 +274,13 @@ class AppTest {
     Files.writeString(source, "let name: string = \"Ada\";");
 
     int exitCode =
-        new App()
-            .run(VALIDATE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            new App(),
+            VALIDATE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     assertEquals(0, exitCode, EXPECTED_SUCCESSFUL_EXIT_CODE);
   }
@@ -275,13 +310,13 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App()
-                .run(
-                    VALIDATE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION));
+            execute(
+                new App(),
+                VALIDATE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION));
   }
 
   @Test
@@ -309,13 +344,13 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App()
-                .run(
-                    EXECUTE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION));
+            execute(
+                new App(),
+                EXECUTE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION));
   }
 
   @Test
@@ -345,15 +380,15 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App(new FakeConfigReader())
-                .run(
-                    FORMAT_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION,
-                    CONFIG_FLAG,
-                    config.toString()));
+            execute(
+                appWith(new FakeConfigReader()),
+                FORMAT_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION,
+                CONFIG_FLAG,
+                config.toString()));
   }
 
   @Test
@@ -383,15 +418,15 @@ class AppTest {
 
     return runCapturingStderr(
         () ->
-            new App(new FakeConfigReader())
-                .run(
-                    ANALYZE_COMMAND,
-                    SOURCE_FLAG,
-                    source.toString(),
-                    VERSION_FLAG,
-                    UNSUPPORTED_VERSION,
-                    CONFIG_FLAG,
-                    config.toString()));
+            execute(
+                appWith(new FakeConfigReader()),
+                ANALYZE_COMMAND,
+                SOURCE_FLAG,
+                source.toString(),
+                VERSION_FLAG,
+                UNSUPPORTED_VERSION,
+                CONFIG_FLAG,
+                config.toString()));
   }
 
   @Test
@@ -402,22 +437,22 @@ class AppTest {
     Files.writeString(config, ANALYZER_SECTION);
 
     int exitCode =
-        new App(new FakeConfigReader())
-            .run(
-                ANALYZE_COMMAND,
-                SOURCE_FLAG,
-                source.toString(),
-                VERSION_FLAG,
-                VERSION_ONE_ZERO,
-                CONFIG_FLAG,
-                config.toString());
+        execute(
+            appWith(new FakeConfigReader()),
+            ANALYZE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO,
+            CONFIG_FLAG,
+            config.toString());
 
     assertEquals(1, exitCode, "expected a naming-style violation to yield exit code 1");
   }
 
   @Test
   void runningWithoutASubcommandPrintsUsageAndReturnsExitCodeTwo() {
-    int exitCode = new App().run();
+    int exitCode = execute(new App());
 
     assertEquals(2, exitCode, "expected the bare command to print usage and exit with code 2");
   }
@@ -452,8 +487,13 @@ class AppTest {
     ProgressReporter progress = progressMessages::add;
 
     int exitCode =
-        new App(new FakeConfigReader(), new PrintScript(), progress)
-            .run(EXECUTE_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+        execute(
+            new App(new FakeConfigReader(), new PrintScript(), progress, NO_PROMPT),
+            EXECUTE_COMMAND,
+            SOURCE_FLAG,
+            source.toString(),
+            VERSION_FLAG,
+            VERSION_ONE_ZERO);
 
     return new InjectedProgressRun(exitCode, progressMessages);
   }
@@ -476,8 +516,13 @@ class AppTest {
       System.setIn(
           new ByteArrayInputStream((config.toString() + "\n").getBytes(StandardCharsets.UTF_8)));
       exitCode =
-          new App()
-              .run(FORMAT_COMMAND, SOURCE_FLAG, source.toString(), VERSION_FLAG, VERSION_ONE_ZERO);
+          execute(
+              new App(),
+              FORMAT_COMMAND,
+              SOURCE_FLAG,
+              source.toString(),
+              VERSION_FLAG,
+              VERSION_ONE_ZERO);
     } finally {
       System.setIn(originalIn);
     }

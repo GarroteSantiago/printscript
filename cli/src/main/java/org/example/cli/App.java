@@ -51,25 +51,14 @@ public class App implements Callable<Integer> {
   private final ConfigPathPrompt configPathPrompt;
 
   public App() {
-    this(new JsonPrintScriptConfigReader());
-  }
-
-  App(PrintScriptConfigReader configReader) {
-    this(configReader, App::promptConfigPath);
-  }
-
-  App(PrintScriptConfigReader configReader, ConfigPathPrompt configPathPrompt) {
     this(
-        configReader,
+        new JsonPrintScriptConfigReader(),
         new PrintScript(),
         message -> System.err.println("[printscript] " + message),
-        configPathPrompt);
+        App::promptConfigPath);
   }
 
-  App(PrintScriptConfigReader configReader, PrintScript printScript, ProgressReporter progress) {
-    this(configReader, printScript, progress, App::promptConfigPath);
-  }
-
+  /** Injects every collaborator that touches the outside world: config files, stderr, stdin. */
   App(
       PrintScriptConfigReader configReader,
       PrintScript printScript,
@@ -86,10 +75,6 @@ public class App implements Callable<Integer> {
     if (exitCode != 0) {
       System.exit(exitCode);
     }
-  }
-
-  int run(String... args) {
-    return new CommandLine(this).execute(args);
   }
 
   @Override
