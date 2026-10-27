@@ -12,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import picocli.CommandLine;
 
 /** Commands that fail on the user's code, and the real stdin prompt for a missing config file. */
 class AppFailureTest {
@@ -27,21 +26,31 @@ class AppFailureTest {
 
   /** Runs the CLI exactly as {@code App.main} does, returning the exit code instead of exiting. */
   private static int execute(App app, String... args) {
-    return new CommandLine(app).execute(args);
+    return App.commandLine(app).execute(args);
   }
 
   /** Runs the CLI with {@code stdin} as standard input, discarding stdout and stderr. */
-  @SuppressWarnings(CLOSE_RESOURCE_SUPPRESSION) // the saved streams are restored, not ours to close
+  private record Run(int exitCode, String stderr) {}
+
   private int run(String stdin, String... args) throws Exception {
+    return runCapturingStderr(stdin, args).exitCode();
+  }
+
+  /** Runs the CLI with {@code stdin} as standard input, discarding stdout and capturing stderr. */
+  @SuppressWarnings(CLOSE_RESOURCE_SUPPRESSION) // the saved streams are restored, not ours to close
+  private Run runCapturingStderr(String stdin, String... args) throws Exception {
     InputStream originalIn = System.in;
     PrintStream originalOut = System.out;
     PrintStream originalErr = System.err;
+    ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     try (PrintStream discard =
-        new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8)) {
+            new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8);
+        PrintStream capturedErr = new PrintStream(stderr, true, StandardCharsets.UTF_8)) {
       System.setIn(new ByteArrayInputStream(stdin.getBytes(StandardCharsets.UTF_8)));
       System.setOut(discard);
-      System.setErr(discard);
-      return execute(new App(), args);
+      System.setErr(capturedErr);
+      int exitCode = execute(new App(), args);
+      return new Run(exitCode, stderr.toString(StandardCharsets.UTF_8));
     } finally {
       System.setIn(originalIn);
       System.setOut(originalOut);
@@ -138,5 +147,41 @@ class AppFailureTest {
   @Test
   void aBlankLineAtTheConfigPromptFails() throws Exception {
     assertNotEquals(0, formatPromptingForConfig("   \n"), "expected a blank path to be rejected");
+  }
+
+  private Run formatWithABlankConfigAnswer() throws Exception {
+    return runCapturingStderr(
+        "   \n", "format", SOURCE_FLAG, source("println(1);"), VERSION_FLAG, VERSION_ONE_ZERO);
+  }
+
+  @Test
+  void aBlankConfigAnswerIsReportedOnOneLine() throws Exception {
+    assertEquals(
+        "Config file: ERROR: Config file is required\n",
+        formatWithABlankConfigAnswer().stderr(),
+        "expected the prompt and a one-line error, not a stack trace");
+  }
+
+  private Run executeAMissingSourceFile() throws Exception {
+    return runCapturingStderr(
+        "",
+        "execute",
+        SOURCE_FLAG,
+        tempDir.resolve("missing.pisp").toString(),
+        VERSION_FLAG,
+        VERSION_ONE_ZERO);
+  }
+
+  @Test
+  void aMissingSourceFileIsReportedOnOneLine() throws Exception {
+    assertEquals(
+        "ERROR: File not found: " + tempDir.resolve("missing.pisp") + "\n",
+        executeAMissingSourceFile().stderr(),
+        "expected a one-line error naming the missing file");
+  }
+
+  @Test
+  void aMissingSourceFileExitsWithOne() throws Exception {
+    assertEquals(1, executeAMissingSourceFile().exitCode(), EXPECTED_FAILURE_EXIT_CODE);
   }
 }

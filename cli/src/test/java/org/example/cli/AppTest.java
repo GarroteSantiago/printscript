@@ -22,7 +22,6 @@ import org.printscript.testkit.TestConfigs;
 import org.printscript.toolchain.PrintScript;
 import org.printscript.toolchain.PrintScriptConfigReader;
 import org.printscript.toolchain.ProgressReporter;
-import picocli.CommandLine;
 
 class AppTest {
   private static final String SOURCE_FILE_NAME = "source.pisp";
@@ -49,7 +48,7 @@ class AppTest {
 
   /** Runs the CLI exactly as {@code App.main} does, returning the exit code instead of exiting. */
   private static int execute(App app, String... args) {
-    return new CommandLine(app).execute(args);
+    return App.commandLine(app).execute(args);
   }
 
   /** For tests that always pass {@code --config}: asking for a config path would be a bug. */

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -70,11 +71,49 @@ public class App implements Callable<Integer> {
     this.configPathPrompt = configPathPrompt;
   }
 
+  /**
+   * The CLI for {@code app}, as {@link #main} runs it. A command that fails on I/O — a missing
+   * source file, an unreadable or unanswered config path — is reported as one {@code ERROR:} line
+   * on stderr with exit code 1, not a stack trace. Any other exception is a bug and keeps picocli's
+   * default handling, stack trace included.
+   */
+  static CommandLine commandLine(App app) {
+    return new CommandLine(app)
+        .setExecutionExceptionHandler(
+            (exception, commandLine, parseResult) -> reportIoFailure(exception));
+  }
+
   public static void main(String[] args) {
-    int exitCode = new CommandLine(new App()).execute(args);
+    int exitCode = commandLine(new App()).execute(args);
     if (exitCode != 0) {
       System.exit(exitCode);
     }
+  }
+
+  private static int reportIoFailure(Exception exception) throws Exception {
+    IOException failure = asIoException(exception);
+    if (failure == null) {
+      throw exception;
+    }
+    System.err.println("ERROR: " + describe(failure));
+    return 1;
+  }
+
+  private static IOException asIoException(Exception exception) {
+    if (exception instanceof IOException io) {
+      return io;
+    }
+    if (exception instanceof UncheckedIOException unchecked) {
+      return unchecked.getCause();
+    }
+    return null;
+  }
+
+  private static String describe(IOException failure) {
+    if (failure instanceof NoSuchFileException missing) {
+      return "File not found: " + missing.getFile();
+    }
+    return failure.getMessage();
   }
 
   @Override
