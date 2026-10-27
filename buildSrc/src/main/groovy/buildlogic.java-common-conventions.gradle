@@ -68,6 +68,10 @@ tasks.named('test') {
 
 tasks.named('jacocoTestReport') {
     dependsOn 'test'
+    reports {
+        // Machine-readable report alongside the HTML one, for CI tools and quick coverage queries.
+        xml.required = true
+    }
 }
 
 jacocoTestCoverageVerification {
@@ -80,4 +84,10 @@ jacocoTestCoverageVerification {
             }
         }
     }
+}
+
+// Enforce the coverage minimum as part of `check`, so `./gradlew check` (and `just check`) fails
+// below it, the same as the pre-push hook and CI do.
+tasks.named('check') {
+    dependsOn 'jacocoTestCoverageVerification'
 }
