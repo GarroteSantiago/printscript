@@ -16,6 +16,7 @@ import org.printscript.ast.nodes.statements.IfStatementSyntax;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.Diagnostic;
+import org.printscript.diagnostics.DiagnosticCode;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.tokens.SyntaxToken;
@@ -31,7 +32,9 @@ import org.printscript.types.TypeName;
  * disambiguate an assignment (`identifier =`) from an expression statement. Expression parsing
  * implements a fixed two-level precedence (addition/subtraction over multiplication/division; no
  * further operators exist in this grammar). There is no error recovery: the first malformed
- * construct throws a {@link DiagnosticException} and parsing stops.
+ * construct throws a {@link DiagnosticException} and parsing stops. An error raised because the
+ * input ended mid-construct carries {@link DiagnosticCode#UNEXPECTED_END_OF_INPUT}, so a caller
+ * reading input incrementally (the REPL) can tell "needs more input" from "is wrong".
  */
 public final class StatementSyntaxReader implements StatementSource {
   private final TokenSource tokenSource;
@@ -224,6 +227,10 @@ public final class StatementSyntaxReader implements StatementSource {
   }
 
   private DiagnosticException error(Token token, String message) {
-    return new DiagnosticException(Diagnostic.error(Phase.SYNTAX, message, token.span()));
+    Diagnostic diagnostic = Diagnostic.error(Phase.SYNTAX, message, token.span());
+    if (token.type() == TokenType.EOF) {
+      diagnostic = diagnostic.withCode(DiagnosticCode.UNEXPECTED_END_OF_INPUT);
+    }
+    return new DiagnosticException(diagnostic);
   }
 }

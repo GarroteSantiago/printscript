@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.printscript.diagnostics.DiagnosticCode;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.testkit.TestSources;
 
@@ -35,5 +36,36 @@ class StatementSyntaxReaderTest {
         "Expected expression",
         exception.getMessage(),
         "expected the 'no expression matched' message");
+  }
+
+  private DiagnosticCode codeOfParseFailure(String source) {
+    return expectSyntaxException(() -> TestSources.programOf(source), "expected a syntax error")
+        .diagnostics()
+        .getFirst()
+        .code();
+  }
+
+  @Test
+  public void aMissingSemicolonAtTheEndIsMarkedAsUnexpectedEndOfInput() {
+    assertEquals(
+        DiagnosticCode.UNEXPECTED_END_OF_INPUT,
+        codeOfParseFailure("let x: number = 1"),
+        "expected input that ends mid-statement to be marked as incomplete");
+  }
+
+  @Test
+  public void aTrailingOperatorIsMarkedAsUnexpectedEndOfInput() {
+    assertEquals(
+        DiagnosticCode.UNEXPECTED_END_OF_INPUT,
+        codeOfParseFailure("let x: number = 1 +"),
+        "expected input that ends after an operator to be marked as incomplete");
+  }
+
+  @Test
+  public void anErrorBeforeTheEndOfInputHasNoSpecificCode() {
+    assertEquals(
+        DiagnosticCode.UNSPECIFIED,
+        codeOfParseFailure("let x number = 1;"),
+        "expected a genuine syntax error not to be marked as incomplete");
   }
 }

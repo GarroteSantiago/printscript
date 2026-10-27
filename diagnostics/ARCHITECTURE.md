@@ -1,6 +1,8 @@
 # Diagnostics Module
 
 Owns the shared vocabulary for reporting problems in user code: `Diagnostic`, `Severity`, `Phase`,
+`DiagnosticCode` (a machine-readable reason, e.g. `UNEXPECTED_END_OF_INPUT`, for callers that must
+react to one specific problem without matching on its message),
 and `DiagnosticException`.
 
 Design rules:

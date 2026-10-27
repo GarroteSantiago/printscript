@@ -32,7 +32,9 @@ callers that genuinely want the whole program up front, which today is only
 `testkit.TestSources#programOf` and this module's own tests.
 
 There is no error recovery: the first malformed construct throws a `diagnostics.DiagnosticException` and
-parsing stops. If recovery is needed later, semicolon should be the main synchronization point.
+parsing stops. An error raised at the EOF token (the input ended mid-construct) carries
+`DiagnosticCode.UNEXPECTED_END_OF_INPUT`, which is how the REPL tells "needs another line" from
+"is wrong". If recovery is needed later, semicolon should be the main synchronization point.
 
 Representative tests: `ParserTest.java` (v1 grammar), `ParserV11Test.java`
 (`const`/`if`/`else`/boolean literals added in v1.1), `ParserDeclarationTest.java` (variable
