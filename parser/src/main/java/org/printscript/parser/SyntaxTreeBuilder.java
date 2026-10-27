@@ -23,6 +23,6 @@ public final class SyntaxTreeBuilder {
   public ProgramSyntax buildProgram() {
     List<StatementSyntax> result = new ArrayList<>();
     while (statements.hasNext()) result.add(statements.next());
-    return new ProgramSyntax(result, statements.eof());
+    return new ProgramSyntax(result);
   }
 }

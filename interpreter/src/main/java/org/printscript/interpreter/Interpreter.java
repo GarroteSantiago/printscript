@@ -125,16 +125,14 @@ public final class Interpreter {
           .map(
               initializer ->
                   environment.put(
-                      declaration.identifier().semanticLexeme(),
-                      evaluate(initializer, environment, semanticModel)))
+                      declaration.name(), evaluate(initializer, environment, semanticModel)))
           .orElse(environment);
     }
 
     @Override
     public RuntimeEnvironment visitAssignment(AssignmentSyntax assignment) {
       return environment.put(
-          assignment.identifier().semanticLexeme(),
-          evaluate(assignment.value(), environment, semanticModel));
+          assignment.name(), evaluate(assignment.value(), environment, semanticModel));
     }
 
     @Override
@@ -197,12 +195,9 @@ public final class Interpreter {
     @Override
     public RuntimeValue visitIdentifier(IdentifierExpressionSyntax identifier) {
       return environment
-          .find(identifier.identifier().semanticLexeme())
+          .find(identifier.name())
           .orElseThrow(
-              () ->
-                  runtime(
-                      "Variable '" + identifier.identifier().semanticLexeme() + "' is not declared",
-                      identifier));
+              () -> runtime("Variable '" + identifier.name() + "' is not declared", identifier));
     }
 
     @Override
@@ -225,17 +220,17 @@ public final class Interpreter {
 
     @Override
     public RuntimeValue visitNumber() {
-      return new RuntimeValue.NumberValue(new BigDecimal(literal.literal().semanticLexeme()));
+      return new RuntimeValue.NumberValue(new BigDecimal(literal.value()));
     }
 
     @Override
     public RuntimeValue visitString() {
-      return new RuntimeValue.StringValue(literal.literal().semanticLexeme());
+      return new RuntimeValue.StringValue(literal.value());
     }
 
     @Override
     public RuntimeValue visitBoolean() {
-      return new RuntimeValue.BooleanValue("true".equals(literal.literal().semanticLexeme()));
+      return new RuntimeValue.BooleanValue("true".equals(literal.value()));
     }
   }
 
@@ -250,7 +245,7 @@ public final class Interpreter {
     BigDecimal rightNumber = ((RuntimeValue.NumberValue) right).value();
     BigDecimal result;
     try {
-      result = operators.apply(binary.operator().type(), leftNumber, rightNumber);
+      result = operators.apply(binary.operator(), leftNumber, rightNumber);
     } catch (ArithmeticException exception) {
       DiagnosticException failure = runtime(exception.getMessage(), binary);
       failure.initCause(exception);
@@ -262,9 +257,9 @@ public final class Interpreter {
   private RuntimeValue evaluateCall(
       CallExpressionSyntax call, RuntimeEnvironment environment, SemanticModel semanticModel) {
     if (semanticModel.resolveCall(call).isEmpty()) {
-      throw runtime("Unknown callable '" + call.callee().semanticLexeme() + "'", call);
+      throw runtime("Unknown callable '" + call.callee() + "'", call);
     }
-    String name = call.callee().semanticLexeme();
+    String name = call.callee();
     RuntimeValue argument = evaluate(call.arguments().getFirst(), environment, semanticModel);
     BuiltinBehavior behavior =
         BuiltinBehaviors.find(name)

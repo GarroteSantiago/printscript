@@ -7,12 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.BinaryOperator;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.statements.AssignmentSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.testkit.TestSources;
-import org.printscript.tokens.TokenType;
 
 class ParserTest {
   private static final String SOURCE =
@@ -60,8 +60,11 @@ class ParserTest {
   }
 
   @Test
-  public void programSpanEndsAtEof() {
-    assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
+  public void programSpanEndsAtLastStatement() {
+    assertEquals(
+        program.statements().getLast().span().end(),
+        program.span().end(),
+        "expected span to end at the last statement");
   }
 
   @Test
@@ -79,12 +82,12 @@ class ParserTest {
 
   @Test
   public void parsesAdditionAsTopLevelBinaryOperator() {
-    assertEquals(TokenType.PLUS, plus.operator().type(), "expected top-level '+' operator");
+    assertEquals(BinaryOperator.ADD, plus.operator(), "expected top-level '+' operator");
   }
 
   @Test
   public void parsesDivisionAsHigherPrecedenceThanAddition() {
-    assertEquals(TokenType.SLASH, divide.operator().type(), "expected nested '/' operator");
+    assertEquals(BinaryOperator.DIVIDE, divide.operator(), "expected nested '/' operator");
   }
 
   @Test

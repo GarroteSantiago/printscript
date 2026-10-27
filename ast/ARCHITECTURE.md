@@ -1,7 +1,9 @@
 # AST Module
 
-The ast module owns source structure. It builds on [tokens](../tokens/ARCHITECTURE.md) (the
-`SyntaxToken` shape every node holds) and [types](../types/ARCHITECTURE.md)
+The ast module owns source structure, as language meaning only: nodes hold names, literal values,
+a `BinaryOperator`, type annotations as written, and a `SourceSpan` — never lexer tokens or
+whitespace. It builds on [source](../source/ARCHITECTURE.md) (every node's span) and
+[types](../types/ARCHITECTURE.md)
 (for the one place a tree shape needs a type: `LiteralExpressionSyntax.literalType`).
 
 Responsibilities:

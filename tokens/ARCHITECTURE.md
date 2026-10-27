@@ -14,8 +14,6 @@ Responsibilities:
   [parser](../parser/ARCHITECTURE.md) avoid depending on each other directly: `lexer` depends on
   `tokens` to implement `TokenSource`, `parser` depends on `tokens` to consume it, and neither
   depends on the other.
-- `SyntaxToken` — the immutable, trivia-carrying token shape the AST retains, built from a `Token`
-  via `SyntaxToken.from(Token)`.
 
 Design rules:
 
@@ -24,6 +22,10 @@ Design rules:
   and parser, not a type owned here, so this module doesn't depend on `diagnostics`.
 - Never depend on `lexer` or `parser`. This module exists specifically so those two do not need to
   depend on each other.
+- Tokens stop at the parser. The AST holds none: the parser translates them into plain values
+  (names, literal values, `ast.nodes.expressions.BinaryOperator`), so nothing after it — the
+  typechecker, interpreter, analyzer — depends on this module. Only the lexer, the parser, and the
+  formatter (which works on tokens by design) do.
 
 ## Why lexer and parser don't depend on each other
 
@@ -39,5 +41,4 @@ graph TD
 [toolchain](../toolchain/ARCHITECTURE.md) is the only place that knows both concrete types
 exist and wires one into the other; every module in between types against `TokenSource`.
 
-Representative tests: `src/test/java/org/printscript/tokens/TokenTypeTest.java`,
-`SyntaxTokenTest.java`.
+Representative tests: `src/test/java/org/printscript/tokens/TokenTypeTest.java`.

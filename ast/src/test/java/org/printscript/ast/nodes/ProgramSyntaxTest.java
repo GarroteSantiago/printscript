@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.printscript.source.SourcePosition;
+import org.printscript.source.SourceSpan;
 import org.printscript.testkit.TestSources;
 
 class ProgramSyntaxTest {
@@ -20,20 +22,23 @@ class ProgramSyntaxTest {
   }
 
   @Test
-  public void spanEndsAtEofWhenStatementsArePresent() {
+  public void spanEndsAtTheLastStatementWhenStatementsArePresent() {
     ProgramSyntax program = TestSources.programOf("let a: number = 1;\nprintln(a);\n");
 
-    assertEquals(program.eof().span().end(), program.span().end(), "expected span to end at eof");
+    assertEquals(
+        program.statements().getLast().span().end(),
+        program.span().end(),
+        "expected span to end at the last statement");
   }
 
   @Test
-  public void spanIsEofSpanWhenThereAreNoStatements() {
+  public void spanIsTheStartOfSourceWhenThereAreNoStatements() {
     ProgramSyntax program = TestSources.programOf("");
 
     assertEquals(
-        program.eof().span(),
+        SourceSpan.at(new SourcePosition(1, 1, 0)),
         program.span(),
-        "expected an empty program's span to be exactly the eof token's span");
+        "expected an empty program's span to be the start of the source");
   }
 
   private ProgramSyntax copyBuiltFromMutableList() {
@@ -41,7 +46,7 @@ class ProgramSyntaxTest {
     List<org.printscript.ast.nodes.statements.StatementSyntax> mutable =
         new ArrayList<>(program.statements());
 
-    ProgramSyntax copy = new ProgramSyntax(mutable, program.eof());
+    ProgramSyntax copy = new ProgramSyntax(mutable);
     mutable.clear();
     return copy;
   }

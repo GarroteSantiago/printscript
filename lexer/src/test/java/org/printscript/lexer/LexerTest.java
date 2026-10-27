@@ -224,4 +224,25 @@ class LexerTest {
 
     assertThrows(IllegalStateException.class, () -> new Lexer(failingReader));
   }
+
+  @Test
+  public void preservesEverySourceCharacterAsTriviaOrTokenText() {
+    String source =
+        """
+                # file comment
+                let   name:string='Ada'; # inline comment
+
+                println(name);\s\s
+                """;
+    Lexer lexer = new Lexer(source);
+    StringBuilder rebuilt = new StringBuilder();
+    Token token;
+    do {
+      token = lexer.next();
+      rebuilt.append(token.leadingTrivia()).append(token.text());
+    } while (!TokenType.EOF.equals(token.type()));
+
+    assertEquals(
+        source, rebuilt.toString(), "expected every source character preserved as trivia or text");
+  }
 }

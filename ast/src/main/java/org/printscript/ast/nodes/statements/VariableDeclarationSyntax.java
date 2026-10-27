@@ -3,27 +3,21 @@ package org.printscript.ast.nodes.statements;
 import java.util.Optional;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
 import org.printscript.source.SourceSpan;
-import org.printscript.tokens.SyntaxToken;
-import org.printscript.tokens.TokenType;
 
+/**
+ * {@code let|const name: type [= initializer];}. {@link #typeAnnotation} is the annotation as
+ * written — resolving it to a type is version-specific, so it's the typechecker's job, not the
+ * parser's. {@link #nameSpan} locates just the name (for diagnostics about it); {@link #span}
+ * covers the whole statement, semicolon included.
+ */
 public record VariableDeclarationSyntax(
-    SyntaxToken keyword,
-    SyntaxToken identifier,
-    SyntaxToken colon,
-    SyntaxToken type,
-    Optional<SyntaxToken> equals,
+    boolean isConst,
+    String name,
+    SourceSpan nameSpan,
+    String typeAnnotation,
     Optional<ExpressionSyntax> initializer,
-    SyntaxToken semicolon)
+    SourceSpan span)
     implements StatementSyntax {
-  public boolean isConst() {
-    return TokenType.CONST.equals(keyword.type());
-  }
-
-  @Override
-  public SourceSpan span() {
-    return new SourceSpan(keyword.span().start(), semicolon.span().end());
-  }
-
   @Override
   public <R> R accept(StatementVisitor<R> visitor) {
     return visitor.visitVariableDeclaration(this);

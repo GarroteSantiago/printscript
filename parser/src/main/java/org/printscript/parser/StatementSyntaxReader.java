@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.printscript.ast.StatementSource;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
+import org.printscript.ast.nodes.expressions.BinaryOperator;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
 import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
@@ -19,7 +20,7 @@ import org.printscript.diagnostics.Diagnostic;
 import org.printscript.diagnostics.DiagnosticCode;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
-import org.printscript.tokens.SyntaxToken;
+import org.printscript.source.SourceSpan;
 import org.printscript.tokens.Token;
 import org.printscript.tokens.TokenSource;
 import org.printscript.tokens.TokenType;
@@ -61,11 +62,6 @@ public final class StatementSyntaxReader implements StatementSource {
     return statement();
   }
 
-  @Override
-  public SyntaxToken eof() {
-    return syntax(current);
-  }
-
   private StatementSyntax statement() {
     if (match(TokenType.LET, TokenType.CONST)) {
       return variableDeclaration(previous);
@@ -78,49 +74,39 @@ public final class StatementSyntaxReader implements StatementSource {
     }
     ExpressionSyntax expression = expression();
     Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after statement");
-    return new ExpressionStatementSyntax(expression, syntax(semicolon));
+    return new ExpressionStatementSyntax(expression, spanning(expression.span(), semicolon));
   }
 
   private StatementSyntax variableDeclaration(Token keyword) {
     Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
-    Token colon = consume(TokenType.COLON, "Expected ':' after variable name");
+    consume(TokenType.COLON, "Expected ':' after variable name");
     Token type = consume(TokenType.TYPE, "Expected type annotation");
-    Optional<SyntaxToken> equals = Optional.empty();
     Optional<ExpressionSyntax> initializer = Optional.empty();
     if (match(TokenType.EQUAL)) {
-      equals = Optional.of(syntax(previous));
       initializer = Optional.of(expression());
     }
     Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after declaration");
     return new VariableDeclarationSyntax(
-        syntax(keyword),
-        syntax(name),
-        syntax(colon),
-        syntax(type),
-        equals,
+        TokenType.CONST.equals(keyword.type()),
+        name.semanticLexeme(),
+        name.span(),
+        type.semanticLexeme(),
         initializer,
-        syntax(semicolon));
+        spanning(keyword.span(), semicolon));
   }
 
   private StatementSyntax ifStatement(Token ifKeyword) {
-    Token leftParen = consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
+    consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'");
     ExpressionSyntax condition = expression();
-    Token rightParen = consume(TokenType.RIGHT_PAREN, "Expected ')' after if condition");
+    consume(TokenType.RIGHT_PAREN, "Expected ')' after if condition");
     BlockStatementSyntax thenBlock = block();
-    Optional<SyntaxToken> elseKeyword = Optional.empty();
     Optional<BlockStatementSyntax> elseBlock = Optional.empty();
     if (match(TokenType.ELSE)) {
-      elseKeyword = Optional.of(syntax(previous));
       elseBlock = Optional.of(block());
     }
+    SourceSpan last = elseBlock.orElse(thenBlock).span();
     return new IfStatementSyntax(
-        syntax(ifKeyword),
-        syntax(leftParen),
-        condition,
-        syntax(rightParen),
-        thenBlock,
-        elseKeyword,
-        elseBlock);
+        condition, thenBlock, elseBlock, new SourceSpan(ifKeyword.span().start(), last.end()));
   }
 
   private BlockStatementSyntax block() {
@@ -130,15 +116,15 @@ public final class StatementSyntaxReader implements StatementSource {
       statements.add(statement());
     }
     Token rightBrace = consume(TokenType.RIGHT_BRACE, "Expected '}' to close block");
-    return new BlockStatementSyntax(syntax(leftBrace), statements, syntax(rightBrace));
+    return new BlockStatementSyntax(statements, spanning(leftBrace.span(), rightBrace));
   }
 
   private StatementSyntax assignment() {
     Token name = consume(TokenType.IDENTIFIER, "Expected variable name");
-    Token equals = consume(TokenType.EQUAL, "Expected '=' after variable name");
+    consume(TokenType.EQUAL, "Expected '=' after variable name");
     ExpressionSyntax value = expression();
     Token semicolon = consume(TokenType.SEMICOLON, "Expected ';' after assignment");
-    return new AssignmentSyntax(syntax(name), syntax(equals), value, syntax(semicolon));
+    return new AssignmentSyntax(name.semanticLexeme(), value, spanning(name.span(), semicolon));
   }
 
   private ExpressionSyntax expression() {
@@ -148,9 +134,10 @@ public final class StatementSyntaxReader implements StatementSource {
   private ExpressionSyntax addition() {
     ExpressionSyntax expression = multiplication();
     while (match(TokenType.PLUS, TokenType.MINUS)) {
-      Token operator = previous;
+      BinaryOperator operator =
+          TokenType.PLUS.equals(previous.type()) ? BinaryOperator.ADD : BinaryOperator.SUBTRACT;
       ExpressionSyntax right = multiplication();
-      expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
+      expression = new BinaryExpressionSyntax(expression, operator, right);
     }
     return expression;
   }
@@ -158,38 +145,49 @@ public final class StatementSyntaxReader implements StatementSource {
   private ExpressionSyntax multiplication() {
     ExpressionSyntax expression = primary();
     while (match(TokenType.STAR, TokenType.SLASH)) {
-      Token operator = previous;
+      BinaryOperator operator =
+          TokenType.STAR.equals(previous.type()) ? BinaryOperator.MULTIPLY : BinaryOperator.DIVIDE;
       ExpressionSyntax right = primary();
-      expression = new BinaryExpressionSyntax(expression, syntax(operator), right);
+      expression = new BinaryExpressionSyntax(expression, operator, right);
     }
     return expression;
   }
 
   private ExpressionSyntax primary() {
     if (match(TokenType.NUMBER)) {
-      return new LiteralExpressionSyntax(syntax(previous), TypeName.NUMBER);
+      return literal(TypeName.NUMBER);
     }
     if (match(TokenType.STRING)) {
-      return new LiteralExpressionSyntax(syntax(previous), TypeName.STRING);
+      return literal(TypeName.STRING);
     }
     if (match(TokenType.BOOLEAN)) {
-      return new LiteralExpressionSyntax(syntax(previous), TypeName.BOOLEAN);
+      return literal(TypeName.BOOLEAN);
     }
     if (match(TokenType.IDENTIFIER)) {
       Token identifier = previous;
       if (match(TokenType.LEFT_PAREN)) {
-        Token leftParen = previous;
         List<ExpressionSyntax> arguments = new ArrayList<>();
         if (!check(TokenType.RIGHT_PAREN)) {
           arguments.add(expression());
         }
         Token rightParen = consume(TokenType.RIGHT_PAREN, "Expected ')' after call arguments");
         return new CallExpressionSyntax(
-            syntax(identifier), syntax(leftParen), arguments, syntax(rightParen));
+            identifier.semanticLexeme(), arguments, spanning(identifier.span(), rightParen));
       }
-      return new IdentifierExpressionSyntax(syntax(identifier));
+      return new IdentifierExpressionSyntax(identifier.semanticLexeme(), identifier.span());
     }
     throw error(current, "Expected expression");
+  }
+
+  private LiteralExpressionSyntax literal(TypeName type) {
+    return new LiteralExpressionSyntax(previous.semanticLexeme(), type, previous.span());
+  }
+
+  /**
+   * From the start of {@code first} to the end of {@code last} — how every node's span is built.
+   */
+  private static SourceSpan spanning(SourceSpan first, Token last) {
+    return new SourceSpan(first.start(), last.span().end());
   }
 
   private boolean match(TokenType... types) {
@@ -220,10 +218,6 @@ public final class StatementSyntaxReader implements StatementSource {
     current = next;
     next = tokenSource.next();
     return previous;
-  }
-
-  private SyntaxToken syntax(Token token) {
-    return SyntaxToken.from(token);
   }
 
   private DiagnosticException error(Token token, String message) {

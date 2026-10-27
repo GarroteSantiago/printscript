@@ -115,8 +115,8 @@ public final class SemanticContext {
 
     @Override
     public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
-      String name = declaration.identifier().semanticLexeme();
-      TypeName declaredType = typeAnnotations.resolve(declaration.type().semanticLexeme());
+      String name = declaration.name();
+      TypeName declaredType = typeAnnotations.resolve(declaration.typeAnnotation());
       if (nextSymbols.containsKey(name)) {
         model.addDiagnostic(
             error("Variable '" + name + "' is already declared", declaration.span()));
@@ -149,7 +149,7 @@ public final class SemanticContext {
 
     @Override
     public Void visitAssignment(AssignmentSyntax assignment) {
-      String name = assignment.identifier().semanticLexeme();
+      String name = assignment.name();
       VariableSymbol symbol = nextSymbols.get(name);
       if (symbol == null) {
         model.addDiagnostic(error("Variable '" + name + "' is not declared", assignment.span()));
@@ -265,7 +265,7 @@ public final class SemanticContext {
       IdentifierExpressionSyntax identifier,
       Map<String, VariableSymbol> symbols,
       SemanticModel.Builder model) {
-    String name = identifier.identifier().semanticLexeme();
+    String name = identifier.name();
     VariableSymbol symbol = symbols.get(name);
     if (symbol == null) {
       model.addDiagnostic(error("Variable '" + name + "' is not declared", identifier.span()));
@@ -284,13 +284,13 @@ public final class SemanticContext {
     TypeName right = typeOf(binary.right(), symbols, model);
     if (right == null) return null;
     return binaryOperatorRules
-        .resultType(binary.operator().type(), left, right)
+        .resultType(binary.operator(), left, right)
         .orElseGet(
             () -> {
               model.addDiagnostic(
                   error(
                       "Operator '"
-                          + binary.operator().text()
+                          + binary.operator().symbol()
                           + "' cannot be applied to "
                           + printable(left)
                           + " and "
@@ -305,7 +305,7 @@ public final class SemanticContext {
       Map<String, VariableSymbol> symbols,
       SemanticModel.Builder model,
       Optional<TypeName> expected) {
-    String callee = call.callee().semanticLexeme();
+    String callee = call.callee();
     BuiltinSignature signature = builtins.find(callee).orElse(null);
     if (signature == null) {
       model.addDiagnostic(error("Unknown callable '" + callee + "'", call.span()));

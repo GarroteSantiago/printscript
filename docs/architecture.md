@@ -71,7 +71,8 @@ graph TD
     typetable --> types
     parser --> ast
     parser --> tokens
-    ast --> tokens
+    ast --> source
+    parser --> source
     ast --> types
     lexer --> tokens
     tokens --> source
@@ -113,10 +114,10 @@ flowchart TD
 
 ## Recurring pattern: interface-with-singletons + visitor
 
-Seven otherwise-unrelated "closed set of kinds" types across the codebase follow the same shape, so
-it's documented once here instead of seven times: `tokens.TokenType`, `lexer.Punctuation`,
+Eight otherwise-unrelated "closed set of kinds" types across the codebase follow the same shape, so
+it's documented once here instead of eight times: `tokens.TokenType`, `lexer.Punctuation`,
 `types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`,
-`toolchain.LanguageVersion`, and the AST's
+`toolchain.LanguageVersion`, and the AST's `ast.nodes.expressions.BinaryOperator` and
 `ast.nodes.expressions.ExpressionSyntax` / `ast.nodes.statements.StatementSyntax`. Each is
 modeled as an interface with one singleton constant (or sealed subtype) per kind and an
 `accept(XVisitor<R>)` method, rather than a Java `enum` with a `switch`.
@@ -124,35 +125,34 @@ modeled as an interface with one singleton constant (or sealed subtype) per kind
 ```mermaid
 classDiagram
     direction TB
-    class TokenType {
+    class BinaryOperator {
         <<interface>>
-        +accept(TokenTypeVisitor) R
+        +accept(BinaryOperatorVisitor) R
+        +symbol() String
     }
-    class TokenTypeVisitor~R~ {
+    class BinaryOperatorVisitor~R~ {
         <<interface>>
-        +visitPlus() R
-        +visitMinus() R
-        +visitLet() R
+        +visitAdd() R
+        +visitSubtract() R
+        +visitMultiply() R
+        +visitDivide() R
     }
-    class LET
-    class PLUS
+    class ADD
+    class DIVIDE
     class ArithmeticOperators_V1Visitor {
-        implements TokenTypeVisitor
+        implements BinaryOperatorVisitor
     }
-    class SpacingRules_V1Visitor {
-        implements TokenTypeVisitor
-    }
-    TokenType <|.. LET
-    TokenType <|.. PLUS
-    TokenType --> TokenTypeVisitor : accept()
-    TokenTypeVisitor <|.. ArithmeticOperators_V1Visitor
-    TokenTypeVisitor <|.. SpacingRules_V1Visitor
+    BinaryOperator <|.. ADD
+    BinaryOperator <|.. DIVIDE
+    BinaryOperator --> BinaryOperatorVisitor : accept()
+    BinaryOperatorVisitor <|.. ArithmeticOperators_V1Visitor
 ```
 
-The payoff: adding a new kind (e.g. a new `TokenType` constant) forces a compile error in every
-`XVisitor` implementation across every module that dispatches on it — `interpreter.ArithmeticOperators`,
-`formatter.SpacingRules`, and any future one — until every case is handled. A `switch` over an
-`enum` only gets that same exhaustiveness check if every call site remembers to write one.
+The payoff: adding a new kind (e.g. a new `BinaryOperator` constant) forces a compile error in every
+`XVisitor` implementation across every module that dispatches on it — `interpreter.ArithmeticOperators`
+for operators, `formatter.SpacingRules` for a new `TokenType`, and any future one — until every case
+is handled. A `switch` over an `enum` only gets that same exhaustiveness check if every call site
+remembers to write one.
 
 ## Main Direction
 

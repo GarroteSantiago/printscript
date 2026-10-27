@@ -96,11 +96,7 @@ public final class StaticAnalyzer {
 
     @Override
     public Void visitVariableDeclaration(VariableDeclarationSyntax declaration) {
-      checkName(
-          declaration.identifier().semanticLexeme(),
-          declaration.identifier().span(),
-          config,
-          diagnostics);
+      checkName(declaration.name(), declaration.nameSpan(), config, diagnostics);
       declaration
           .initializer()
           .ifPresent(initializer -> checkCalls(initializer, semanticModel, config, diagnostics));

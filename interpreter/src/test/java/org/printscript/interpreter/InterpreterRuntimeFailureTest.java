@@ -8,13 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.printscript.ast.nodes.expressions.BinaryOperator;
 import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
-import org.printscript.tokens.TokenType;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.SemanticStatementResult;
 import org.printscript.types.TypeAnnotationTable;
@@ -168,7 +168,8 @@ class InterpreterRuntimeFailureTest {
   public void arithmeticOperatorsAdd() {
     assertEquals(
         new BigDecimal("5"),
-        ArithmeticOperators.v1().apply(TokenType.PLUS, new BigDecimal("3"), new BigDecimal("2")),
+        ArithmeticOperators.v1()
+            .apply(BinaryOperator.ADD, new BigDecimal("3"), new BigDecimal("2")),
         "expected addition");
   }
 
@@ -176,7 +177,8 @@ class InterpreterRuntimeFailureTest {
   public void arithmeticOperatorsSubtract() {
     assertEquals(
         new BigDecimal("1"),
-        ArithmeticOperators.v1().apply(TokenType.MINUS, new BigDecimal("3"), new BigDecimal("2")),
+        ArithmeticOperators.v1()
+            .apply(BinaryOperator.SUBTRACT, new BigDecimal("3"), new BigDecimal("2")),
         "expected subtraction");
   }
 
@@ -184,7 +186,8 @@ class InterpreterRuntimeFailureTest {
   public void arithmeticOperatorsMultiply() {
     assertEquals(
         new BigDecimal("6"),
-        ArithmeticOperators.v1().apply(TokenType.STAR, new BigDecimal("3"), new BigDecimal("2")),
+        ArithmeticOperators.v1()
+            .apply(BinaryOperator.MULTIPLY, new BigDecimal("3"), new BigDecimal("2")),
         "expected multiplication");
   }
 
@@ -192,7 +195,8 @@ class InterpreterRuntimeFailureTest {
   public void arithmeticOperatorsDivide() {
     assertEquals(
         new BigDecimal("1.5"),
-        ArithmeticOperators.v1().apply(TokenType.SLASH, new BigDecimal("3"), new BigDecimal("2")),
+        ArithmeticOperators.v1()
+            .apply(BinaryOperator.DIVIDE, new BigDecimal("3"), new BigDecimal("2")),
         "expected division");
   }
 
@@ -202,16 +206,7 @@ class InterpreterRuntimeFailureTest {
 
     assertThrows(
         ArithmeticException.class,
-        () -> operators.apply(TokenType.SLASH, BigDecimal.ONE, BigDecimal.ZERO));
-  }
-
-  @Test
-  public void arithmeticOperatorsRejectUnsupportedOperators() {
-    ArithmeticOperators operators = ArithmeticOperators.v1();
-
-    assertThrows(
-        IllegalStateException.class,
-        () -> operators.apply(TokenType.EQUAL, BigDecimal.ONE, BigDecimal.ONE));
+        () -> operators.apply(BinaryOperator.DIVIDE, BigDecimal.ONE, BigDecimal.ZERO));
   }
 
   @Test
