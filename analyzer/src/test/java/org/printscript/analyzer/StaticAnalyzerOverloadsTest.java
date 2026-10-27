@@ -10,33 +10,25 @@ import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticModelBuilder;
+import org.printscript.typechecker.ValidatingStatementSource;
 import org.printscript.types.TypeAnnotationTable;
 import org.printscript.typetable.BuiltinRegistry;
 
 class StaticAnalyzerOverloadsTest {
   @Test
-  public void programOverloadAnalyzesEveryStatementInTheProgram() {
-    var program = TestSources.programOf("let badName: string = \"x\";\nprintln(badName);");
-    var model = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
+  public void analyzeAllAnalyzesEveryValidatedStatement() {
+    var statements =
+        new ValidatingStatementSource(
+            TestSources.statementsOf("let badName: string = \"x\";\nprintln(\"hi \" + badName);"),
+            SemanticContext.forVersion(false));
+    List<Diagnostic> diagnostics = new ArrayList<>();
 
-    var diagnostics = new StaticAnalyzer().analyze(program, model, AnalyzerConfig.defaults());
-
-    assertEquals(
-        1, diagnostics.size(), "expected the naming-style diagnostic from the program overload");
-  }
-
-  @Test
-  public void statementOverloadReturnsCollectedDiagnostics() {
-    var statement = TestSources.statementsOf("let badName: string = \"x\";").next();
-    var semantic = SemanticContext.empty(BuiltinRegistry.v1()).validate(statement);
-
-    var diagnostics =
-        new StaticAnalyzer()
-            .analyze(statement, semantic.semanticModel(), AnalyzerConfig.defaults());
+    new StaticAnalyzer().analyzeAll(statements, AnalyzerConfig.defaults(), diagnostics::add);
 
     assertEquals(
-        1, diagnostics.size(), "expected the naming-style diagnostic from the statement overload");
+        2,
+        diagnostics.size(),
+        "expected the naming diagnostic and the println-argument diagnostic");
   }
 
   @Test

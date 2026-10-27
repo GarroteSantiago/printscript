@@ -3,8 +3,9 @@ package org.printscript.interpreter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.math.BigDecimal;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -12,14 +13,14 @@ import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
 import org.printscript.typechecker.SemanticContext;
-import org.printscript.typechecker.SemanticModelBuilder;
 import org.printscript.typechecker.ValidatingStatementSource;
-import org.printscript.typetable.BuiltinRegistry;
 import org.printscript.typetable.SemanticModel;
+import org.printscript.typetable.ValidatedStatement;
+import org.printscript.typetable.ValidatedStatementSource;
 
 /**
- * The whole-program and streaming entry points ({@link Interpreter#execute} and {@link
- * Interpreter#executeAll}), plus evaluation paths the statement-level tests don't reach.
+ * The streaming entry point ({@link Interpreter#executeAll}), plus evaluation paths the
+ * statement-level tests don't reach.
  */
 class InterpreterEntryPointsTest {
   private final List<String> output = new ArrayList<>();
@@ -35,21 +36,6 @@ class InterpreterEntryPointsTest {
             SemanticContext.forVersion(true));
     interpreter(prompt -> "").executeAll(statements, RuntimeEnvironment.empty());
     return output;
-  }
-
-  @Test
-  public void executeRunsEveryStatementOfAProgram() {
-    // Call-free on purpose: SemanticModelBuilder.build() keeps only diagnostics, not resolved
-    // calls.
-    var program = TestSources.programOf("let x: number = 1;\nlet y: number = x + 2;");
-    SemanticModel model = new SemanticModelBuilder(BuiltinRegistry.v1()).build(program);
-
-    RuntimeEnvironment environment = interpreter(prompt -> "").execute(program, model);
-
-    assertEquals(
-        Optional.of(new RuntimeValue.NumberValue(new BigDecimal("3"))),
-        environment.find("y"),
-        "expected the second statement to see the first one's variable");
   }
 
   @Test
@@ -89,12 +75,31 @@ class InterpreterEntryPointsTest {
     assertEquals(List.of("false"), output, "expected 'false' read as the boolean false");
   }
 
+  /** A source yielding one statement paired with an empty model, as if validation were skipped. */
+  private static ValidatedStatementSource unvalidated(String source) {
+    Deque<ValidatedStatement> remaining = new ArrayDeque<>();
+    remaining.add(
+        new ValidatedStatement(
+            TestSources.statementsOf(source).next(), SemanticModel.builder().build()));
+    return new ValidatedStatementSource() {
+      @Override
+      public boolean hasNext() {
+        return !remaining.isEmpty();
+      }
+
+      @Override
+      public ValidatedStatement next() {
+        return remaining.pop();
+      }
+    };
+  }
+
   private DiagnosticException unresolvedCallFailure() {
-    var program = TestSources.programOf("println(1);");
-    SemanticModel unvalidated = SemanticModel.builder().build();
     return assertThrows(
         DiagnosticException.class,
-        () -> interpreter(prompt -> "").execute(program, unvalidated),
+        () ->
+            interpreter(prompt -> "")
+                .executeAll(unvalidated("println(1);"), RuntimeEnvironment.empty()),
         "expected a call the semantic model never resolved to fail");
   }
 

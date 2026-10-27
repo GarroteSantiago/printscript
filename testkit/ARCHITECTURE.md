@@ -1,14 +1,16 @@
 # Testkit Module
 
-Test-only helper module. Centralizes the "parse this string into statements/a program" wiring
-(`new StatementSyntaxReader(new Lexer(source))`, drained through `SyntaxTreeBuilder`) that test
+Test-only helper module. Centralizes the "parse this string into tokens/statements" wiring
+(`new StatementSyntaxReader(new Lexer(source))`) that test
 fixtures across the repo need, without letting any *production* module depend on `lexer` just to
 build test data.
 
 Responsibilities:
 
 - `TestSources.statementsOf(String)` — a `StatementSource` over a string.
-- `TestSources.programOf(String)` — a fully-built `ProgramSyntax` over a string.
+- `TestSources.statementListOf(String)` — every statement of a string, as a list (drains
+  `statementsOf`).
+- `TestSources.tokensOf(String)` — a `TokenSource` over a string.
 
 Design rules:
 

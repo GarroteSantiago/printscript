@@ -1,7 +1,6 @@
 package org.printscript.interpreter;
 
 import java.math.BigDecimal;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
 import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.expressions.ExpressionSyntax;
@@ -35,11 +34,10 @@ import org.printscript.typetable.ValidatedStatementSource;
  * vs. numeric addition, rather than inspecting the runtime values itself. The only per-version
  * strategy this class owns is {@link ArithmeticOperators} (constructor-injected, default {@link
  * ArithmeticOperators#v1()}); everything else version-specific was already resolved by the time a
- * {@link ProgramSyntax}/statement reaches here. I/O is reached only through the {@link
- * OutputPort}/{@link InputPort}/{@link EnvironmentPort} ports, never directly — the 2-argument
- * constructor's defaults reject {@code readInput}/{@code readEnv} with an {@link
- * UnsupportedOperationException} for callers (such as {@code format}/{@code analyze}/{@code
- * validate}) that never wire real I/O in.
+ * statement reaches here. I/O is reached only through the {@link OutputPort}/{@link
+ * InputPort}/{@link EnvironmentPort} ports, never directly — the 2-argument constructor's defaults
+ * reject {@code readInput}/{@code readEnv} with an {@link UnsupportedOperationException} for
+ * callers (such as {@code format}/{@code analyze}/{@code validate}) that never wire real I/O in.
  */
 public final class Interpreter {
   private final OutputPort output;
@@ -73,14 +71,6 @@ public final class Interpreter {
     return name -> {
       throw new UnsupportedOperationException("readEnv is not available in this context");
     };
-  }
-
-  public RuntimeEnvironment execute(ProgramSyntax program, SemanticModel semanticModel) {
-    RuntimeEnvironment environment = RuntimeEnvironment.empty();
-    for (StatementSyntax statement : program.statements()) {
-      environment = execute(statement, environment, semanticModel);
-    }
-    return environment;
   }
 
   public RuntimeEnvironment executeStatement(

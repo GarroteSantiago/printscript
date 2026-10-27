@@ -35,7 +35,7 @@ direction; the full graph (and why `lexer`/`parser` don't depend on each other) 
 | [`lexer`](lexer/ARCHITECTURE.md) | Scans source text into tokens (`Lexer`). |
 | [`types`](types/ARCHITECTURE.md) | The type-system vocabulary (`TypeName`, `TypeAnnotationTable`). Zero dependencies. |
 | [`ast`](ast/ARCHITECTURE.md) | Owns the AST node types and the `StatementSource` port a parser implements. |
-| [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`, `SyntaxTreeBuilder`) — the only production implementation of `StatementSource`. |
+| [`parser`](parser/ARCHITECTURE.md) | Parses tokens into an AST (`StatementSyntaxReader`) — the only production implementation of `StatementSource`. |
 | [`typetable`](typetable/ARCHITECTURE.md) | The result of semantic analysis (`SemanticModel`) and its vocabulary (`BuiltinRegistry`, `VariableSymbol`) — not the checker itself. |
 | [`typechecker`](typechecker/ARCHITECTURE.md) | Type checking, symbol resolution, builtin resolution (`SemanticContext`) — the sole production producer of a `SemanticModel`. |
 | [`interpreter`](interpreter/ARCHITECTURE.md) | Executes validated statements (`Interpreter`), immutable runtime state. |

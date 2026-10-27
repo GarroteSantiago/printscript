@@ -12,10 +12,6 @@ Responsibilities:
   context that reflects a statement that failed to validate.
 - `SemanticStatementResult` — one validation step's result: the next `SemanticContext`, the
   resulting `SemanticModel`, and any diagnostics.
-- `SemanticModelBuilder` — whole-program convenience over `SemanticContext#validate`: folds every
-  statement through successive contexts into one merged `SemanticModel`. Not the production path —
-  `ValidatingStatementSource` validates one statement at a time, off a `StatementSource`, threading
-  the context itself. Used mainly by this module's own tests.
 - `BinaryOperatorRules` — the single source of truth for what result type, if any, a binary operator
   produces given its operand types. `interpreter.Interpreter` deliberately does not reimplement this
   decision at runtime; it only acts on the `TypeName` this rule already assigned during validation
@@ -32,7 +28,7 @@ Split out from `typetable` (then still named `semantics`) on purpose. `interpret
 both need to read a `SemanticModel` — neither one re-derives a type decision or a symbol
 resolution — but neither one runs the checker itself; they receive an already-validated model from
 `toolchain`'s composition root. Before this split, both modules pulled in
-`SemanticContext`/`SemanticModelBuilder`/`BinaryOperatorRules` transitively through that module
+`SemanticContext`/`BinaryOperatorRules` transitively through that module
 even though neither referenced them.
 Depending on `typechecker` at all is now a signal that a consumer runs analysis, not just reads its
 result; today that's only `toolchain` (composition root) and, for test fixtures that build a model
@@ -55,4 +51,5 @@ model it produces, and it's deliberate rather than an oversight.
 Representative tests: `SemanticContextV11Test.java` (the v1.1 builtins/const/if rules),
 `SemanticContextDeclarationTest.java` (declaration/type-checking rules),
 `SemanticContextModelAccessorsTest.java` (reading resolved types/variables/calls back off a
-`SemanticModel`), `SemanticModelBuilderTest.java`, `BinaryOperatorRulesTest.java`.
+`SemanticModel`), `SemanticContextErrorsTest.java`, `ValidatingStatementSourceTest.java`,
+`BinaryOperatorRulesTest.java`.

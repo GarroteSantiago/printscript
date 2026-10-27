@@ -3,6 +3,7 @@ package org.printscript.typechecker;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.printscript.ast.nodes.expressions.BinaryExpressionSyntax;
@@ -10,13 +11,11 @@ import org.printscript.ast.nodes.expressions.CallExpressionSyntax;
 import org.printscript.ast.nodes.expressions.IdentifierExpressionSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
-import org.printscript.lexer.KeywordTable;
+import org.printscript.diagnostics.Diagnostic;
 import org.printscript.testkit.TestSources;
-import org.printscript.types.TypeAnnotationTable;
 import org.printscript.types.TypeName;
 import org.printscript.typetable.BuiltinRegistry;
 import org.printscript.typetable.BuiltinSignature;
-import org.printscript.typetable.SemanticModel;
 import org.printscript.typetable.VariableSymbol;
 
 class SemanticContextModelAccessorsTest {
@@ -67,30 +66,25 @@ class SemanticContextModelAccessorsTest {
 
   @Test
   public void rejectsBinaryOperandsThatCannotBeCombined() {
-    var model = buildMismatchedBinaryOperandsModel();
+    var diagnostics = mismatchedBinaryOperandsDiagnostics();
 
-    assertEquals(1, model.diagnostics().size(), "expected one diagnostic");
+    assertEquals(1, diagnostics.size(), "expected one diagnostic");
   }
 
   @Test
   public void reportsAnOperatorNotApplicableMessageForMismatchedOperands() {
-    var model = buildMismatchedBinaryOperandsModel();
+    var diagnostics = mismatchedBinaryOperandsDiagnostics();
 
     assertTrue(
-        model.diagnostics().getFirst().message().contains("cannot be applied"),
+        diagnostics.getFirst().message().contains("cannot be applied"),
         "expected an operator-not-applicable diagnostic");
   }
 
-  private SemanticModel buildMismatchedBinaryOperandsModel() {
-    var program =
-        TestSources.programOf(
-            """
+  private List<Diagnostic> mismatchedBinaryOperandsDiagnostics() {
+    return Validation.diagnosticsOfV11(
+        """
             let flag: boolean = true;
             let result: number = flag + 1;
-            """,
-            KeywordTable.v1_1());
-
-    return new SemanticModelBuilder(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1())
-        .build(program);
+            """);
   }
 }

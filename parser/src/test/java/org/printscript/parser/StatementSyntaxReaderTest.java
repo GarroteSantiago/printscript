@@ -29,7 +29,7 @@ class StatementSyntaxReaderTest {
   public void primaryThrowsWhenNoExpressionMatches() {
     DiagnosticException exception =
         expectSyntaxException(
-            () -> TestSources.programOf(";"),
+            () -> TestSources.statementListOf(";"),
             "expected a lone ';' to fail to parse as an expression statement");
 
     assertEquals(
@@ -39,7 +39,8 @@ class StatementSyntaxReaderTest {
   }
 
   private DiagnosticCode codeOfParseFailure(String source) {
-    return expectSyntaxException(() -> TestSources.programOf(source), "expected a syntax error")
+    return expectSyntaxException(
+            () -> TestSources.statementListOf(source), "expected a syntax error")
         .diagnostics()
         .getFirst()
         .code();

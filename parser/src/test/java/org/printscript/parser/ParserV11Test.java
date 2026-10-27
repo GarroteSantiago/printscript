@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.expressions.LiteralExpressionSyntax;
 import org.printscript.ast.nodes.statements.IfStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.ast.nodes.statements.VariableDeclarationSyntax;
 import org.printscript.diagnostics.DiagnosticException;
 import org.printscript.lexer.KeywordTable;
@@ -35,16 +36,14 @@ class ParserV11Test {
       }
       """;
 
-  private ProgramSyntax parse(String source) {
-    return TestSources.programOf(source, KeywordTable.v1_1());
+  private List<StatementSyntax> parse(String source) {
+    return TestSources.statementListOf(source, KeywordTable.v1_1());
   }
 
   private VariableDeclarationSyntax parseDeclaration(String source) {
-    var program = parse(source);
+    var parsed = parse(source);
     return assertInstanceOf(
-        VariableDeclarationSyntax.class,
-        program.statements().getFirst(),
-        "expected a variable declaration");
+        VariableDeclarationSyntax.class, parsed.getFirst(), "expected a variable declaration");
   }
 
   private TypeName parseInitializerLiteralType(String source) {
@@ -58,9 +57,8 @@ class ParserV11Test {
   }
 
   private IfStatementSyntax parseIfStatement(String source) {
-    var program = parse(source);
-    return assertInstanceOf(
-        IfStatementSyntax.class, program.statements().get(1), "expected an if statement");
+    var parsed = parse(source);
+    return assertInstanceOf(IfStatementSyntax.class, parsed.get(1), "expected an if statement");
   }
 
   @Test

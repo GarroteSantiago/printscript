@@ -9,21 +9,19 @@ import org.printscript.ast.nodes.statements.BlockStatementSyntax;
 import org.printscript.diagnostics.Diagnostic;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.testkit.TestSources;
-import org.printscript.types.TypeAnnotationTable;
-import org.printscript.typetable.BuiltinRegistry;
 
 /** The error paths of {@link SemanticContext}: each test checks the one diagnostic it reports. */
 class SemanticContextErrorsTest {
+  private static String firstMessage(List<Diagnostic> diagnostics) {
+    return diagnostics.stream().map(Diagnostic::message).findFirst().orElse("<none>");
+  }
+
   private String firstMessage(String source) {
-    var model = new SemanticModelBuilder(BuiltinRegistry.v1()).build(TestSources.programOf(source));
-    return model.diagnostics().stream().map(Diagnostic::message).findFirst().orElse("<none>");
+    return firstMessage(Validation.diagnosticsOf(source));
   }
 
   private String firstMessageV11(String source) {
-    var model =
-        new SemanticModelBuilder(BuiltinRegistry.v1_1(), TypeAnnotationTable.v1_1())
-            .build(TestSources.programOf(source, KeywordTable.v1_1()));
-    return model.diagnostics().stream().map(Diagnostic::message).findFirst().orElse("<none>");
+    return firstMessage(Validation.diagnosticsOfV11(source));
   }
 
   @Test

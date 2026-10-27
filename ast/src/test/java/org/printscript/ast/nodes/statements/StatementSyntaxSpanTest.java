@@ -3,8 +3,8 @@ package org.printscript.ast.nodes.statements;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.source.SourcePosition;
 import org.printscript.testkit.TestSources;
@@ -30,32 +30,29 @@ class StatementSyntaxSpanTest {
       }
       """;
 
-  private final ProgramSyntax program = TestSources.programOf(SOURCE, KeywordTable.v1_1());
+  private final List<StatementSyntax> parsed =
+      TestSources.statementListOf(SOURCE, KeywordTable.v1_1());
 
   private static String at(SourcePosition position) {
     return position.row() + ":" + position.column();
   }
 
   private IfStatementSyntax ifStatement() {
-    return assertInstanceOf(
-        IfStatementSyntax.class, program.statements().get(2), "expected an if statement");
+    return assertInstanceOf(IfStatementSyntax.class, parsed.get(2), "expected an if statement");
   }
 
   private VariableDeclarationSyntax variableDeclaration() {
     return assertInstanceOf(
-        VariableDeclarationSyntax.class, program.statements().getFirst(), "expected a declaration");
+        VariableDeclarationSyntax.class, parsed.getFirst(), "expected a declaration");
   }
 
   private AssignmentSyntax assignment() {
-    return assertInstanceOf(
-        AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+    return assertInstanceOf(AssignmentSyntax.class, parsed.get(1), "expected an assignment");
   }
 
   private ExpressionStatementSyntax expressionStatement() {
     return assertInstanceOf(
-        ExpressionStatementSyntax.class,
-        program.statements().get(3),
-        "expected an expression statement");
+        ExpressionStatementSyntax.class, parsed.get(3), "expected an expression statement");
   }
 
   @Test
@@ -152,11 +149,10 @@ class StatementSyntaxSpanTest {
   }
 
   private IfStatementSyntax ifStatementWithoutElse() {
-    var programWithoutElse = TestSources.programOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
+    var parsedWithoutElse =
+        TestSources.statementListOf(SOURCE_IF_WITHOUT_ELSE, KeywordTable.v1_1());
     return assertInstanceOf(
-        IfStatementSyntax.class,
-        programWithoutElse.statements().get(1),
-        "expected an if statement");
+        IfStatementSyntax.class, parsedWithoutElse.get(1), "expected an if statement");
   }
 
   @Test

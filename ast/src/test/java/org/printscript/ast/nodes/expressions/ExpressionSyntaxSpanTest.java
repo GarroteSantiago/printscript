@@ -3,10 +3,11 @@ package org.printscript.ast.nodes.expressions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.printscript.ast.nodes.ProgramSyntax;
 import org.printscript.ast.nodes.statements.AssignmentSyntax;
 import org.printscript.ast.nodes.statements.ExpressionStatementSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.source.SourcePosition;
 import org.printscript.source.SourceSpan;
 import org.printscript.testkit.TestSources;
@@ -19,7 +20,7 @@ class ExpressionSyntaxSpanTest {
       println(a);
       """;
 
-  private final ProgramSyntax program = TestSources.programOf(SOURCE);
+  private final List<StatementSyntax> parsed = TestSources.statementListOf(SOURCE);
 
   private static String at(SourcePosition position) {
     return position.row() + ":" + position.column();
@@ -31,8 +32,7 @@ class ExpressionSyntaxSpanTest {
 
   private BinaryExpressionSyntax binaryFromAssignment() {
     var assignment =
-        assertInstanceOf(
-            AssignmentSyntax.class, program.statements().get(1), "expected an assignment");
+        assertInstanceOf(AssignmentSyntax.class, parsed.get(1), "expected an assignment");
     return assertInstanceOf(
         BinaryExpressionSyntax.class, assignment.value(), "expected a binary expression");
   }
@@ -50,9 +50,7 @@ class ExpressionSyntaxSpanTest {
   private CallExpressionSyntax callExpression() {
     var expressionStatement =
         assertInstanceOf(
-            ExpressionStatementSyntax.class,
-            program.statements().get(2),
-            "expected an expression statement");
+            ExpressionStatementSyntax.class, parsed.get(2), "expected an expression statement");
     return assertInstanceOf(
         CallExpressionSyntax.class, expressionStatement.expression(), "expected a call expression");
   }

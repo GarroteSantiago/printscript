@@ -1,11 +1,12 @@
 package org.printscript.testkit;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.printscript.ast.StatementSource;
-import org.printscript.ast.nodes.ProgramSyntax;
+import org.printscript.ast.nodes.statements.StatementSyntax;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.parser.SyntaxTreeBuilder;
 import org.printscript.tokens.TokenSource;
 
 /**
@@ -34,11 +35,20 @@ public final class TestSources {
     return new StatementSyntaxReader(new Lexer(source, keywords));
   }
 
-  public static ProgramSyntax programOf(String source) {
-    return new SyntaxTreeBuilder(statementsOf(source)).buildProgram();
+  /** Every statement of {@code source}, parsed with the v1.0 keywords. */
+  public static List<StatementSyntax> statementListOf(String source) {
+    return drain(statementsOf(source));
   }
 
-  public static ProgramSyntax programOf(String source, KeywordTable keywords) {
-    return new SyntaxTreeBuilder(statementsOf(source, keywords)).buildProgram();
+  public static List<StatementSyntax> statementListOf(String source, KeywordTable keywords) {
+    return drain(statementsOf(source, keywords));
+  }
+
+  private static List<StatementSyntax> drain(StatementSource statements) {
+    List<StatementSyntax> result = new ArrayList<>();
+    while (statements.hasNext()) {
+      result.add(statements.next());
+    }
+    return List.copyOf(result);
   }
 }

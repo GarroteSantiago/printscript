@@ -18,7 +18,7 @@ separate [types](../types/ARCHITECTURE.md) module, not here: it describes values
 system, not tree structure, and `TypeAnnotationTable` doesn't touch a node at all. This module
 consumes `TypeName` (one field, on `LiteralExpressionSyntax`) but never `TypeAnnotationTable`.
 
-The parser itself — `StatementSyntaxReader`/`SyntaxTreeBuilder` — lives in a separate
+The parser itself — `StatementSyntaxReader` — lives in a separate
 [parser](../parser/ARCHITECTURE.md) module, not here. This module defines the tree shape and the
 port a parser implements; it never builds one. `interpreter` and `analyzer`
 depend on `ast` (they walk the AST) but none of them depend on `parser` (they never build one —
@@ -68,8 +68,6 @@ classDiagram
         <<non-sealed interface>>
         +accept(ExpressionVisitor) R
     }
-    class ProgramSyntax
-    SyntaxNode <|-- ProgramSyntax
     SyntaxNode <|-- StatementSyntax
     SyntaxNode <|-- ExpressionSyntax
     StatementSyntax <|.. VariableDeclarationSyntax
@@ -95,5 +93,5 @@ Representative tests: `src/test/java/org/printscript/ast/nodes/expressions/Expre
 `nodes/statements/StatementSyntaxSpanTest.java`. Type-vocabulary tests
 (`TypeAnnotationTableTest.java`, `TypeNameTest.java`) live in [types](../types/ARCHITECTURE.md).
 Parser-specific tests (`ParserTest.java`, `ParserV11Test.java`, `ParserDeclarationTest.java`,
-`StatementSyntaxReaderTest.java`, `SyntaxTreeBuilderTest.java`) live in
+`StatementSyntaxReaderTest.java`) live in
 [parser](../parser/ARCHITECTURE.md) alongside the code they test.

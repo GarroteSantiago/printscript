@@ -8,9 +8,6 @@ Responsibilities:
 
 - `StatementSyntaxReader` — a recursive-descent parser with one-token lookahead, pulling from a
   `tokens.TokenSource` (never a concrete `Lexer` itself, so it works against any token producer)
-- `SyntaxTreeBuilder` — drains a `StatementSource` into a fully materialized `ProgramSyntax`, for
-  callers that want the whole tree at once instead of streaming statement-by-statement
-
 Split out from `ast` on purpose. `interpreter` and `analyzer` both walk the AST
 `ast` defines, but none of them parse — they receive an already-built tree from `toolchain`'s
 composition root, one statement at a time (`formatter` needs no tree at all). Before this split,
@@ -26,11 +23,10 @@ TokenSource (Lexer)
   -> Statement, pulled one at a time
 ```
 
-`SyntaxTreeBuilder` is not the production path — `toolchain.PrintScript` validates and
-processes each statement as it's parsed, interleaved with execution/formatting/analysis, so a
-later statement is never even parsed once an earlier one has failed. `SyntaxTreeBuilder` exists for
-callers that genuinely want the whole program up front, which today is only
-`testkit.TestSources#programOf` and this module's own tests.
+There is no whole-program API: `toolchain.PrintScript` and the REPL validate and process each
+statement as it's parsed, interleaved with execution/formatting/analysis, so a later statement is
+never even parsed once an earlier one has failed. Tests that want every statement at once use
+`testkit.TestSources#statementListOf`, which drains this same streaming parser.
 
 There is no error recovery: the first malformed construct throws a `diagnostics.DiagnosticException` and
 parsing stops. An error raised at the EOF token (the input ended mid-construct) carries
@@ -39,4 +35,4 @@ parsing stops. An error raised at the EOF token (the input ended mid-construct) 
 
 Representative tests: `ParserTest.java` (v1 grammar), `ParserV11Test.java`
 (`const`/`if`/`else`/boolean literals added in v1.1), `ParserDeclarationTest.java` (variable
-declaration edge cases), `StatementSyntaxReaderTest.java`, `SyntaxTreeBuilderTest.java`.
+declaration edge cases) and `StatementSyntaxReaderTest.java`.
