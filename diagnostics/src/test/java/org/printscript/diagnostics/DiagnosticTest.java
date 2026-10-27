@@ -45,6 +45,6 @@ class DiagnosticTest {
 
   @Test
   public void everyPhaseIsResolvableByName() {
-    assertEquals(Phase.TOOLCHAIN, Phase.valueOf("TOOLCHAIN"), "expected the toolchain phase");
+    assertEquals(Phase.ANALYZER, Phase.valueOf("ANALYZER"), "expected the analyzer phase");
   }
 }

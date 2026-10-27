@@ -109,8 +109,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Override
     @SuppressWarnings(
@@ -131,7 +132,7 @@ public class App implements Callable<Integer> {
       CommandResult<?> result =
           app.printScript.execute(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               System.out::println,
               input,
               env,
@@ -152,8 +153,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Option(names = {"-c", "--config"})
     private Path configFile;
@@ -164,7 +166,7 @@ public class App implements Callable<Integer> {
       CommandResult<Void> result =
           app.printScript.format(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               app.configReader.readFormatterConfig(resolvedConfigFile),
               System.out,
               app.progress);
@@ -184,8 +186,9 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Option(names = {"-c", "--config"})
     private Path configFile;
@@ -196,7 +199,7 @@ public class App implements Callable<Integer> {
       CommandResult<AnalysisResult> result =
           app.printScript.analyze(
               Files.newBufferedReader(sourceFile),
-              LanguageVersion.parse(version),
+              version,
               app.configReader.readAnalyzerConfig(resolvedConfigFile),
               app::printDiagnostic,
               app.progress);
@@ -216,14 +219,14 @@ public class App implements Callable<Integer> {
 
     @Option(
         names = {"-v", VERSION_OPTION},
-        required = true)
-    private String version;
+        required = true,
+        converter = LanguageVersionConverter.class)
+    private LanguageVersion version;
 
     @Override
     public Integer call() throws IOException {
       CommandResult<Void> result =
-          app.printScript.validate(
-              Files.newBufferedReader(sourceFile), LanguageVersion.parse(version), app.progress);
+          app.printScript.validate(Files.newBufferedReader(sourceFile), version, app.progress);
       if (!result.isSuccess()) return app.printDiagnostics(result.diagnostics());
       return 0;
     }
@@ -262,6 +265,24 @@ public class App implements Callable<Integer> {
         end.row(),
         end.column(),
         diagnostic.message());
+  }
+
+  /**
+   * Rejects an unsupported {@code --version} while picocli parses arguments, so it's reported as a
+   * usage error (exit code 2) like any other invalid flag, before any command runs.
+   */
+  static final class LanguageVersionConverter
+      implements CommandLine.ITypeConverter<LanguageVersion> {
+    @Override
+    public LanguageVersion convert(String value) {
+      try {
+        return LanguageVersion.parse(value);
+      } catch (IllegalArgumentException exception) {
+        var conversionError = new CommandLine.TypeConversionException(exception.getMessage());
+        conversionError.initCause(exception);
+        throw conversionError;
+      }
+    }
   }
 
   @FunctionalInterface

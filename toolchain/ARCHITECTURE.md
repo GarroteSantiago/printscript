@@ -41,9 +41,11 @@ on `ast`/`typetable`/`types`: it never touches `StatementSyntax`/`SemanticModel`
 higher-level stream types those `*All` methods accept.
 
 `PrintScript` is also where every version-specific strategy object *it directly constructs* gets
-selected: `KeywordTable`, `ArithmeticOperators`, `NamingStyleRules`, `SpacingRules` (currently all
-`.v1()`) are injected into `Lexer`, `Interpreter`, `StaticAnalyzer`, and `PrintScriptFormatter`
-respectively. `TypeAnnotationTable`/`BuiltinRegistry` selection lives behind
+selected: `KeywordTable`, `ArithmeticOperators`, `NamingStyleRules`, `SpacingRules` are injected
+into `Lexer`, `Interpreter`, `StaticAnalyzer`, and `PrintScriptFormatter` respectively, chosen in
+`pipelineFor` through a `LanguageVersionVisitor`. `LanguageVersion` is a closed set (`V1_0_0`,
+`V1_1_0`): `LanguageVersion.parse` rejects anything else, so an unsupported version never reaches
+`PrintScript` — the `cli` reports it as a usage error while parsing `--version`. `TypeAnnotationTable`/`BuiltinRegistry` selection lives behind
 `typechecker.SemanticContext.forVersion(boolean)` instead, since `toolchain` has no other reason
 to depend on `typetable`/`types`. None of the receiving classes decide their own version-specific
 behavior — they only receive it. Swapping in a new version's behavior means changing exactly one

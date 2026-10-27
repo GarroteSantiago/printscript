@@ -19,27 +19,6 @@ class PrintScriptValidateTest {
   }
 
   @Test
-  public void rejectsAnUnsupportedVersion() {
-    CommandResult<Void> result = validateWithUnsupportedVersion();
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail validation");
-  }
-
-  @Test
-  public void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
-    CommandResult<Void> result = validateWithUnsupportedVersion();
-
-    assertTrue(
-        result.diagnostics().getFirst().message().contains("Unsupported PrintScript version"),
-        "expected an unsupported-version diagnostic");
-  }
-
-  private CommandResult<Void> validateWithUnsupportedVersion() {
-    return new PrintScript()
-        .validate("println(\"hi\");", new LanguageVersion(9, 9, 0), ProgressReporter.NONE);
-  }
-
-  @Test
   public void reportsASemanticErrorAsADiagnosticFailure() {
     CommandResult<Void> result =
         new PrintScript()

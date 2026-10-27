@@ -119,27 +119,6 @@ class PrintScriptTest {
   }
 
   @Test
-  public void executeRejectsAnUnsupportedVersion() {
-    CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail execution");
-  }
-
-  @Test
-  public void executeRejectsAnUnsupportedVersionWithExpectedDiagnostic() {
-    CommandResult<ExecutionResult> result = executeWithUnsupportedVersion();
-
-    assertTrue(
-        result.diagnostics().getFirst().message().contains("Unsupported PrintScript version"),
-        "expected an unsupported-version diagnostic");
-  }
-
-  private CommandResult<ExecutionResult> executeWithUnsupportedVersion() {
-    return new PrintScript()
-        .execute("println(\"hi\");", new LanguageVersion(9, 9, 0), ProgressReporter.NONE);
-  }
-
-  @Test
   public void executeReportsARuntimeFailureAsADiagnosticFailure() {
     CommandResult<ExecutionResult> result =
         new PrintScript()
@@ -172,18 +151,5 @@ class PrintScriptTest {
                 ProgressReporter.NONE);
 
     assertEquals(1, result.value().size(), "expected the collected diagnostics list");
-  }
-
-  @Test
-  public void analyzeStringOverloadRejectsAnUnsupportedVersion() {
-    CommandResult<List<Diagnostic>> result =
-        new PrintScript()
-            .analyze(
-                "println(\"hi\");",
-                new LanguageVersion(9, 9, 0),
-                AnalyzerConfig.defaults(),
-                ProgressReporter.NONE);
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail analysis");
   }
 }

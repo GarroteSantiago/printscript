@@ -39,8 +39,8 @@ class AppTest {
   private static final String VERSION_ONE_ZERO = "1.0";
   private static final String UNSUPPORTED_VERSION = "9.9";
   private static final String UNSUPPORTED_VERSION_FRAGMENT = "Unsupported PrintScript version";
-  private static final String EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC =
-      "expected the unsupported-version diagnostic to be printed to stderr";
+  private static final String EXPECTED_UNSUPPORTED_VERSION_ERROR =
+      "expected the unsupported-version error to be printed to stderr";
   private static final String PRINTLN_HI_SOURCE = "println(\"hi\");";
 
   @TempDir Path tempDir;
@@ -250,19 +250,22 @@ class AppTest {
   }
 
   @Test
-  void validateCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void validateCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runValidateWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected validate to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected validate to reject an unsupported version as a usage error");
   }
 
   @Test
-  void validateCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void validateCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runValidateWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runValidateWithUnsupportedVersion() throws Exception {
@@ -281,19 +284,22 @@ class AppTest {
   }
 
   @Test
-  void executeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void executeCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runExecuteWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected execute to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected execute to reject an unsupported version as a usage error");
   }
 
   @Test
-  void executeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void executeCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runExecuteWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runExecuteWithUnsupportedVersion() throws Exception {
@@ -312,19 +318,22 @@ class AppTest {
   }
 
   @Test
-  void formatCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void formatCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runFormatWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected format to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected format to reject an unsupported version as a usage error");
   }
 
   @Test
-  void formatCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void formatCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runFormatWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runFormatWithUnsupportedVersion() throws Exception {
@@ -347,19 +356,22 @@ class AppTest {
   }
 
   @Test
-  void analyzeCommandWithUnsupportedVersionFailsWithExitCodeOne() throws Exception {
+  void analyzeCommandWithUnsupportedVersionFailsAsAUsageError() throws Exception {
     CapturedErr captured = runAnalyzeWithUnsupportedVersion();
 
-    assertEquals(1, captured.exitCode(), "expected analyze to fail for an unsupported version");
+    assertEquals(
+        2,
+        captured.exitCode(),
+        "expected analyze to reject an unsupported version as a usage error");
   }
 
   @Test
-  void analyzeCommandWithUnsupportedVersionPrintsDiagnostic() throws Exception {
+  void analyzeCommandWithUnsupportedVersionPrintsTheError() throws Exception {
     CapturedErr captured = runAnalyzeWithUnsupportedVersion();
 
     assertTrue(
         captured.stderr().contains(UNSUPPORTED_VERSION_FRAGMENT),
-        EXPECTED_UNSUPPORTED_VERSION_DIAGNOSTIC);
+        EXPECTED_UNSUPPORTED_VERSION_ERROR);
   }
 
   private CapturedErr runAnalyzeWithUnsupportedVersion() throws Exception {

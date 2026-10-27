@@ -12,7 +12,6 @@ import org.printscript.analyzer.AnalyzerConfig;
 import org.printscript.analyzer.NamingStyleRules;
 import org.printscript.analyzer.StaticAnalyzer;
 import org.printscript.diagnostics.Diagnostic;
-import org.printscript.diagnostics.Phase;
 import org.printscript.diagnostics.Severity;
 import org.printscript.formatter.FormatterConfigProvider;
 import org.printscript.formatter.PrintScriptFormatter;
@@ -24,8 +23,6 @@ import org.printscript.interpreter.RuntimeFailure;
 import org.printscript.lexer.KeywordTable;
 import org.printscript.lexer.Lexer;
 import org.printscript.parser.StatementSyntaxReader;
-import org.printscript.source.SourcePosition;
-import org.printscript.source.SourceSpan;
 import org.printscript.tokens.SyntaxException;
 import org.printscript.typechecker.SemanticContext;
 import org.printscript.typechecker.ValidatingStatementSource;
@@ -62,17 +59,28 @@ public final class PrintScript {
       PrintScriptFormatter formatter) {}
 
   private LanguagePipeline pipelineFor(LanguageVersion version) {
-    boolean v11 = version.supportsV1_1();
-    return new LanguagePipeline(
-        v11 ? KeywordTable.v1_1() : KeywordTable.v1(),
-        v11,
-        ArithmeticOperators.v1(),
-        new StaticAnalyzer(NamingStyleRules.v1()),
-        new PrintScriptFormatter(v11 ? SpacingRules.v1_1() : SpacingRules.v1()));
-  }
+    return version.accept(
+        new LanguageVersionVisitor<>() {
+          @Override
+          public LanguagePipeline visitV1_0() {
+            return new LanguagePipeline(
+                KeywordTable.v1(),
+                false,
+                ArithmeticOperators.v1(),
+                new StaticAnalyzer(NamingStyleRules.v1()),
+                new PrintScriptFormatter(SpacingRules.v1()));
+          }
 
-  private boolean supported(LanguageVersion version) {
-    return version.supportsV1() || version.supportsV1_1();
+          @Override
+          public LanguagePipeline visitV1_1() {
+            return new LanguagePipeline(
+                KeywordTable.v1_1(),
+                true,
+                ArithmeticOperators.v1(),
+                new StaticAnalyzer(NamingStyleRules.v1()),
+                new PrintScriptFormatter(SpacingRules.v1_1()));
+          }
+        });
   }
 
   public CommandResult<ExecutionResult> execute(
@@ -90,7 +98,6 @@ public final class PrintScript {
 
   public CommandResult<RuntimeEnvironment> execute(
       Reader source, LanguageVersion version, Consumer<String> output, ProgressReporter progress) {
-    if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
     Interpreter interpreter = new Interpreter(output::accept, pipeline.operators());
     return execute(source, pipeline, interpreter, progress);
@@ -103,7 +110,6 @@ public final class PrintScript {
       InputSource input,
       EnvironmentSource env,
       ProgressReporter progress) {
-    if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
     Interpreter interpreter =
         new Interpreter(output::accept, pipeline.operators(), input::readLine, env::get);
@@ -162,7 +168,6 @@ public final class PrintScript {
       Appendable output,
       ProgressReporter progress)
       throws IOException {
-    if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
     try {
       progress.report(READING_STATEMENTS);
@@ -195,7 +200,6 @@ public final class PrintScript {
       AnalyzerConfig config,
       Consumer<Diagnostic> diagnosticSink,
       ProgressReporter progress) {
-    if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
     AtomicInteger diagnosticCount = new AtomicInteger();
     AtomicInteger errorCount = new AtomicInteger();
@@ -232,7 +236,6 @@ public final class PrintScript {
 
   public CommandResult<Void> validate(
       Reader source, LanguageVersion version, ProgressReporter progress) {
-    if (!supported(version)) return unsupported(version);
     LanguagePipeline pipeline = pipelineFor(version);
     try {
       progress.report(READING_STATEMENTS);
@@ -246,19 +249,5 @@ public final class PrintScript {
     } catch (SemanticException exception) {
       return CommandResult.failure(exception.diagnostics());
     }
-  }
-
-  private <T> CommandResult<T> unsupported(LanguageVersion version) {
-    Diagnostic diagnostic =
-        Diagnostic.error(
-            Phase.TOOLCHAIN,
-            "Unsupported PrintScript version: "
-                + version.major()
-                + "."
-                + version.minor()
-                + "."
-                + version.patch(),
-            new SourceSpan(new SourcePosition(1, 1, 0), new SourcePosition(1, 1, 0)));
-    return CommandResult.failure(List.of(diagnostic));
   }
 }

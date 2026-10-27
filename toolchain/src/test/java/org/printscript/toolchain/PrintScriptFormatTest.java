@@ -68,27 +68,6 @@ class PrintScriptFormatTest {
   private record FormatSinkRun(CommandResult<Void> result, StringWriter output) {}
 
   @Test
-  public void rejectsAnUnsupportedVersion() {
-    CommandResult<String> result = formatWithUnsupportedVersion();
-
-    assertFalse(result.isSuccess(), "expected an unsupported version to fail");
-  }
-
-  @Test
-  public void rejectsAnUnsupportedVersionWithExpectedDiagnostic() {
-    CommandResult<String> result = formatWithUnsupportedVersion();
-
-    assertTrue(
-        result.diagnostics().getFirst().message().contains("Unsupported PrintScript version"),
-        "expected an unsupported-version diagnostic");
-  }
-
-  private CommandResult<String> formatWithUnsupportedVersion() {
-    return new PrintScript()
-        .format(SOURCE, new LanguageVersion(9, 9, 0), defaultConfig(), ProgressReporter.NONE);
-  }
-
-  @Test
   public void reportsASyntaxErrorAsADiagnosticFailure() {
     CommandResult<String> result =
         new PrintScript()

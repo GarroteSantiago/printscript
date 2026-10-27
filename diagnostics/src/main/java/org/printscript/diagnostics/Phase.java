@@ -2,14 +2,12 @@ package org.printscript.diagnostics;
 
 /**
  * Which pipeline stage produced a {@link Diagnostic}: scanning/parsing, semantic validation,
- * interpretation, formatting, static analysis, or the {@code toolchain} composition root itself
- * (e.g. an unsupported {@code LanguageVersion}).
+ * interpretation, formatting, or static analysis.
  */
 public enum Phase {
   SYNTAX,
   SEMANTIC,
   RUNTIME,
   FORMATTER,
-  ANALYZER,
-  TOOLCHAIN
+  ANALYZER
 }

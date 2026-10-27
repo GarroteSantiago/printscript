@@ -104,9 +104,10 @@ flowchart TD
 
 ## Recurring pattern: interface-with-singletons + visitor
 
-Six otherwise-unrelated "closed set of kinds" types across the core follow the same shape, so it's
-documented once here instead of six times: `tokens.TokenType`, `lexer.Punctuation`,
-`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`, and the AST's
+Seven otherwise-unrelated "closed set of kinds" types across the codebase follow the same shape, so
+it's documented once here instead of seven times: `tokens.TokenType`, `lexer.Punctuation`,
+`types.TypeName`, `interpreter.RuntimeValue`, `analyzer.NamingStyle`,
+`toolchain.LanguageVersion`, and the AST's
 `ast.nodes.expressions.ExpressionSyntax` / `ast.nodes.statements.StatementSyntax`. Each is
 modeled as an interface with one singleton constant (or sealed subtype) per kind and an
 `accept(XVisitor<R>)` method, rather than a Java `enum` with a `switch`.
